@@ -70,17 +70,17 @@ public struct FastNoise
 
     private FN_DECIMAL m_gradientPerturbAmp;
 
-    public FastNoise(int seed, float frequency = 0.007f)
+    public FastNoise(int seed, float frequency = 0.007f, Interp interp = Interp.Quintic, NoiseType noiseType = NoiseType.Simplex, int octaves = 3, float lancuarity = 2f, float gain = 0.5f, FractalType fractalType = FractalType.FBM)
     {
         m_seed = seed;
         m_frequency = (FN_DECIMAL)frequency;
         m_interp = Interp.Quintic;
-        m_noiseType = NoiseType.CubicFractal;
+        m_noiseType = NoiseType.Simplex;
 
-        m_octaves = 3;
-        m_lacunarity = (FN_DECIMAL)2.0;
-        m_gain = (FN_DECIMAL)0.5;
-        m_fractalType = FractalType.FBM;
+        m_octaves = octaves;
+        m_lacunarity = (FN_DECIMAL)lancuarity;
+        m_gain = (FN_DECIMAL)gain;
+        m_fractalType = fractalType;
 
         m_cellularDistanceFunction = CellularDistanceFunction.Euclidean;
         m_cellularReturnType = CellularReturnType.CellValue;

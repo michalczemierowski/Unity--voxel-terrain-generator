@@ -253,9 +253,15 @@ public struct Block
 
         return false;
     }
-    public void GetWaterShape(BlockFace face, int3 blockPos, NativeArray<float3> verts, NativeArray<float2> uv, short sourceDistance)
+    public bool GetWaterShape(BlockFace face, int3 blockPos, NativeArray<float3> verts, NativeArray<float2> uv, short sourceDistance, NativeArray<short> nearbyLiquidSourceDistance)
     {
         float height = (float)sourceDistance / 8;
+        // R L F B
+        float heightRight = (float)nearbyLiquidSourceDistance[0] / 8;
+        float heightLeft = (float)nearbyLiquidSourceDistance[1] / 8;
+        float heightFront = (float)nearbyLiquidSourceDistance[3] / 8;
+        float heightBack = (float)nearbyLiquidSourceDistance[2] / 8;
+
         switch (face)
         {
             case BlockFace.TOP:
@@ -268,7 +274,7 @@ public struct Block
                 uv[1] = topPos.uv1;
                 uv[2] = topPos.uv2;
                 uv[3] = topPos.uv3;
-                return;
+                return false;
             case BlockFace.BOTTOM:
                 verts[0] = new float3(blockPos.x, blockPos.y, blockPos.z);
                 verts[1] = new float3(blockPos.x + 1, blockPos.y, blockPos.z);
@@ -279,52 +285,54 @@ public struct Block
                 uv[1] = bottomPos.uv1;
                 uv[2] = bottomPos.uv2;
                 uv[3] = bottomPos.uv3;
-                return;
+                return false;
             case BlockFace.FRONT:
-                verts[0] = new float3(blockPos.x, blockPos.y, blockPos.z);
+                verts[0] = new float3(blockPos.x, blockPos.y + heightFront, blockPos.z);
                 verts[1] = new float3(blockPos.x, blockPos.y + height, blockPos.z);
                 verts[2] = new float3(blockPos.x + 1, blockPos.y + height, blockPos.z);
-                verts[3] = new float3(blockPos.x + 1, blockPos.y, blockPos.z);
+                verts[3] = new float3(blockPos.x + 1, blockPos.y + heightFront, blockPos.z);
 
-                uv[0] = sidePos.uv0;
+                uv[0] = new Vector2(sidePos.uv0.x, sidePos.uv0.y + heightFront / TilePos.textureSize);
                 uv[1] = sidePos.uv1;
                 uv[2] = sidePos.uv2;
-                uv[3] = sidePos.uv3;
-                return;
+                uv[3] = new Vector2(sidePos.uv3.x, sidePos.uv0.y + heightFront / TilePos.textureSize);
+                return height < heightFront;
             case BlockFace.BACK:
-                verts[0] = new float3(blockPos.x + 1, blockPos.y, blockPos.z + 1);
+                verts[0] = new float3(blockPos.x + 1, blockPos.y + heightBack, blockPos.z + 1);
                 verts[1] = new float3(blockPos.x + 1, blockPos.y + height, blockPos.z + 1);
                 verts[2] = new float3(blockPos.x, blockPos.y + height, blockPos.z + 1);
-                verts[3] = new float3(blockPos.x, blockPos.y, blockPos.z + 1);
+                verts[3] = new float3(blockPos.x, blockPos.y + heightBack, blockPos.z + 1);
 
-                uv[0] = sidePos.uv0;
+                uv[0] = new Vector2(sidePos.uv0.x, sidePos.uv0.y + heightBack / TilePos.textureSize);
                 uv[1] = sidePos.uv1;
                 uv[2] = sidePos.uv2;
-                uv[3] = sidePos.uv3;
-                return;
+                uv[3] = new Vector2(sidePos.uv3.x, sidePos.uv0.y + heightBack / TilePos.textureSize);
+                return height < heightBack;
             case BlockFace.RIGHT:
-                verts[0] = new float3(blockPos.x + 1, blockPos.y, blockPos.z);
+                verts[0] = new float3(blockPos.x + 1, blockPos.y + heightRight, blockPos.z);
                 verts[1] = new float3(blockPos.x + 1, blockPos.y + height, blockPos.z);
                 verts[2] = new float3(blockPos.x + 1, blockPos.y + height, blockPos.z + 1);
-                verts[3] = new float3(blockPos.x + 1, blockPos.y, blockPos.z + 1);
+                verts[3] = new float3(blockPos.x + 1, blockPos.y + heightRight, blockPos.z + 1);
 
-                uv[0] = sidePos.uv0;
+                uv[0] = new Vector2(sidePos.uv0.x, sidePos.uv0.y + heightRight / TilePos.textureSize);
                 uv[1] = sidePos.uv1;
                 uv[2] = sidePos.uv2;
-                uv[3] = sidePos.uv3;
-                return;
+                uv[3] = new Vector2(sidePos.uv3.x, sidePos.uv0.y + heightRight / TilePos.textureSize);
+                return height < heightRight;
             case BlockFace.LEFT:
-                verts[0] = new float3(blockPos.x, blockPos.y, blockPos.z + 1);
+                verts[0] = new float3(blockPos.x, blockPos.y + heightLeft, blockPos.z + 1);
                 verts[1] = new float3(blockPos.x, blockPos.y + height, blockPos.z + 1);
                 verts[2] = new float3(blockPos.x, blockPos.y + height, blockPos.z);
-                verts[3] = new float3(blockPos.x, blockPos.y, blockPos.z);
+                verts[3] = new float3(blockPos.x, blockPos.y + heightLeft, blockPos.z);
 
-                uv[0] = sidePos.uv0;
+                uv[0] = new Vector2(sidePos.uv0.x, sidePos.uv0.y + heightLeft / TilePos.textureSize);
                 uv[1] = sidePos.uv1;
                 uv[2] = sidePos.uv2;
-                uv[3] = sidePos.uv3;
-                return;
+                uv[3] = new Vector2(sidePos.uv3.x, sidePos.uv0.y + heightLeft / TilePos.textureSize);
+                return height < heightLeft;
         }
+
+        return false;
     }
 
     #endregion

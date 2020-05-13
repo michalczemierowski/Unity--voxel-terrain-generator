@@ -10,7 +10,10 @@ public struct GenerateTerrainData : IJob
 
     public int chunkPosX, chunkPosZ;
 
+    [ReadOnly]
     public NativeArray<GeneratorSettings> generatorSettings;
+    [ReadOnly]
+    public NativeArray<FastNoise> noises;
 
     public NativeArray<BlockType> blockData;
     public NativeArray<BiomeType> biomeTypes;
@@ -18,6 +21,7 @@ public struct GenerateTerrainData : IJob
 
     public Unity.Mathematics.Random random;
 
+    [ReadOnly]
     public FastNoise baseNoise;
 
     #endregion
@@ -39,36 +43,30 @@ public struct GenerateTerrainData : IJob
                 int bix = chunkPosX + x - 1;
                 int biz = chunkPosZ + z - 1;
 
-                BiomeType biomeType = (BiomeType)math.round(((baseNoise.GetSimplex(bix, biz) + 1) / 2) * TerrainData.possibleBiomes);
+                BiomeType biomeType = (BiomeType)math.round((baseNoise.GetSimplex(bix / TerrainChunk.biomeSize, biz / TerrainChunk.biomeSize) + 1) / TerrainData.possibleBiomes);
                 biomeTypes[Index2Dto1D(x, z)] = biomeType;
+
+                FastNoise noise = noises[(int)biomeType];
 
                 GeneratorSettings settings = generatorSettings[(int)biomeType];
                 float baseLandHeightMultipler = settings.baseLandHeightMultipler;
 
                 #region noise
 
-                float simplex1 = baseNoise.GetSimplex(bix * 0.8f, biz * 0.8f);
-                float simplex2 = baseNoise.GetSimplex(bix * 3f, biz * 3f) * (baseNoise.GetSimplex(bix * 0.3f, biz * 0.3f) + 0.5f);
-
-                if (settings.heighMapAbs.x)
-                    simplex1 = math.abs(simplex1);
-                if (settings.heighMapAbs.y)
-                    simplex2 = math.abs(simplex2);
-
-                simplex1 *= settings.heightMapMultipler.x;
-                simplex2 *= settings.heightMapMultipler.y;
+                float simplex1 = noise.GetSimplex(bix * 0.8f, biz * 0.8f) * settings.heightMapMultipler;
+                float simplex2 = noise.GetSimplex(bix * 3f, biz * 3f) * (noise.GetSimplex(bix * 0.3f, biz * 0.3f) + 0.5f) * settings.heightMapMultipler;
 
                 float heightMap = (simplex1 + simplex2);
 
                 int baseLandHeight = (int)math.round(TerrainChunk.chunkHeight * baseLandHeightMultipler + heightMap);
 
-                float caveMask = baseNoise.GetSimplex(bix * 0.3f, biz * 0.3f) + 0.3f;
+                float caveMask = noise.GetSimplex(bix * 0.3f, biz * 0.3f) + 0.3f;
 
                 #endregion
 
                 for (int y = 0; y < TerrainChunk.chunkHeight; y++)
                 {
-                    float cavebaseNoise1 = baseNoise.GetPerlinFractal(bix * 7.5f, y * 15f, biz * 7.5f);
+                    float cavebaseNoise1 = noise.GetPerlinFractal(bix * 7.5f, y * 15f, biz * 7.5f);
 
                     BlockType blockType = BlockType.AIR;
 
@@ -93,7 +91,7 @@ public struct GenerateTerrainData : IJob
                     if (y >= baseLandHeight && y <= TerrainChunk.waterHeight)
                         blockType = BlockType.WATER;
 
-                    if (y <= baseNoise.GetWhiteNoise(bix, z) * 3)
+                    if (y <= noise.GetWhiteNoise(bix, z) * 3)
                         blockType = BlockType.OBSIDIAN;
 
                     lastBlock = blockData[Index3Dto1D(x, y, z)] = blockType;
@@ -110,7 +108,7 @@ public struct GenerateTerrainData : IJob
 
     private void GenerateTrees()
     {
-        float simplex = baseNoise.GetSimplex(chunkPosX * .8f, chunkPosZ * .8f);
+        float simplex = baseNoise.GetSimplex(chunkPosX * .3f, chunkPosZ * .3f);
 
         if (simplex > 0)
         {

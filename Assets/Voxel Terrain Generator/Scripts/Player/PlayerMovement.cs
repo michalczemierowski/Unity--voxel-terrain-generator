@@ -5,6 +5,8 @@ using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour
 {
+    public bool fly;
+
     private float defaultSpeed;
     public float speed = 6.0f;
     public float jumpSpeed = 8.0f;
@@ -114,15 +116,16 @@ public class PlayerMovement : MonoBehaviour
         defaultSpeed = speed;
     }
 
-    // Update is called once per frame
     void Update()
     {
-        isGrounded = Physics.CheckSphere(groundCheck.position, groundDistance, groundMask);
+        if (Input.GetKeyDown(KeyCode.Q))
+            SwitchFlying();
 
         float horizontal = Input.GetAxis("Horizontal");
         float vertical = Input.GetAxis("Vertical");
-
         moveVector = new Vector2(horizontal * speed, vertical * speed);
+
+        isGrounded = Physics.CheckSphere(groundCheck.position, groundDistance, groundMask);
 
         if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
         {
@@ -132,20 +135,52 @@ public class PlayerMovement : MonoBehaviour
 
     private void FixedUpdate()
     {
-        Vector3 npos = (transform.forward * moveVector.y) + (transform.right * moveVector.x);
-        m_Rigidbody.velocity = new Vector3(npos.x, m_Rigidbody.velocity.y, npos.z);
-        if (isInWater)
+        if (fly)
         {
-            if(Input.GetKey(KeyCode.Space))
-                m_Rigidbody.velocity = new Vector3(m_Rigidbody.velocity.x, 1, m_Rigidbody.velocity.z);//  .MovePosition(transform.position + (transform.up * speed * Time.deltaTime));
-        }
-        else if (jump)
-        {
-            m_Rigidbody.AddForce(new Vector3(0, Mathf.Sqrt(-2 * gravity * jumpHeight), 0), ForceMode.VelocityChange);
-            jump = false;
-        }
+            Vector3 npos = (transform.position + (transform.forward * moveVector.y * Time.deltaTime + transform.right * moveVector.x * Time.deltaTime));
+            if (Input.GetKey(KeyCode.Space))
+                npos += Vector3.up * speed * Time.deltaTime;
+            else if (Input.GetKey(KeyCode.LeftShift))
+                npos += Vector3.down * speed * Time.deltaTime;
 
-        // ceil x, round y, ceil z
-        currentPosition = new Vector3Int(Mathf.CeilToInt(transform.position.x), Mathf.RoundToInt(transform.position.y), Mathf.CeilToInt(transform.position.z));
+            transform.position = npos;
+        }
+        else
+        {
+            Vector3 npos = (transform.forward * moveVector.y) + (transform.right * moveVector.x);
+            m_Rigidbody.velocity = new Vector3(npos.x, m_Rigidbody.velocity.y, npos.z);
+            if (isInWater)
+            {
+                if (Input.GetKey(KeyCode.Space))
+                    m_Rigidbody.velocity = new Vector3(m_Rigidbody.velocity.x, 1, m_Rigidbody.velocity.z);//  .MovePosition(transform.position + (transform.up * speed * Time.deltaTime));
+            }
+            else if (jump)
+            {
+                m_Rigidbody.AddForce(new Vector3(0, Mathf.Sqrt(-2 * gravity * jumpHeight), 0), ForceMode.VelocityChange);
+                jump = false;
+            }
+
+            // ceil x, round y, ceil z
+            currentPosition = new Vector3Int(Mathf.CeilToInt(transform.position.x), Mathf.RoundToInt(transform.position.y), Mathf.CeilToInt(transform.position.z));
+        }
+    }
+
+    private void SwitchFlying()
+    {
+        if(fly)
+        {
+            m_Rigidbody.isKinematic = false;
+            m_BoxCollider.enabled = true;
+            GetComponentInChildren<TerrainModifier>().maxDist /= 10;
+            GetComponentInChildren<TerrainModifier>().down = true;
+        }
+        else
+        {
+            m_Rigidbody.isKinematic = true;
+            m_BoxCollider.enabled = false;
+            GetComponentInChildren<TerrainModifier>().maxDist *= 10;
+            GetComponentInChildren<TerrainModifier>().down = false;
+        }
+        fly = !fly;
     }
 }

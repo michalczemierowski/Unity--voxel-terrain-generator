@@ -45,6 +45,8 @@ public struct CreateMeshData : IJob
         NativeArray<bool> drawFace = new NativeArray<bool>(6, Allocator.Temp);
         NativeArray<bool> flipFace = new NativeArray<bool>(6, Allocator.Temp);
 
+        NativeArray<short> nearbyLiquidSourceDistance = new NativeArray<short>(4, Allocator.Temp);
+
         for (int x = 1; x < TerrainChunk.chunkWidth + 1; x++)
         {
             for (int z = 1; z < TerrainChunk.chunkWidth + 1; z++)
@@ -105,10 +107,18 @@ public struct CreateMeshData : IJob
                             {
                                 if (block.shape == BlockShape.LIQUID)
                                 {
-                                    block.GetWaterShape((BlockFace)i, blockPos, verts, uv, param);
+                                    short value;
+                                    // R L F B
+                                    nearbyLiquidSourceDistance[0] = blockParameters.TryGetValue(new BlockParameter(new int3(x + 1, y, z), ParameterType.WATER_SOURCE_DISTANCE), out value) ? value : (short)0;
+                                    nearbyLiquidSourceDistance[1] = blockParameters.TryGetValue(new BlockParameter(new int3(x - 1, y, z), ParameterType.WATER_SOURCE_DISTANCE), out value) ? value : (short)0;
+                                    nearbyLiquidSourceDistance[2] = blockParameters.TryGetValue(new BlockParameter(new int3(x, y, z + 1), ParameterType.WATER_SOURCE_DISTANCE), out value) ? value : (short)0;
+                                    nearbyLiquidSourceDistance[3] = blockParameters.TryGetValue(new BlockParameter(new int3(x, y, z - 1), ParameterType.WATER_SOURCE_DISTANCE), out value) ? value : (short)0;
+
+                                    bool reverse = block.GetWaterShape((BlockFace)i, blockPos, verts, uv, param, nearbyLiquidSourceDistance);
                                     verticles.AddRange(verts);
                                     uvs.AddRange(uv);
 
+                                    flipFace[numFaces] = reverse;
                                     numFaces++;
                                 }
                                 else
@@ -195,14 +205,27 @@ public struct CreateMeshData : IJob
 
     private void BlockstateLiquid(NativeArray<bool> sides, int x, int y, int z)
     {
+        short waterSourceDistance = blockParameters[new BlockParameter(new int3(x, y, z), ParameterType.WATER_SOURCE_DISTANCE)];
+        NativeArray<int> nearbyWaterSources = new NativeArray<int>(4, Allocator.Temp);
+
+        short value;
+        nearbyWaterSources[0] = blockParameters.TryGetValue(new BlockParameter(new int3(x, y, z - 1), ParameterType.WATER_SOURCE_DISTANCE), out value) ? value : waterSourceDistance;
+        nearbyWaterSources[1] = blockParameters.TryGetValue(new BlockParameter(new int3(x, y, z + 1), ParameterType.WATER_SOURCE_DISTANCE), out value) ? value : waterSourceDistance;
+        nearbyWaterSources[2] = blockParameters.TryGetValue(new BlockParameter(new int3(x - 1, y, z), ParameterType.WATER_SOURCE_DISTANCE), out value) ? value : waterSourceDistance;
+        nearbyWaterSources[3] = blockParameters.TryGetValue(new BlockParameter(new int3(x + 1, y, z), ParameterType.WATER_SOURCE_DISTANCE), out value) ? value : waterSourceDistance;
+
         sides[0] = y < TerrainChunk.chunkHeight - 1 &&
             TerrainData.GetBlockState(blockData[Index3Dto1D(x, y + 1, z)]) == BlockState.TRANSPARENT;
         sides[1] = y > 0 &&
             TerrainData.GetBlockState(blockData[Index3Dto1D(x, y - 1, z)]) == BlockState.TRANSPARENT;
-        sides[2] = TerrainData.GetBlockState(blockData[Index3Dto1D(x, y, z - 1)]) == BlockState.TRANSPARENT;
-        sides[5] = TerrainData.GetBlockState(blockData[Index3Dto1D(x + 1, y, z)]) == BlockState.TRANSPARENT;
-        sides[3] = TerrainData.GetBlockState(blockData[Index3Dto1D(x, y, z + 1)]) == BlockState.TRANSPARENT;
-        sides[4] = TerrainData.GetBlockState(blockData[Index3Dto1D(x - 1, y, z)]) == BlockState.TRANSPARENT;
+        sides[2] = nearbyWaterSources[0] < waterSourceDistance || 
+            TerrainData.GetBlockState(blockData[Index3Dto1D(x, y, z - 1)]) == BlockState.TRANSPARENT;
+        sides[3] = nearbyWaterSources[1] < waterSourceDistance || 
+            TerrainData.GetBlockState(blockData[Index3Dto1D(x, y, z + 1)]) == BlockState.TRANSPARENT;
+        sides[4] = nearbyWaterSources[2] < waterSourceDistance || 
+            TerrainData.GetBlockState(blockData[Index3Dto1D(x - 1, y, z)]) == BlockState.TRANSPARENT;
+        sides[5] = nearbyWaterSources[3] < waterSourceDistance || 
+            TerrainData.GetBlockState(blockData[Index3Dto1D(x + 1, y, z)]) == BlockState.TRANSPARENT;
     }
 
     private void BlockstateSolidHalf(NativeArray<bool> sides, int x, int y, int z, int3 rotation)

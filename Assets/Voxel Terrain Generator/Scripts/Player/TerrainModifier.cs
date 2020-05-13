@@ -11,15 +11,16 @@ public class TerrainModifier : MonoBehaviour
 
     public Inventory inv;
 
-    float maxDist = 4;
+    public float maxDist = 8;
+    public bool down = true;
 
     // Update is called once per frame
     void Update()
     {
-        bool leftClick = Input.GetMouseButtonDown(0);
-        bool rightClick = Input.GetMouseButtonDown(1);
+        bool leftClick = down ? Input.GetMouseButtonDown(0) : Input.GetMouseButton(0);
+        bool rightClick = down ? Input.GetMouseButtonDown(1) : Input.GetMouseButton(1);
 
-        if(leftClick || rightClick) { 
+        if (leftClick || rightClick) { 
         RaycastHit hitInfo;
             if (Physics.Raycast(transform.position, transform.forward, out hitInfo, maxDist, groundLayer))
             {
@@ -48,7 +49,7 @@ public class TerrainModifier : MonoBehaviour
                 {
                     //TerrainGenerator.SetBlock(new BlockData(BlockType.Air, new Vector3Int(bix + chunkPosX - 1, biy, biz + chunkPosZ - 1)));
                     tc.ClearParameters(bix, biy, biz);
-                    tc.UpdateBlock(bix, biy, biz, BlockType.AIR);
+                    tc.SetBlock(bix, biy, biz, BlockType.AIR);
                     //tc.blocks[index] = BlockType.Air;
                     //tc.BuildMesh();
                     //CheckNeighbours(tc, bix, biy, biz, BlockType.Air, cp);
@@ -72,7 +73,7 @@ public class TerrainModifier : MonoBehaviour
                     if (block.type == BlockType.WATER)
                         tc.SetParameters(new BlockParameter(new int3(bix, biy, biz), ParameterType.WATER_SOURCE_DISTANCE), (short)8);
 
-                    tc.UpdateBlock(bix, biy, biz, inv.GetCurrentBlock());
+                    tc.SetBlock(bix, biy, biz, inv.GetCurrentBlock());
                     //tc.BuildMesh();
                     //CheckNeighbours(tc, bix, biy, biz, blockType, cp);
 

@@ -1,6 +1,5 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
-using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
@@ -13,16 +12,18 @@ using UnityEngine;
  */
 public class TerrainChunk : MonoBehaviour
 {
+    #region // === Variables === \\
+
+    #region public
     public MeshFilter blockMeshFilter, liquidMeshFilter, plantsMeshFilter;
     public MeshCollider blockMeshCollider;
 
-    private ChunkDissapearingAnimation chunkDissapearingAnimation;
-    private ChunkAnimation chunkAnimation;
+    public TerrainChunk[] neigbourChunks = new TerrainChunk[0]; // +x, -x, +z, -z
 
     //chunk size
     public const int chunkWidth = 16;
-    public const int chunkHeight = 64;
-    public const int waterHeight = 28;
+    public const int chunkHeight = 256;
+    public const int waterHeight = 56;
     public const int fixedChunkWidth = chunkWidth + 2;
 
     public const int maxTreeCount = 10;
@@ -30,10 +31,20 @@ public class TerrainChunk : MonoBehaviour
     public static readonly int2 treeHeigthRange = new int2(4, 8);
     public const float chanceForGrass = 0.15f;
 
-    private bool refreshBlocks;
+    public const float biomeSize = 3f;
 
     public NativeArray<BlockType> blocks;
     public NativeArray<BiomeType> biomeTypes;
+
+    public ChunkPos chunkPos;
+
+    #endregion
+
+    #region private
+
+    private ChunkDissapearingAnimation chunkDissapearingAnimation;
+    private ChunkAnimation chunkAnimation;
+
     private NativeHashMap<BlockParameter, short> blockParameters;
 
     private NativeList<float3> blockVerticles;
@@ -47,12 +58,13 @@ public class TerrainChunk : MonoBehaviour
     private NativeList<float3> plantsVerticles;
     private NativeList<int> plantsTriangles;
     private NativeList<float2> plantsUVs;
-    public TerrainChunk[] neigbourChunks = new TerrainChunk[0]; // +x, -x, +z, -z
 
     private List<BlockData> blocksToBuild = new List<BlockData>();
     private Dictionary<BlockParameter, short> parametersToAdd = new Dictionary<BlockParameter, short>();
 
-    public ChunkPos chunkPos;
+    #endregion
+
+    #endregion
 
     #region // === Monobehaviour === \\
 
@@ -175,6 +187,7 @@ public class TerrainChunk : MonoBehaviour
             blockData = blocks,
             biomeTypes = biomeTypes,
             blockParameters = blockParameters,
+            noises = TerrainGenerator.biomeNoises,
             baseNoise = TerrainGenerator.baseNoise,
             generatorSettings = TerrainGenerator.generatorSettings,
             random = new Unity.Mathematics.Random((uint)(xPos * 10000 + zPos + 1000))
@@ -210,8 +223,6 @@ public class TerrainChunk : MonoBehaviour
 
     public void BuildMesh(List<JobHandle> jobHandles)
     {
-        //refreshBlocks = false;
-
         CreateMeshData createMeshData = new CreateMeshData
         {
             blockData = blocks,
@@ -237,9 +248,14 @@ public class TerrainChunk : MonoBehaviour
 
     public void ApplyMesh()
     {
-        Mesh mesh = new Mesh();
-        Mesh liquidMesh = new Mesh();
-        Mesh plantsMesh = new Mesh();
+        Mesh mesh = blockMeshFilter.mesh;
+        mesh.Clear();
+
+        Mesh liquidMesh = liquidMeshFilter.mesh;
+        liquidMesh.Clear();
+
+        Mesh plantsMesh = plantsMeshFilter.mesh;
+        plantsMesh.Clear();
 
         // blocks
         mesh.SetVertices<float3>(blockVerticles);
@@ -258,7 +274,13 @@ public class TerrainChunk : MonoBehaviour
 
         //mesh.RecalculateNormals();
         blockMeshFilter.mesh = mesh;
-        TerrainGenerator.SchedulePhysicsBake(this);
+
+        // bake mesh immediately if player is near
+        Vector2 playerPosition = new Vector2(TerrainGenerator.player.transform.position.x, TerrainGenerator.player.transform.position.z);
+        if (Vector2.Distance(new Vector2(chunkPos.x, chunkPos.z), playerPosition) < fixedChunkWidth * 2)
+            blockMeshCollider.sharedMesh = mesh;
+        else
+            TerrainGenerator.SchedulePhysicsBake(this);
 
         //liquidMesh.RecalculateNormals();
         liquidMeshFilter.mesh = liquidMesh;
@@ -365,7 +387,7 @@ public class TerrainChunk : MonoBehaviour
         return blocks[Index3Dto1D(blockPos.x, blockPos.y, blockPos.z)];
     }
 
-    public void SetBlock(int x, int y, int z, BlockType blockType)
+    private void SetBlockWithoutRebuild(int x, int y, int z, BlockType blockType)
     {
         blocks[Index3Dto1D(x, y, z)] = blockType;
 
@@ -376,13 +398,20 @@ public class TerrainChunk : MonoBehaviour
         }
     }
 
-    public void UpdateBlock(int x, int y, int z, BlockType blockType)
+    public void SetBlock(int3 position, BlockType blockType)
+    {
+        SetBlock(position.x, position.y, position.z, blockType);
+    }
+    public void SetBlock(BlockPos position, BlockType blockType)
+    {
+        SetBlock(position.x, position.y, position.z, blockType);
+    }
+    public void SetBlock(int x, int y, int z, BlockType blockType)
     {
         List<JobHandle> jobHandles = new List<JobHandle>();
         List<TerrainChunk> chunksToBuild = new List<TerrainChunk>();
 
-        SetBlock(x, y, z, blockType);
-        //blocks[Index3Dto1D(x, y, z)] = blockType;
+        SetBlockWithoutRebuild(x, y, z, blockType);
 
         // add current chunk
         BuildMesh(jobHandles);
@@ -448,7 +477,7 @@ public class TerrainChunk : MonoBehaviour
         UpdateNeighbourBlocks(new BlockPos(x, y, z), 10);
     }
 
-    public void UpdateBlocks(BlockData[] blockDatas)
+    public void SetBlocks(BlockData[] blockDatas)
     {
         List<JobHandle> jobHandles = new List<JobHandle>();
         List<TerrainChunk> chunksToBuild = new List<TerrainChunk>();
@@ -463,7 +492,7 @@ public class TerrainChunk : MonoBehaviour
             int z = blockDatas[i].position.z;
 
             BlockType blockType = blockDatas[i].blockType;
-            SetBlock(x, y, z, blockType);
+            SetBlockWithoutRebuild(x, y, z, blockType);
             //blocks[Index3Dto1D(x, y, z)] = blockType;
 
             // check neighbours
@@ -590,6 +619,20 @@ public class TerrainChunk : MonoBehaviour
             new BlockPos(x, y - 1, z)
         };
 
+        Dictionary<Side, BlockUpdateEventData> neighbourBlocks = new Dictionary<Side, BlockUpdateEventData>();
+        neighbourBlocks.Add(Side.TOP, new BlockUpdateEventData(this, upDownBlocks[0], GetBlock(upDownBlocks[0])));
+        neighbourBlocks.Add(Side.DOWN, new BlockUpdateEventData(this, upDownBlocks[1], GetBlock(upDownBlocks[1]))); // down
+
+        for (int i = 0; i < 4; i++)
+        {
+            TerrainChunk chunk = neighbours[i] < 0 ? this : neigbourChunks[neighbours[i]];
+            BlockPos blockPos = sideBlocks[i];
+            neighbourBlocks.Add((Side)i, new BlockUpdateEventData(chunk, blockPos, chunk.GetBlock(blockPos)));
+        }
+
+        TerrainGenerator.InvokeBlockUpdateEvent(blockType, new BlockUpdateEventData(this, position, blockType), neighbourBlocks);
+        return;
+
         if (blockType == BlockType.GRASS_BLOCK && TerrainData.GetBlockState(blocks[Index3Dto1D(upDownBlocks[0])]) == BlockState.SOLID)
         {
             AddBlockToBuildList(new BlockData(BlockType.DIRT, position));
@@ -639,6 +682,10 @@ public class TerrainChunk : MonoBehaviour
         }
     }
 
+    public void AddBlockToBuildList(BlockPos blockPos, BlockType blockType)
+    {
+        AddBlockToBuildList(new BlockData(blockType, blockPos));
+    }
     public void AddBlockToBuildList(BlockData data)
     {
         if (!blocksToBuild.Contains(data))
@@ -653,7 +700,6 @@ public class TerrainChunk : MonoBehaviour
         }
     }
 
-
     private void BuildBlocks()
     {
         if (blocksToBuild.Count == 0) return;
@@ -667,7 +713,7 @@ public class TerrainChunk : MonoBehaviour
 
         BlockData[] datas = blocksToBuild.ToArray();
         blocksToBuild.Clear();
-        UpdateBlocks(datas);
+        SetBlocks(datas);
         // TODO: GC alloc
     }
 

@@ -7,7 +7,7 @@ public struct TilePos
 {
     public float2 uv0, uv1, uv2, uv3;
 
-    private static readonly float textureSize = 16f;
+    public static readonly float textureSize = 16f;
 
     public static readonly TilePos AIR_UV = new TilePos
     {
