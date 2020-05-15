@@ -1,15 +1,19 @@
 ﻿
-public class TickQueueData
-{
-    public TerrainChunk chunk;
-    public BlockPos blockPos;
-    public int ticks;
+using VoxelTG.Terrain.Blocks;
 
-    public TickQueueData(TerrainChunk chunk, BlockPos blockPos, int ticks)
+namespace VoxelTG.Terrain
+{
+    public class TickQueueData
     {
-        this.chunk = chunk;
-        this.blockPos = blockPos;
-        this.ticks = ticks;
+        public Chunk chunk;
+        public BlockPosition blockPos;
+        public int ticks;
+
+        public TickQueueData(Chunk chunk, BlockPosition blockPos, int ticks)
+        {
+            this.chunk = chunk;
+            this.blockPos = blockPos;
+            this.ticks = ticks;
+        }
     }
 }
-

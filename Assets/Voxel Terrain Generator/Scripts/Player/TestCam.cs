@@ -1,12 +1,17 @@
 ﻿using UnityEngine;
+using VoxelTG.Terrain;
 
+/*
+ * Michał Czemierowski
+ * https://github.com/michalczemierowski
+*/
 public class TestCam : MonoBehaviour
 {
     public float speed;
 
     private void Awake()
     {
-        TerrainGenerator.player = transform;
+        World.player = transform;
     }
 
     private void Update()

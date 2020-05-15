@@ -1,28 +1,34 @@
 ﻿using UnityEngine;
 
-public class ChunkAnimation : MonoBehaviour
+/*
+ * Michał Czemierowski
+ * https://github.com/michalczemierowski
+*/
+namespace VoxelTG.Terrain.Chunks
 {
-    public float distance;
-    public float speed = 32;
-
-    private void OnEnable()
+    public class ChunkAnimation : MonoBehaviour
     {
-        transform.position = new Vector3(transform.position.x, -distance, transform.position.z);
+        public float distance;
+        public float speed = 32;
 
-        foreach (var mr in GetComponentsInChildren<MeshRenderer>())
+        private void OnEnable()
         {
-            mr.enabled = true;
+            transform.position = new Vector3(transform.position.x, -distance, transform.position.z);
+
+            foreach (var mr in GetComponentsInChildren<MeshRenderer>())
+            {
+                mr.enabled = true;
+            }
         }
-    }
 
-    private void Update()
-    {
-        transform.Translate(Vector3.up * speed * Time.deltaTime);
-        if(transform.position.y >= 0)
+        private void Update()
         {
-            transform.position = new Vector3(transform.position.x, 0, transform.position.z);
-            this.enabled = false;
+            transform.Translate(Vector3.up * speed * Time.deltaTime);
+            if (transform.position.y >= 0)
+            {
+                transform.position = new Vector3(transform.position.x, 0, transform.position.z);
+                this.enabled = false;
+            }
         }
     }
 }
-

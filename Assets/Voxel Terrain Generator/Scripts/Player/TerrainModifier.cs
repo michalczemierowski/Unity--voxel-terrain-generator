@@ -1,10 +1,12 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using Unity.Collections;
-using Unity.Jobs;
-using Unity.Mathematics;
+﻿using Unity.Mathematics;
 using UnityEngine;
+using VoxelTG.Terrain;
+using VoxelTG.Terrain.Blocks;
 
+/*
+ * Michał Czemierowski
+ * https://github.com/michalczemierowski
+*/
 public class TerrainModifier : MonoBehaviour
 {
     public LayerMask groundLayer;
@@ -32,18 +34,12 @@ public class TerrainModifier : MonoBehaviour
                 else
                     pointInTargetBlock = hitInfo.point - transform.forward * .01f;
 
-                //get the terrain chunk (can't just use collider)
-                int chunkPosX = Mathf.FloorToInt(pointInTargetBlock.x / TerrainChunk.chunkWidth) * TerrainChunk.chunkWidth;
-                int chunkPosZ = Mathf.FloorToInt(pointInTargetBlock.z / TerrainChunk.chunkWidth) * TerrainChunk.chunkWidth;
-
-                ChunkPos cp = new ChunkPos(chunkPosX, chunkPosZ);
-
-                TerrainChunk tc = TerrainGenerator.chunks[cp];
-
+                Chunk tc = World.GetChunkByBlockPosition(pointInTargetBlock.x, pointInTargetBlock.z);//World.chunks[cp];
+                //BlockPosition blockPosition = new BlockPosition(pointInTargetBlock.x, pointInTargetBlock.y, pointInTargetBlock.z);
                 //index of the target block
-                int bix = Mathf.FloorToInt(pointInTargetBlock.x) - chunkPosX + 1;
+                int bix = Mathf.FloorToInt(pointInTargetBlock.x) - tc.chunkPos.x + 1;
                 int biy = Mathf.FloorToInt(pointInTargetBlock.y);
-                int biz = Mathf.FloorToInt(pointInTargetBlock.z) - chunkPosZ + 1;
+                int biz = Mathf.FloorToInt(pointInTargetBlock.z) - tc.chunkPos.z + 1;
 
                 if (leftClick)//replace block with air
                 {
@@ -63,10 +59,11 @@ public class TerrainModifier : MonoBehaviour
                     //BlockType blockType = inv.GetCurBlock();
                     //tc.blocks[index] = inv.GetCurBlock();
 
+                    // schedule update if below block is grass block (if above block is solid : grass_block -> dirt_block)
                     if (tc.GetBlock(bix, biy - 1, biz) == BlockType.GRASS_BLOCK)
-                        TerrainGenerator.ScheduleUpdate(tc, new BlockPos(bix, biy - 1, biz), 10, 50);
+                        World.ScheduleUpdate(tc, new BlockPosition(bix, biy - 1, biz), 10, 50);
 
-                    Block block = TerrainData.GetBlock(inv.GetCurrentBlock());
+                    Block block = WorldData.GetBlock(inv.GetCurrentBlock());
 
                     if (block.shape == BlockShape.HALF_BLOCK)
                         tc.SetParameters(new BlockParameter(new int3(bix, biy, biz), ParameterType.ROTATION), (short)(Mathf.RoundToInt(transform.eulerAngles.y / 90) * 90));

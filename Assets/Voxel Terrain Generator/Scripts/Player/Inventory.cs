@@ -1,8 +1,11 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
+using VoxelTG.Terrain;
 
+/*
+ * Michał Czemierowski
+ * https://github.com/michalczemierowski
+*/
 public class Inventory : MonoBehaviour
 {
     [SerializeField] private Text materialListText;

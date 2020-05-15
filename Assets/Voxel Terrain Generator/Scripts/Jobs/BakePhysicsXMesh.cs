@@ -2,14 +2,21 @@
 using Unity.Collections;
 using Unity.Jobs;
 
-[BurstCompile]
-public struct BakePhysicsXMesh : IJob
+/*
+ * Michał Czemierowski
+ * https://github.com/michalczemierowski
+*/
+namespace VoxelTG.Jobs
 {
-    [ReadOnly]
-    public int meshID;
-
-    public void Execute()
+    [BurstCompile]
+    public struct BakePhysicsXMesh : IJob
     {
-        UnityEngine.Physics.BakeMesh(meshID, false);
+        [ReadOnly]
+        public int meshID;
+
+        public void Execute()
+        {
+            UnityEngine.Physics.BakeMesh(meshID, false);
+        }
     }
 }

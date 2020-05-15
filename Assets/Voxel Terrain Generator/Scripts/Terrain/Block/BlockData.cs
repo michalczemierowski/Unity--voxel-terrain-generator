@@ -1,11 +1,18 @@
-﻿public struct BlockData
+﻿/*
+ * Michał Czemierowski
+ * https://github.com/michalczemierowski
+*/
+namespace VoxelTG.Terrain.Blocks
 {
-    public BlockType blockType;
-    public BlockPos position;
-
-    public BlockData(BlockType blockType, BlockPos position)
+    public struct BlockData
     {
-        this.blockType = blockType;
-        this.position = position;
+        public BlockType blockType;
+        public BlockPosition position;
+
+        public BlockData(BlockType blockType, BlockPosition position)
+        {
+            this.blockType = blockType;
+            this.position = position;
+        }
     }
 }

@@ -1,7 +1,9 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
+/*
+ * Michał Czemierowski
+ * https://github.com/michalczemierowski
+*/
 public class MouseLook : MonoBehaviour
 {
     public float mouseSensitivity = 180;

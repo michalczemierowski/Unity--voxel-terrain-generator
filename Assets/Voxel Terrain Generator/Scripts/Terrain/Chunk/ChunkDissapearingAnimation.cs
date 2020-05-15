@@ -1,23 +1,30 @@
 ﻿using UnityEngine;
 
-public class ChunkDissapearingAnimation : MonoBehaviour
+/*
+ * Michał Czemierowski
+ * https://github.com/michalczemierowski
+*/
+namespace VoxelTG.Terrain.Chunks
 {
-    public float speed = 32;
-    public float distance = 32;
-
-    private void Update()
+    public class ChunkDissapearingAnimation : MonoBehaviour
     {
-        transform.Translate(Vector3.down * speed * Time.deltaTime);
+        public float speed = 32;
+        public float distance = 32;
 
-        if(transform.position.y <= -distance)
+        private void Update()
         {
-            foreach (var mr in GetComponentsInChildren<MeshRenderer>())
-            {
-                mr.enabled = false;
-            }
+            transform.Translate(Vector3.down * speed * Time.deltaTime);
 
-            gameObject.SetActive(false);
-            this.enabled = false;
+            if (transform.position.y <= -distance)
+            {
+                foreach (var mr in GetComponentsInChildren<MeshRenderer>())
+                {
+                    mr.enabled = false;
+                }
+
+                gameObject.SetActive(false);
+                this.enabled = false;
+            }
         }
     }
 }

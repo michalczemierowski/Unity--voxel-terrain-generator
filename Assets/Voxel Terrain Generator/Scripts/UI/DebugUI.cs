@@ -1,22 +1,29 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 
-public class DebugUI : MonoBehaviour
+/*
+ * Michał Czemierowski
+ * https://github.com/michalczemierowski
+*/
+namespace VoxelTG.UI
 {
-    public static DebugUI Instance;
-
-    [SerializeField] private Text debugText;
-
-    private void Awake()
+    public class DebugUI : MonoBehaviour
     {
-        if (!Instance)
-            Instance = this;
-        else
-            Destroy(this);
-    }
+        public static DebugUI Instance;
 
-    public void SetDebugText(string text)
-    {
-        debugText.text = text;
+        [SerializeField] private Text debugText;
+
+        private void Awake()
+        {
+            if (!Instance)
+                Instance = this;
+            else
+                Destroy(this);
+        }
+
+        public void SetDebugText(string text)
+        {
+            debugText.text = text;
+        }
     }
 }

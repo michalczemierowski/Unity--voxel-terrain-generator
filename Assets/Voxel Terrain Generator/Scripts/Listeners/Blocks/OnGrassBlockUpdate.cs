@@ -1,20 +1,28 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
+using VoxelTG.Listeners.Interfaces;
+using VoxelTG.Terrain;
+using VoxelTG.Terrain.Blocks;
 
-//https://github.com/michalczemierowski
-public class OnGrassBlockUpdate : MonoBehaviour, IBlockUpdateListener
+/*
+ * Michał Czemierowski
+ * https://github.com/michalczemierowski
+*/
+namespace VoxelTG.Blocks.Listeners
 {
-    public BlockType GetBlockType()
+    public class OnGrassBlockUpdate : MonoBehaviour, IBlockUpdateListener
     {
-        return BlockType.GRASS_BLOCK;
-    }
-
-    public void OnBlockUpdate(BlockUpdateEventData data, Dictionary<Side, BlockUpdateEventData> neighbours)
-    {
-        if (TerrainData.GetBlockState(neighbours[Side.TOP].type) == BlockState.SOLID)
+        public BlockType GetBlockType()
         {
-            data.chunk.AddBlockToBuildList(data.position, BlockType.DIRT);
+            return BlockType.GRASS_BLOCK;
+        }
+
+        public void OnBlockUpdate(BlockUpdateEventData data, Dictionary<BlockFace, BlockUpdateEventData> neighbours)
+        {
+            if (WorldData.GetBlockState(neighbours[BlockFace.TOP].type) == BlockState.SOLID)
+            {
+                data.chunk.AddBlockToBuildList(data.position, BlockType.DIRT);
+            }
         }
     }
 }

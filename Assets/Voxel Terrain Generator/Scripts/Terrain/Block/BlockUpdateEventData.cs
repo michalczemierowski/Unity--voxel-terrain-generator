@@ -1,13 +1,20 @@
-﻿public struct BlockUpdateEventData
+﻿/*
+ * Michał Czemierowski
+ * https://github.com/michalczemierowski
+*/
+namespace VoxelTG.Terrain.Blocks
 {
-    public TerrainChunk chunk;
-    public BlockPos position;
-    public BlockType type;
-
-    public BlockUpdateEventData(TerrainChunk chunk, BlockPos blockPos, BlockType blockType)
+    public struct BlockUpdateEventData
     {
-        this.chunk = chunk;
-        this.position = blockPos;
-        this.type = blockType;
+        public Chunk chunk;
+        public BlockPosition position;
+        public BlockType type;
+
+        public BlockUpdateEventData(Chunk chunk, BlockPosition blockPos, BlockType blockType)
+        {
+            this.chunk = chunk;
+            this.position = blockPos;
+            this.type = blockType;
+        }
     }
 }

@@ -1,8 +1,11 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
+using VoxelTG.Terrain;
+using VoxelTG.UI;
 
+/*
+ * Michał Czemierowski
+ * https://github.com/michalczemierowski
+*/
 public class PlayerMovement : MonoBehaviour
 {
     public bool fly;
@@ -31,7 +34,7 @@ public class PlayerMovement : MonoBehaviour
 
     private Vector2 moveVector;
 
-    private TerrainChunk currentChunk;
+    private Chunk currentChunk;
 
     // above head; head; legs; below legs
     private BlockType[] nearbyBlocks = new BlockType[4];
@@ -61,7 +64,7 @@ public class PlayerMovement : MonoBehaviour
 
         if (!currentChunk || x - currentChunk.chunkPos.x > 16 || x - currentChunk.chunkPos.x < 1 || z - currentChunk.chunkPos.z > 16 || z - currentChunk.chunkPos.z < 1)
         {
-            currentChunk = TerrainGenerator.GetChunk(x, z);
+            currentChunk = World.GetChunk(x, z);
         }
 
         int bix = x - currentChunk.chunkPos.x;
@@ -103,7 +106,7 @@ public class PlayerMovement : MonoBehaviour
 
     private void Awake()
     {
-        TerrainGenerator.player = transform;
+        World.player = transform;
     }
 
     // Start is called before the first frame update

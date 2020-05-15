@@ -1,28 +1,26 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using VoxelTG.Listeners.Interfaces;
+using VoxelTG.Terrain;
+using VoxelTG.Terrain.Blocks;
 
-//https://github.com/michalczemierowski
-public class OnDirtUpdate : MonoBehaviour, IBlockUpdateListener
+/*
+ * Michał Czemierowski
+ * https://github.com/michalczemierowski
+*/
+namespace VoxelTG.Blocks.Listeners
 {
-    public BlockType GetBlockType()
+    public class OnDirtUpdate : MonoBehaviour, IBlockUpdateListener
     {
-        return BlockType.DIRT;
-    }
-
-    public void OnBlockUpdate(BlockUpdateEventData data, Dictionary<Side, BlockUpdateEventData> neighbours)
-    {
-        return;
-        TerrainChunk chunk = data.chunk;
-        Vector3 position = TerrainGenerator.LocalToWorldPositionVector3Int(chunk.chunkPos, data.position);
-        if(Vector3.Distance(position, TerrainGenerator.player.transform.position) < 32)
+        public BlockType GetBlockType()
         {
-            chunk.AddBlockToBuildList(data.position, BlockType.STONE);
+            return BlockType.DIRT;
         }
-        return;
-        if(neighbours.Any(x => x.Value.type == BlockType.OBSIDIAN))
+
+        public void OnBlockUpdate(BlockUpdateEventData data, Dictionary<BlockFace, BlockUpdateEventData> neighbours)
         {
-            chunk.AddBlockToBuildList(data.position, BlockType.STONE);
+            return;
         }
     }
 }

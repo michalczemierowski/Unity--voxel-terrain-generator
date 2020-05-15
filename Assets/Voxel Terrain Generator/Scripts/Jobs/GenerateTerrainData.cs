@@ -2,293 +2,302 @@
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
+using VoxelTG.Terrain;
+using VoxelTG.Terrain.Blocks;
 
-[BurstCompile]
-public struct GenerateTerrainData : IJob
+/*
+ * Michał Czemierowski
+ * https://github.com/michalczemierowski
+*/
+namespace VoxelTG.Jobs
 {
-    #region /= Variables
-
-    public int chunkPosX, chunkPosZ;
-
-    [ReadOnly]
-    public NativeArray<GeneratorSettings> generatorSettings;
-    [ReadOnly]
-    public NativeArray<FastNoise> noises;
-
-    public NativeArray<BlockType> blockData;
-    public NativeArray<BiomeType> biomeTypes;
-    public NativeHashMap<BlockParameter, short> blockParameters;
-
-    public Unity.Mathematics.Random random;
-
-    [ReadOnly]
-    public FastNoise baseNoise;
-
-    #endregion
-
-    public void Execute()
+    [BurstCompile]
+    public struct GenerateTerrainData : IJob
     {
-        GenerateBlockTypes();
-        GenerateTrees();
-    }
+        #region /= Variables
 
-    private void GenerateBlockTypes()
-    {
-        BlockType lastBlock = BlockType.AIR;
+        public int chunkPosX, chunkPosZ;
 
-        for (int x = 0; x < TerrainChunk.fixedChunkWidth; x++)
+        [ReadOnly]
+        public NativeArray<GeneratorSettings> generatorSettings;
+        [ReadOnly]
+        public NativeArray<FastNoise> noises;
+
+        public NativeArray<BlockType> blockData;
+        public NativeArray<BiomeType> biomeTypes;
+        public NativeHashMap<BlockParameter, short> blockParameters;
+
+        public Unity.Mathematics.Random random;
+
+        [ReadOnly]
+        public FastNoise baseNoise;
+
+        #endregion
+
+        public void Execute()
         {
-            for (int z = 0; z < TerrainChunk.fixedChunkWidth; z++)
+            GenerateBlockTypes();
+            GenerateTrees();
+        }
+
+        private void GenerateBlockTypes()
+        {
+            BlockType lastBlock = BlockType.AIR;
+
+            for (int x = 0; x < Chunk.fixedChunkWidth; x++)
             {
-                int bix = chunkPosX + x - 1;
-                int biz = chunkPosZ + z - 1;
-
-                BiomeType biomeType = (BiomeType)math.round((baseNoise.GetSimplex(bix / TerrainChunk.biomeSize, biz / TerrainChunk.biomeSize) + 1) / TerrainData.possibleBiomes);
-                biomeTypes[Index2Dto1D(x, z)] = biomeType;
-
-                FastNoise noise = noises[(int)biomeType];
-
-                GeneratorSettings settings = generatorSettings[(int)biomeType];
-                float baseLandHeightMultipler = settings.baseLandHeightMultipler;
-
-                #region noise
-
-                float simplex1 = noise.GetSimplex(bix * 0.8f, biz * 0.8f) * settings.heightMapMultipler;
-                float simplex2 = noise.GetSimplex(bix * 3f, biz * 3f) * (noise.GetSimplex(bix * 0.3f, biz * 0.3f) + 0.5f) * settings.heightMapMultipler;
-
-                float heightMap = (simplex1 + simplex2);
-
-                int baseLandHeight = (int)math.round(TerrainChunk.chunkHeight * baseLandHeightMultipler + heightMap);
-
-                float caveMask = noise.GetSimplex(bix * 0.3f, biz * 0.3f) + 0.3f;
-
-                #endregion
-
-                for (int y = 0; y < TerrainChunk.chunkHeight; y++)
+                for (int z = 0; z < Chunk.fixedChunkWidth; z++)
                 {
-                    float cavebaseNoise1 = noise.GetPerlinFractal(bix * 7.5f, y * 15f, biz * 7.5f);
+                    int bix = chunkPosX + x - 1;
+                    int biz = chunkPosZ + z - 1;
 
-                    BlockType blockType = BlockType.AIR;
+                    BiomeType biomeType = (BiomeType)math.round((baseNoise.GetSimplex(bix / Chunk.biomeSize, biz / Chunk.biomeSize) + 1) / WorldData.possibleBiomes);
+                    biomeTypes[Index2Dto1D(x, z)] = biomeType;
 
-                    if (cavebaseNoise1 > math.max(caveMask, 0.2f))
-                        blockType = BlockType.AIR;
-                    else if (y < baseLandHeight && cavebaseNoise1 > math.max(caveMask, 0.2f) * 0.9f)
-                        blockType = BlockType.COBBLESTONE;
-                    else if (y <= baseLandHeight)
+                    FastNoise noise = noises[(int)biomeType];
+
+                    GeneratorSettings settings = generatorSettings[(int)biomeType];
+                    float baseLandHeightMultipler = settings.baseLandHeightMultipler;
+
+                    #region noise
+
+                    float simplex1 = noise.GetSimplex(bix * 0.8f, biz * 0.8f) * settings.heightMapMultipler;
+                    float simplex2 = noise.GetSimplex(bix * 3f, biz * 3f) * (noise.GetSimplex(bix * 0.3f, biz * 0.3f) + 0.5f) * settings.heightMapMultipler;
+
+                    float heightMap = (simplex1 + simplex2);
+
+                    int baseLandHeight = (int)math.round(Chunk.chunkHeight * baseLandHeightMultipler + heightMap);
+
+                    float caveMask = noise.GetSimplex(bix * 0.3f, biz * 0.3f) + 0.3f;
+
+                    #endregion
+
+                    for (int y = 0; y < Chunk.chunkHeight; y++)
                     {
-                        if (y == baseLandHeight && y > TerrainChunk.waterHeight - 1)
-                            blockType = TerrainData.CanPlaceGrass(lastBlock) && random.NextFloat() < settings.chanceForGrass ? settings.plantsBlock : BlockType.AIR;
-                        else if (y == baseLandHeight - 1 && y > TerrainChunk.waterHeight - 1)
-                            blockType = settings.topBlock;
-                        else if (y > baseLandHeight - 3)
-                            blockType = settings.belowBlock;
-                        else
+                        float cavebaseNoise1 = noise.GetPerlinFractal(bix * 7.5f, y * 15f, biz * 7.5f);
+
+                        BlockType blockType = BlockType.AIR;
+
+                        if (cavebaseNoise1 > math.max(caveMask, 0.2f))
+                            blockType = BlockType.AIR;
+                        else if (y < baseLandHeight && cavebaseNoise1 > math.max(caveMask, 0.2f) * 0.9f)
+                            blockType = BlockType.COBBLESTONE;
+                        else if (y <= baseLandHeight)
                         {
-                            blockType = BlockType.STONE;
+                            if (y == baseLandHeight && y > Chunk.waterHeight - 1)
+                                blockType = WorldData.CanPlaceGrass(lastBlock) && random.NextFloat() < settings.chanceForGrass ? settings.plantsBlock : BlockType.AIR;
+                            else if (y == baseLandHeight - 1 && y > Chunk.waterHeight - 1)
+                                blockType = settings.topBlock;
+                            else if (y > baseLandHeight - 3)
+                                blockType = settings.belowBlock;
+                            else
+                            {
+                                blockType = BlockType.STONE;
+                            }
                         }
+
+                        if (y >= baseLandHeight && y <= Chunk.waterHeight)
+                            blockType = BlockType.WATER;
+
+                        if (y <= noise.GetWhiteNoise(bix, z) * 3)
+                            blockType = BlockType.OBSIDIAN;
+
+                        lastBlock = blockData[Index3Dto1D(x, y, z)] = blockType;
+
+
+                        if (lastBlock == BlockType.GRASS)       // assing random block type to grass
+                            blockParameters.TryAdd(new BlockParameter(new int3(x, y, z), ParameterType.BLOCK_TYPE), (short)RandomInt(0, 3));
+                        else if (lastBlock == BlockType.WATER)  // set source distance to 8 (full water block)
+                            blockParameters.TryAdd(new BlockParameter(new int3(x, y, z), ParameterType.WATER_SOURCE_DISTANCE), 8);
                     }
-
-                    if (y >= baseLandHeight && y <= TerrainChunk.waterHeight)
-                        blockType = BlockType.WATER;
-
-                    if (y <= noise.GetWhiteNoise(bix, z) * 3)
-                        blockType = BlockType.OBSIDIAN;
-
-                    lastBlock = blockData[Index3Dto1D(x, y, z)] = blockType;
-
-
-                    if (lastBlock == BlockType.GRASS)       // assing random block type to grass
-                        blockParameters.TryAdd(new BlockParameter(new int3(x, y, z), ParameterType.BLOCK_TYPE), (short)RandomInt(0, 3));
-                    else if (lastBlock == BlockType.WATER)  // set source distance to 8 (full water block)
-                        blockParameters.TryAdd(new BlockParameter(new int3(x, y, z), ParameterType.WATER_SOURCE_DISTANCE), 8);
                 }
             }
         }
-    }
 
-    private void GenerateTrees()
-    {
-        float simplex = baseNoise.GetSimplex(chunkPosX * .3f, chunkPosZ * .3f);
-
-        if (simplex > 0)
+        private void GenerateTrees()
         {
-            simplex *= 2f;
+            float simplex = baseNoise.GetSimplex(chunkPosX * .3f, chunkPosZ * .3f);
 
-            int minpos = 4;
-            int maxpos = TerrainChunk.chunkWidth - 5;
-
-            NativeList<int2> treePositions = new NativeList<int2>(TerrainChunk.maxTreeCount, Allocator.Temp);
-            for (int i = 0; i < TerrainChunk.maxTreeCount; i++)
+            if (simplex > 0)
             {
-                int x = RandomInt(minpos, maxpos);
-                int z = RandomInt(minpos, maxpos);
+                simplex *= 2f;
 
-                bool doContinue = false;
-                for (int j = 0; j < treePositions.Length; j++)
+                int minpos = 4;
+                int maxpos = Chunk.chunkWidth - 5;
+
+                NativeList<int2> treePositions = new NativeList<int2>(Chunk.maxTreeCount, Allocator.Temp);
+                for (int i = 0; i < Chunk.maxTreeCount; i++)
                 {
-                    int2 pos = treePositions[j];
-                    if (math.sqrt((pos.x - x) * (pos.x - x) + (pos.y - x) * (pos.y - x)) < TerrainChunk.minimumTreeDistance)
+                    int x = RandomInt(minpos, maxpos);
+                    int z = RandomInt(minpos, maxpos);
+
+                    bool doContinue = false;
+                    for (int j = 0; j < treePositions.Length; j++)
                     {
-                        doContinue = true;
-                        break;
-                    }
-                }
-                if (doContinue)
-                    continue;
-
-                int y = TerrainChunk.chunkHeight - TerrainChunk.treeHeigthRange.x;
-                if (blockData[Index3Dto1D(x, y, z)] != BlockType.AIR)
-                    continue;       // continue if maxTerrainHeigth - minTreeHeigth hits ground
-
-                // find ground position
-                while (y > 0 && blockData[Index3Dto1D(x, y, z)] == BlockType.AIR)
-                    y--;
-
-                BlockType groundBlock = blockData[Index3Dto1D(x, y, z)];
-                if (!TerrainData.CanPlaceTree(groundBlock))
-                    continue;       // continue if cant place tree on ground block
-
-                // add position to position list
-                treePositions.Add(new int2(x, z));
-
-                // place logs
-                int treeHeight = RandomInt(4, 8);
-                for (int j = 0; j < treeHeight; j++)
-                {
-                    if (y + j < TerrainChunk.chunkHeight)
-                        blockData[Index3Dto1D(x, y + j, z)] = BlockType.OAK_LOG;
-                }
-
-                int treeTop = y + treeHeight - 1;
-                int index, xrange, zrange;
-
-                // <0, 1>
-                xrange = 1;
-                zrange = 1;
-                for (int _y = treeTop; _y <= treeTop + 1; _y++)
-                {
-                    for (int _x = -xrange; _x <= xrange; _x++)
-                    {
-                        for (int _z = -zrange; _z <= zrange; _z++)
+                        int2 pos = treePositions[j];
+                        if (math.sqrt((pos.x - x) * (pos.x - x) + (pos.y - x) * (pos.y - x)) < Chunk.minimumTreeDistance)
                         {
-                            index = Index3Dto1D(x + _x, _y, z + _z);
-                            if (blockData[index] == BlockType.AIR)
-                            {
-                                blockData[index] = BlockType.OAK_LEAVES;
-                            }
+                            doContinue = true;
+                            break;
                         }
                     }
+                    if (doContinue)
+                        continue;
 
-                    // x- z-
-                    if (random.NextBool() && AreTypesEqual(BlockType.OAK_LEAVES, x - xrange, _y, z - zrange, out index))
-                        blockData[index] = BlockType.AIR;
-                    // x- z+
-                    if (random.NextBool() && AreTypesEqual(BlockType.OAK_LEAVES, x - xrange, _y, z + zrange, out index))
-                        blockData[index] = BlockType.AIR;
-                    // x+ z-
-                    if (random.NextBool() && AreTypesEqual(BlockType.OAK_LEAVES, x + xrange, _y, z - zrange, out index))
-                        blockData[index] = BlockType.AIR;
-                    // x+ z+
-                    if (random.NextBool() && AreTypesEqual(BlockType.OAK_LEAVES, x + xrange, _y, z + zrange, out index))
-                        blockData[index] = BlockType.AIR;
-                }
+                    int y = Chunk.chunkHeight - Chunk.treeHeigthRange.x;
+                    if (blockData[Index3Dto1D(x, y, z)] != BlockType.AIR)
+                        continue;       // continue if maxTerrainHeigth - minTreeHeigth hits ground
 
-                // <-1, -2>
-                xrange = 2;
-                zrange = 2;
-                for (int _y = treeTop - 2; _y <= treeTop - 1; _y++)
-                {
-                    for (int _x = -xrange; _x <= xrange; _x++)
+                    // find ground position
+                    while (y > 0 && blockData[Index3Dto1D(x, y, z)] == BlockType.AIR)
+                        y--;
+
+                    BlockType groundBlock = blockData[Index3Dto1D(x, y, z)];
+                    if (!WorldData.CanPlaceTree(groundBlock))
+                        continue;       // continue if cant place tree on ground block
+
+                    // add position to position list
+                    treePositions.Add(new int2(x, z));
+
+                    // place logs
+                    int treeHeight = RandomInt(4, 8);
+                    for (int j = 0; j < treeHeight; j++)
                     {
-                        for (int _z = -zrange; _z <= zrange; _z++)
-                        {
-                            index = Index3Dto1D(x + _x, _y, z + _z);
-                            if (blockData[index] == BlockType.AIR)
-                            {
-                                blockData[index] = BlockType.OAK_LEAVES;
-                            }
-                        }
+                        if (y + j < Chunk.chunkHeight)
+                            blockData[Index3Dto1D(x, y + j, z)] = BlockType.OAK_LOG;
                     }
 
-                    // x- z-
-                    if (random.NextBool() && AreTypesEqual(BlockType.OAK_LEAVES, x - xrange, _y, z - zrange, out index))
-                        blockData[index] = BlockType.AIR;
-                    // x- z+
-                    if (random.NextBool() && AreTypesEqual(BlockType.OAK_LEAVES, x - xrange, _y, z + zrange, out index))
-                        blockData[index] = BlockType.AIR;
-                    // x+ z-
-                    if (random.NextBool() && AreTypesEqual(BlockType.OAK_LEAVES, x + xrange, _y, z - zrange, out index))
-                        blockData[index] = BlockType.AIR;
-                    // x+ z+
-                    if (random.NextBool() && AreTypesEqual(BlockType.OAK_LEAVES, x + xrange, _y, z + zrange, out index))
-                        blockData[index] = BlockType.AIR;
-                }
+                    int treeTop = y + treeHeight - 1;
+                    int index, xrange, zrange;
 
-                // <-3, -3>
-                xrange = 1;
-                zrange = 1;
-                for (int _y = treeTop - 3; _y <= treeTop - 3; _y++)
-                {
-                    for (int _x = -xrange; _x <= xrange; _x++)
+                    // <0, 1>
+                    xrange = 1;
+                    zrange = 1;
+                    for (int _y = treeTop; _y <= treeTop + 1; _y++)
                     {
-                        for (int _z = -zrange; _z <= zrange; _z++)
+                        for (int _x = -xrange; _x <= xrange; _x++)
                         {
-                            index = Index3Dto1D(x + _x, _y, z + _z);
-                            if (blockData[index] == BlockType.AIR)
+                            for (int _z = -zrange; _z <= zrange; _z++)
                             {
-                                blockData[index] = BlockType.OAK_LEAVES;
+                                index = Index3Dto1D(x + _x, _y, z + _z);
+                                if (blockData[index] == BlockType.AIR)
+                                {
+                                    blockData[index] = BlockType.OAK_LEAVES;
+                                }
                             }
                         }
+
+                        // x- z-
+                        if (random.NextBool() && AreTypesEqual(BlockType.OAK_LEAVES, x - xrange, _y, z - zrange, out index))
+                            blockData[index] = BlockType.AIR;
+                        // x- z+
+                        if (random.NextBool() && AreTypesEqual(BlockType.OAK_LEAVES, x - xrange, _y, z + zrange, out index))
+                            blockData[index] = BlockType.AIR;
+                        // x+ z-
+                        if (random.NextBool() && AreTypesEqual(BlockType.OAK_LEAVES, x + xrange, _y, z - zrange, out index))
+                            blockData[index] = BlockType.AIR;
+                        // x+ z+
+                        if (random.NextBool() && AreTypesEqual(BlockType.OAK_LEAVES, x + xrange, _y, z + zrange, out index))
+                            blockData[index] = BlockType.AIR;
                     }
 
-                    // x- z-
-                    if (random.NextBool() && AreTypesEqual(BlockType.OAK_LEAVES, x - xrange, _y, z - zrange, out index))
-                        blockData[index] = BlockType.AIR;
-                    // x- z+
-                    if (random.NextBool() && AreTypesEqual(BlockType.OAK_LEAVES, x - xrange, _y, z + zrange, out index))
-                        blockData[index] = BlockType.AIR;
-                    // x+ z-
-                    if (random.NextBool() && AreTypesEqual(BlockType.OAK_LEAVES, x + xrange, _y, z - zrange, out index))
-                        blockData[index] = BlockType.AIR;
-                    // x+ z+
-                    if (random.NextBool() && AreTypesEqual(BlockType.OAK_LEAVES, x + xrange, _y, z + zrange, out index))
-                        blockData[index] = BlockType.AIR;
+                    // <-1, -2>
+                    xrange = 2;
+                    zrange = 2;
+                    for (int _y = treeTop - 2; _y <= treeTop - 1; _y++)
+                    {
+                        for (int _x = -xrange; _x <= xrange; _x++)
+                        {
+                            for (int _z = -zrange; _z <= zrange; _z++)
+                            {
+                                index = Index3Dto1D(x + _x, _y, z + _z);
+                                if (blockData[index] == BlockType.AIR)
+                                {
+                                    blockData[index] = BlockType.OAK_LEAVES;
+                                }
+                            }
+                        }
+
+                        // x- z-
+                        if (random.NextBool() && AreTypesEqual(BlockType.OAK_LEAVES, x - xrange, _y, z - zrange, out index))
+                            blockData[index] = BlockType.AIR;
+                        // x- z+
+                        if (random.NextBool() && AreTypesEqual(BlockType.OAK_LEAVES, x - xrange, _y, z + zrange, out index))
+                            blockData[index] = BlockType.AIR;
+                        // x+ z-
+                        if (random.NextBool() && AreTypesEqual(BlockType.OAK_LEAVES, x + xrange, _y, z - zrange, out index))
+                            blockData[index] = BlockType.AIR;
+                        // x+ z+
+                        if (random.NextBool() && AreTypesEqual(BlockType.OAK_LEAVES, x + xrange, _y, z + zrange, out index))
+                            blockData[index] = BlockType.AIR;
+                    }
+
+                    // <-3, -3>
+                    xrange = 1;
+                    zrange = 1;
+                    for (int _y = treeTop - 3; _y <= treeTop - 3; _y++)
+                    {
+                        for (int _x = -xrange; _x <= xrange; _x++)
+                        {
+                            for (int _z = -zrange; _z <= zrange; _z++)
+                            {
+                                index = Index3Dto1D(x + _x, _y, z + _z);
+                                if (blockData[index] == BlockType.AIR)
+                                {
+                                    blockData[index] = BlockType.OAK_LEAVES;
+                                }
+                            }
+                        }
+
+                        // x- z-
+                        if (random.NextBool() && AreTypesEqual(BlockType.OAK_LEAVES, x - xrange, _y, z - zrange, out index))
+                            blockData[index] = BlockType.AIR;
+                        // x- z+
+                        if (random.NextBool() && AreTypesEqual(BlockType.OAK_LEAVES, x - xrange, _y, z + zrange, out index))
+                            blockData[index] = BlockType.AIR;
+                        // x+ z-
+                        if (random.NextBool() && AreTypesEqual(BlockType.OAK_LEAVES, x + xrange, _y, z - zrange, out index))
+                            blockData[index] = BlockType.AIR;
+                        // x+ z+
+                        if (random.NextBool() && AreTypesEqual(BlockType.OAK_LEAVES, x + xrange, _y, z + zrange, out index))
+                            blockData[index] = BlockType.AIR;
+                    }
                 }
             }
         }
-    }
 
-    #region Utils
+        #region Utils
 
-    private float RandomFloat(float min, float max)
-    {
-        return random.NextFloat(min, max);
-    }
+        private float RandomFloat(float min, float max)
+        {
+            return random.NextFloat(min, max);
+        }
 
-    private int RandomInt(int min, int max)
-    {
-        return random.NextInt(min, max);
-    }
+        private int RandomInt(int min, int max)
+        {
+            return random.NextInt(min, max);
+        }
 
-    private int Index3Dto1D(int x, int y, int z)
-    {
-        return (z * TerrainChunk.fixedChunkWidth * TerrainChunk.chunkHeight) + (y * TerrainChunk.fixedChunkWidth) + x;
-    }
+        private int Index3Dto1D(int x, int y, int z)
+        {
+            return (z * Chunk.fixedChunkWidth * Chunk.chunkHeight) + (y * Chunk.fixedChunkWidth) + x;
+        }
 
-    private int Index2Dto1D(int x, int z)
-    {
-        return x * TerrainChunk.fixedChunkWidth + z;
-    }
+        private int Index2Dto1D(int x, int z)
+        {
+            return x * Chunk.fixedChunkWidth + z;
+        }
 
-    private bool AreTypesEqual(BlockType type, int x, int y, int z)
-    {
-        return blockData[Index3Dto1D(x, y, z)] == type;
-    }
+        private bool AreTypesEqual(BlockType type, int x, int y, int z)
+        {
+            return blockData[Index3Dto1D(x, y, z)] == type;
+        }
 
-    private bool AreTypesEqual(BlockType type, int x, int y, int z, out int index)
-    {
-        index = Index3Dto1D(x, y, z);
-        return blockData[index] == type;
+        private bool AreTypesEqual(BlockType type, int x, int y, int z, out int index)
+        {
+            index = Index3Dto1D(x, y, z);
+            return blockData[index] == type;
+        }
+        #endregion
     }
-    #endregion
 }
