@@ -8,7 +8,7 @@ using VoxelTG.Terrain.Blocks;
 */
 namespace VoxelTG.Listeners.Interfaces
 {
-    public interface IBlockUpdateListener
+    public interface IBlockDestroyListener
     {
         /// <summary>
         /// Method called at initiation of event listeners
@@ -20,7 +20,6 @@ namespace VoxelTG.Listeners.Interfaces
         /// Method called on block update
         /// </summary>
         /// <param name="data">current block data</param>
-        /// <param name="neighbours">neighbour blocks data</param>
-        void OnBlockUpdate(BlockEventData data, Dictionary<BlockFace, BlockEventData> neighbours, params int[] args);
+        void OnBlockDestroy(BlockEventData data, params int[] args);
     }
 }

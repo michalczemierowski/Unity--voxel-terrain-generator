@@ -4,6 +4,8 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using VoxelTG.Terrain;
 using VoxelTG.Terrain.Blocks;
+// use WorldSettings variables
+using static VoxelTG.Terrain.WorldSettings;
 
 /*
  * Michał Czemierowski
@@ -27,7 +29,7 @@ namespace VoxelTG.Jobs
         public NativeArray<BiomeType> biomeTypes;
         public NativeHashMap<BlockParameter, short> blockParameters;
 
-        public Unity.Mathematics.Random random;
+        public Random random;
 
         [ReadOnly]
         public FastNoise baseNoise;
@@ -44,15 +46,15 @@ namespace VoxelTG.Jobs
         {
             BlockType lastBlock = BlockType.AIR;
 
-            for (int x = 0; x < Chunk.fixedChunkWidth; x++)
+            for (int x = 0; x < fixedChunkWidth; x++)
             {
-                for (int z = 0; z < Chunk.fixedChunkWidth; z++)
+                for (int z = 0; z < fixedChunkWidth; z++)
                 {
                     int bix = chunkPosX + x - 1;
                     int biz = chunkPosZ + z - 1;
 
-                    BiomeType biomeType = (BiomeType)math.round((baseNoise.GetSimplex(bix / Chunk.biomeSize, biz / Chunk.biomeSize) + 1) / WorldData.possibleBiomes);
-                    biomeTypes[Index2Dto1D(x, z)] = biomeType;
+                    BiomeType biomeType = (BiomeType)math.round((baseNoise.GetSimplex(bix / biomeSize, biz / biomeSize) + 1) / possibleBiomes);
+                    biomeTypes[Utils.BlockPosition2DtoIndex(x, z)] = biomeType;
 
                     FastNoise noise = noises[(int)biomeType];
 
@@ -66,13 +68,13 @@ namespace VoxelTG.Jobs
 
                     float heightMap = (simplex1 + simplex2);
 
-                    int baseLandHeight = (int)math.round(Chunk.chunkHeight * baseLandHeightMultipler + heightMap);
+                    int baseLandHeight = (int)math.round(chunkHeight * baseLandHeightMultipler + heightMap);
 
                     float caveMask = noise.GetSimplex(bix * 0.3f, biz * 0.3f) + 0.3f;
 
                     #endregion
 
-                    for (int y = 0; y < Chunk.chunkHeight; y++)
+                    for (int y = 0; y < chunkHeight; y++)
                     {
                         float cavebaseNoise1 = noise.GetPerlinFractal(bix * 7.5f, y * 15f, biz * 7.5f);
 
@@ -84,9 +86,9 @@ namespace VoxelTG.Jobs
                             blockType = BlockType.COBBLESTONE;
                         else if (y <= baseLandHeight)
                         {
-                            if (y == baseLandHeight && y > Chunk.waterHeight - 1)
+                            if (y == baseLandHeight && y > waterHeight - 1)
                                 blockType = WorldData.CanPlaceGrass(lastBlock) && random.NextFloat() < settings.chanceForGrass ? settings.plantsBlock : BlockType.AIR;
-                            else if (y == baseLandHeight - 1 && y > Chunk.waterHeight - 1)
+                            else if (y == baseLandHeight - 1 && y > waterHeight - 1)
                                 blockType = settings.topBlock;
                             else if (y > baseLandHeight - 3)
                                 blockType = settings.belowBlock;
@@ -96,13 +98,13 @@ namespace VoxelTG.Jobs
                             }
                         }
 
-                        if (y >= baseLandHeight && y <= Chunk.waterHeight)
+                        if (y >= baseLandHeight && y <= waterHeight)
                             blockType = BlockType.WATER;
 
                         if (y <= noise.GetWhiteNoise(bix, z) * 3)
                             blockType = BlockType.OBSIDIAN;
 
-                        lastBlock = blockData[Index3Dto1D(x, y, z)] = blockType;
+                        lastBlock = blockData[Utils.BlockPosition3DtoIndex(x, y, z)] = blockType;
 
 
                         if (lastBlock == BlockType.GRASS)       // assing random block type to grass
@@ -120,13 +122,11 @@ namespace VoxelTG.Jobs
 
             if (simplex > 0)
             {
-                simplex *= 2f;
-
                 int minpos = 4;
-                int maxpos = Chunk.chunkWidth - 5;
+                int maxpos = chunkWidth - 5;
 
-                NativeList<int2> treePositions = new NativeList<int2>(Chunk.maxTreeCount, Allocator.Temp);
-                for (int i = 0; i < Chunk.maxTreeCount; i++)
+                NativeList<int2> treePositions = new NativeList<int2>(maxTreeCount, Allocator.Temp);
+                for (int i = 0; i < maxTreeCount; i++)
                 {
                     int x = RandomInt(minpos, maxpos);
                     int z = RandomInt(minpos, maxpos);
@@ -135,7 +135,7 @@ namespace VoxelTG.Jobs
                     for (int j = 0; j < treePositions.Length; j++)
                     {
                         int2 pos = treePositions[j];
-                        if (math.sqrt((pos.x - x) * (pos.x - x) + (pos.y - x) * (pos.y - x)) < Chunk.minimumTreeDistance)
+                        if (math.sqrt((pos.x - x) * (pos.x - x) + (pos.y - x) * (pos.y - x)) < minimumTreeDistance)
                         {
                             doContinue = true;
                             break;
@@ -144,15 +144,15 @@ namespace VoxelTG.Jobs
                     if (doContinue)
                         continue;
 
-                    int y = Chunk.chunkHeight - Chunk.treeHeigthRange.x;
-                    if (blockData[Index3Dto1D(x, y, z)] != BlockType.AIR)
+                    int y = chunkHeight - treeHeigthRange.x;
+                    if (blockData[Utils.BlockPosition3DtoIndex(x, y, z)] != BlockType.AIR)
                         continue;       // continue if maxTerrainHeigth - minTreeHeigth hits ground
 
                     // find ground position
-                    while (y > 0 && blockData[Index3Dto1D(x, y, z)] == BlockType.AIR)
+                    while (y > 0 && blockData[Utils.BlockPosition3DtoIndex(x, y, z)] == BlockType.AIR)
                         y--;
 
-                    BlockType groundBlock = blockData[Index3Dto1D(x, y, z)];
+                    BlockType groundBlock = blockData[Utils.BlockPosition3DtoIndex(x, y, z)];
                     if (!WorldData.CanPlaceTree(groundBlock))
                         continue;       // continue if cant place tree on ground block
 
@@ -163,8 +163,8 @@ namespace VoxelTG.Jobs
                     int treeHeight = RandomInt(4, 8);
                     for (int j = 0; j < treeHeight; j++)
                     {
-                        if (y + j < Chunk.chunkHeight)
-                            blockData[Index3Dto1D(x, y + j, z)] = BlockType.OAK_LOG;
+                        if (y + j < chunkHeight)
+                            blockData[Utils.BlockPosition3DtoIndex(x, y + j, z)] = BlockType.OAK_LOG;
                     }
 
                     int treeTop = y + treeHeight - 1;
@@ -179,7 +179,7 @@ namespace VoxelTG.Jobs
                         {
                             for (int _z = -zrange; _z <= zrange; _z++)
                             {
-                                index = Index3Dto1D(x + _x, _y, z + _z);
+                                index = Utils.BlockPosition3DtoIndex(x + _x, _y, z + _z);
                                 if (blockData[index] == BlockType.AIR)
                                 {
                                     blockData[index] = BlockType.OAK_LEAVES;
@@ -210,7 +210,7 @@ namespace VoxelTG.Jobs
                         {
                             for (int _z = -zrange; _z <= zrange; _z++)
                             {
-                                index = Index3Dto1D(x + _x, _y, z + _z);
+                                index = Utils.BlockPosition3DtoIndex(x + _x, _y, z + _z);
                                 if (blockData[index] == BlockType.AIR)
                                 {
                                     blockData[index] = BlockType.OAK_LEAVES;
@@ -241,7 +241,7 @@ namespace VoxelTG.Jobs
                         {
                             for (int _z = -zrange; _z <= zrange; _z++)
                             {
-                                index = Index3Dto1D(x + _x, _y, z + _z);
+                                index = Utils.BlockPosition3DtoIndex(x + _x, _y, z + _z);
                                 if (blockData[index] == BlockType.AIR)
                                 {
                                     blockData[index] = BlockType.OAK_LEAVES;
@@ -278,24 +278,15 @@ namespace VoxelTG.Jobs
             return random.NextInt(min, max);
         }
 
-        private int Index3Dto1D(int x, int y, int z)
-        {
-            return (z * Chunk.fixedChunkWidth * Chunk.chunkHeight) + (y * Chunk.fixedChunkWidth) + x;
-        }
-
-        private int Index2Dto1D(int x, int z)
-        {
-            return x * Chunk.fixedChunkWidth + z;
-        }
 
         private bool AreTypesEqual(BlockType type, int x, int y, int z)
         {
-            return blockData[Index3Dto1D(x, y, z)] == type;
+            return blockData[Utils.BlockPosition3DtoIndex(x, y, z)] == type;
         }
 
         private bool AreTypesEqual(BlockType type, int x, int y, int z, out int index)
         {
-            index = Index3Dto1D(x, y, z);
+            index = Utils.BlockPosition3DtoIndex(x, y, z);
             return blockData[index] == type;
         }
         #endregion

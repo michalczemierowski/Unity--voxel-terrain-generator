@@ -8,7 +8,6 @@ namespace VoxelTG.Terrain
 {
     public class WorldData
     {
-        public const int possibleBiomes = 2;
         #region // === Static === \\
 
         #region // === Blocks === \\
@@ -132,7 +131,7 @@ namespace VoxelTG.Terrain
 
     public enum BlockType : byte { AIR, DIRT, GRASS_BLOCK, STONE, COBBLESTONE, OBSIDIAN, OAK_LOG, OAK_LEAVES, WATER, HALF_SLAB, GRASS }
     public enum BlockState : byte { LIQUID, SOLID, TRANSPARENT, PLANTS }
-    public enum BlockFace : byte { TOP, BOTTOM, FRONT, BACK, LEFT, RIGHT } // TODO: USTAWIENIE KIERUNKÓW TAKICH SAMYCH JAK W SIDE
+    public enum BlockFace : byte { TOP, BOTTOM, FRONT, BACK, LEFT, RIGHT }
     public enum BlockShape : byte { CUBE, LIQUID, GRASS, HALF_BLOCK }
 
     public enum BiomeType { FOREST, STONE_TEST, HIGH_TEST }

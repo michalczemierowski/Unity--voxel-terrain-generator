@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using Unity.Mathematics;
+using UnityEngine;
 
 /*
  * Michał Czemierowski
@@ -10,28 +11,52 @@ namespace VoxelTG.Terrain.Blocks
     {
         public int x, y, z;
 
-        public BlockPosition(int x, int y, int z)
+        public BlockPosition(int x, int y, int z, bool clamp = true)
         {
-            this.x = Utils.ClampInRange(x, 1, Chunk.chunkWidth);
-            this.y = Utils.ClampInRange(y, 1, Chunk.chunkHeight);
-            this.z = Utils.ClampInRange(z, 1, Chunk.chunkWidth);
+            this.x = clamp ? Utils.ClampInRange(x, 1, WorldSettings.chunkWidth) : x;
+            this.y = clamp ? Utils.ClampInRange(y, 1, WorldSettings.chunkHeight) : y;
+            this.z = clamp ? Utils.ClampInRange(z, 1, WorldSettings.chunkWidth) : z;
         }
 
         public BlockPosition(int x, int y, int z, out int neighbour)
         {
             neighbour = -1;
-            if (x > Chunk.chunkWidth)
+            if (x > WorldSettings.chunkWidth)
                 neighbour = 0;
             else if (x < 1)
                 neighbour = 1;
-            if (z > Chunk.chunkWidth)
+            if (z > WorldSettings.chunkWidth)
                 neighbour = 2;
             else if (z < 1)
                 neighbour = 3;
 
-            this.x = Utils.ClampInRange(x, 1, Chunk.chunkWidth);
-            this.y = Utils.ClampInRange(y, 1, Chunk.chunkHeight);
-            this.z = Utils.ClampInRange(z, 1, Chunk.chunkWidth);
+            this.x = Utils.ClampInRange(x, 1, WorldSettings.chunkWidth);
+            this.y = Utils.ClampInRange(y, 1, WorldSettings.chunkHeight);
+            this.z = Utils.ClampInRange(z, 1, WorldSettings.chunkWidth);
+        }
+
+        public Vector3Int ToVector3Int()
+        {
+            return new Vector3Int(x, y, z);
+        }
+        public int3 ToInt3()
+        {
+            return new int3(x, y, z);
+        }
+
+        public BlockPosition Below()
+        {
+            if (y < 1)
+                return this;
+            
+            return new BlockPosition(x, y - 1, z, false);
+        }
+        public BlockPosition Above()
+        {
+            if (y == WorldSettings.chunkHeight)
+                return this;
+
+            return new BlockPosition(x, y + 1, z, false);
         }
 
         public void Add(int x, int y, int z)
@@ -39,39 +64,39 @@ namespace VoxelTG.Terrain.Blocks
             if (x != 0)
             {
                 this.x += x;
-                if (this.x > Chunk.chunkWidth)
-                    this.x -= Chunk.chunkWidth;
+                if (this.x > WorldSettings.chunkWidth)
+                    this.x -= WorldSettings.chunkWidth;
                 else if (x < 1)
-                    this.x += Chunk.chunkWidth;
+                    this.x += WorldSettings.chunkWidth;
             }
             if (y != 0)
             {
                 this.y += y;
-                if (this.y > Chunk.chunkWidth)
-                    this.y -= Chunk.chunkWidth;
+                if (this.y > WorldSettings.chunkWidth)
+                    this.y -= WorldSettings.chunkWidth;
                 else if (y < 1)
-                    this.y += Chunk.chunkWidth;
+                    this.y += WorldSettings.chunkWidth;
             }
             if (z != 0)
             {
                 this.z += z;
-                if (this.z > Chunk.chunkWidth)
-                    this.z -= Chunk.chunkWidth;
+                if (this.z > WorldSettings.chunkWidth)
+                    this.z -= WorldSettings.chunkWidth;
                 else if (z < 1)
-                    this.z += Chunk.chunkWidth;
+                    this.z += WorldSettings.chunkWidth;
             }
         }
 
-        public static BlockPosition WorldToBlockPosition(float x, float y, float z)
+        public static BlockPosition WorldSettingsToBlockPosition(float x, float y, float z)
         {
-            while (x > Chunk.chunkWidth)
-                x -= Chunk.chunkWidth;
+            while (x > WorldSettings.chunkWidth)
+                x -= WorldSettings.chunkWidth;
             while (x < 1)
-                x += Chunk.chunkWidth;
-            while (z > Chunk.chunkWidth)
-                z -= Chunk.chunkWidth;
+                x += WorldSettings.chunkWidth;
+            while (z > WorldSettings.chunkWidth)
+                z -= WorldSettings.chunkWidth;
             while (z < 1)
-                z += Chunk.chunkWidth;
+                z += WorldSettings.chunkWidth;
 
             return new BlockPosition(Mathf.FloorToInt(x) + 1, Mathf.FloorToInt(y), Mathf.FloorToInt(z) + 1);
         }

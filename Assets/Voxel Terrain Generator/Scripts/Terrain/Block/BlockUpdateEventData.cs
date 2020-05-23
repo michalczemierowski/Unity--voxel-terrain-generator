@@ -4,13 +4,13 @@
 */
 namespace VoxelTG.Terrain.Blocks
 {
-    public struct BlockUpdateEventData
+    public struct BlockEventData
     {
         public Chunk chunk;
         public BlockPosition position;
         public BlockType type;
 
-        public BlockUpdateEventData(Chunk chunk, BlockPosition blockPos, BlockType blockType)
+        public BlockEventData(Chunk chunk, BlockPosition blockPos, BlockType blockType)
         {
             this.chunk = chunk;
             this.position = blockPos;

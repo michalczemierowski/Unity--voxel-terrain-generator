@@ -21,6 +21,6 @@ namespace VoxelTG.Listeners.Interfaces
         /// </summary>
         /// <param name="data">current block data</param>
         /// <param name="neighbours">neighbour blocks data</param>
-        void OnBlockUpdate(BlockUpdateEventData data, Dictionary<BlockFace, BlockUpdateEventData> neighbours);
+        void OnBlockUpdate(BlockEventData data, Dictionary<BlockFace, BlockEventData> neighbours, params int[] args);
     }
 }

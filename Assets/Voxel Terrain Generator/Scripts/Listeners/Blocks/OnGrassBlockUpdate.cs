@@ -17,10 +17,12 @@ namespace VoxelTG.Blocks.Listeners
             return BlockType.GRASS_BLOCK;
         }
 
-        public void OnBlockUpdate(BlockUpdateEventData data, Dictionary<BlockFace, BlockUpdateEventData> neighbours)
+        public void OnBlockUpdate(BlockEventData data, Dictionary<BlockFace, BlockEventData> neighbours, params int[] args)
         {
+            // if above block is solid block
             if (WorldData.GetBlockState(neighbours[BlockFace.TOP].type) == BlockState.SOLID)
             {
+                // replace current block with dirt in next update
                 data.chunk.AddBlockToBuildList(data.position, BlockType.DIRT);
             }
         }

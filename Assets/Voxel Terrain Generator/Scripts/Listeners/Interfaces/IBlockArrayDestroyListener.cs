@@ -8,19 +8,18 @@ using VoxelTG.Terrain.Blocks;
 */
 namespace VoxelTG.Listeners.Interfaces
 {
-    public interface IBlockUpdateListener
+    public interface IBlockArrayDestroyListener
     {
         /// <summary>
         /// Method called at initiation of event listeners
         /// </summary>
-        /// <returns>Block type you want to listen for updates</returns>
-        BlockType GetBlockType();
+        /// <returns>Array of block types you want to listen for updates</returns>
+        BlockType[] GetBlockTypes();
 
         /// <summary>
         /// Method called on block update
         /// </summary>
         /// <param name="data">current block data</param>
-        /// <param name="neighbours">neighbour blocks data</param>
-        void OnBlockUpdate(BlockEventData data, Dictionary<BlockFace, BlockEventData> neighbours, params int[] args);
+        void OnBlockDestroy(BlockEventData data, params int[] args);
     }
 }

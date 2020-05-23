@@ -17,7 +17,8 @@ namespace VoxelTG.Blocks.Listeners
             return BlockType.WATER;
         }
 
-        public void OnBlockUpdate(BlockUpdateEventData data, Dictionary<BlockFace, BlockUpdateEventData> neighbours)
+        // TODO: rework
+        public void OnBlockUpdate(BlockEventData data, Dictionary<BlockFace, BlockEventData> neighbours, params int[] args)
         {
             short sourceDistance = data.chunk.GetParameterValue(new BlockParameter(data.position, ParameterType.WATER_SOURCE_DISTANCE));
 
@@ -26,12 +27,12 @@ namespace VoxelTG.Blocks.Listeners
             {
                 for (int i = 2; i < 6; i++)
                 {
-                    BlockUpdateEventData blockUpdateEventData = neighbours[(BlockFace)i];
+                    BlockEventData blockUpdateEventData = neighbours[(BlockFace)i];
                     Chunk chunk = blockUpdateEventData.chunk;
 
                     BlockParameter param = new BlockParameter(blockUpdateEventData.position, ParameterType.WATER_SOURCE_DISTANCE);
 
-                    int index = Chunk.Index3Dto1D(blockUpdateEventData.position);
+                    int index = Utils.BlockPosition3DtoIndex(blockUpdateEventData.position);
                     BlockType type = chunk.blocks[index];
 
                     if (sourceDistance > 0)

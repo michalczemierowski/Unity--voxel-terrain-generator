@@ -7,6 +7,8 @@ using UnityEngine;
 using VoxelTG.Jobs;
 using VoxelTG.Terrain.Blocks;
 using VoxelTG.Terrain.Chunks;
+// use WorldSettings variables
+using static VoxelTG.Terrain.WorldSettings;
 
 /*
  * Michał Czemierowski
@@ -24,23 +26,10 @@ namespace VoxelTG.Terrain
 
         public Chunk[] neigbourChunks = new Chunk[0]; // +x, -x, +z, -z
 
-        //chunk size
-        public const int chunkWidth = 16;
-        public const int chunkHeight = 64;
-        public const int waterHeight = 28;
-        public const int fixedChunkWidth = chunkWidth + 2;
-
-        public const int maxTreeCount = 10;
-        public const float minimumTreeDistance = 4;
-        public static readonly int2 treeHeigthRange = new int2(4, 8);
-        public const float chanceForGrass = 0.15f;
-
-        public const float biomeSize = 3f;
-
         public NativeArray<BlockType> blocks;
         public NativeArray<BiomeType> biomeTypes;
 
-        public ChunkPos chunkPos;
+        public Vector2Int chunkPos;
 
         #endregion
 
@@ -74,6 +63,7 @@ namespace VoxelTG.Terrain
 
         private void Awake()
         {
+            // init native containers
             blocks = new NativeArray<BlockType>(fixedChunkWidth * chunkHeight * fixedChunkWidth, Allocator.Persistent);
             biomeTypes = new NativeArray<BiomeType>(fixedChunkWidth * fixedChunkWidth, Allocator.Persistent);
             blockParameters = new NativeHashMap<BlockParameter, short>(2048, Allocator.Persistent);
@@ -107,6 +97,7 @@ namespace VoxelTG.Terrain
 
         private void OnApplicationQuit()
         {
+            // dispose native containers
             blocks.Dispose();
             biomeTypes.Dispose();
             blockParameters.Dispose();
@@ -129,20 +120,20 @@ namespace VoxelTG.Terrain
         private IEnumerator CheckNeighbours()
         {
             yield return new WaitForEndOfFrame();
-            ChunkPos[] positions = new ChunkPos[]
+            Vector2Int[] positions = new Vector2Int[]
             {
-            new ChunkPos(chunkPos.x + chunkWidth, chunkPos.z),
-            new ChunkPos(chunkPos.x - chunkWidth, chunkPos.z),
-            new ChunkPos(chunkPos.x, chunkPos.z + chunkWidth),
-            new ChunkPos(chunkPos.x, chunkPos.z - chunkWidth)
+                new Vector2Int(chunkPos.x + chunkWidth, chunkPos.y),
+                new Vector2Int(chunkPos.x - chunkWidth, chunkPos.y),
+                new Vector2Int(chunkPos.x, chunkPos.y + chunkWidth),
+                new Vector2Int(chunkPos.x, chunkPos.y - chunkWidth)
             };
 
             neigbourChunks = new Chunk[]
             {
-            World.chunks.ContainsKey(positions[0]) ? World.chunks[positions[0]] : null,
-            World.chunks.ContainsKey(positions[1]) ? World.chunks[positions[1]] : null,
-            World.chunks.ContainsKey(positions[2]) ? World.chunks[positions[2]] : null,
-            World.chunks.ContainsKey(positions[3]) ? World.chunks[positions[3]] : null,
+                World.chunks.ContainsKey(positions[0]) ? World.chunks[positions[0]] : null,
+                World.chunks.ContainsKey(positions[1]) ? World.chunks[positions[1]] : null,
+                World.chunks.ContainsKey(positions[2]) ? World.chunks[positions[2]] : null,
+                World.chunks.ContainsKey(positions[3]) ? World.chunks[positions[3]] : null,
             };
 
 
@@ -158,29 +149,9 @@ namespace VoxelTG.Terrain
 
         #region // === Utils === \\
 
-        public static int Index2Dto1D(int x, int z)
-        {
-            return x * fixedChunkWidth + z;
-        }
-
-        public static int Index3Dto1D(int x, int y, int z)
-        {
-            return (z * fixedChunkWidth * chunkHeight) + (y * fixedChunkWidth) + x;
-        }
-
-        public static int Index3Dto1D(int3 blockPos)
-        {
-            return (blockPos.z * fixedChunkWidth * chunkHeight) + (blockPos.y * fixedChunkWidth) + blockPos.x;
-        }
-
-        public static int Index3Dto1D(BlockPosition blockPos)
-        {
-            return (blockPos.z * fixedChunkWidth * chunkHeight) + (blockPos.y * fixedChunkWidth) + blockPos.x;
-        }
-
         public static bool IsPositionInRange(int x, int y, int z)
         {
-            return x > 0 && y > 0 && z > 0 && x < chunkWidth + 1 && z < chunkWidth + 1 && y < chunkHeight;
+            return x > 0 && y >= 0 && z > 0 && x < chunkWidth + 1 && z < chunkWidth + 1 && y <= chunkHeight;
         }
 
         #endregion
@@ -286,7 +257,7 @@ namespace VoxelTG.Terrain
 
             // bake mesh immediately if player is near
             Vector2 playerPosition = new Vector2(World.player.transform.position.x, World.player.transform.position.z);
-            if (Vector2.Distance(new Vector2(chunkPos.x, chunkPos.z), playerPosition) < fixedChunkWidth * 2)
+            if (Vector2.Distance(new Vector2(chunkPos.x, chunkPos.y), playerPosition) < fixedChunkWidth * 2)
                 blockMeshCollider.sharedMesh = mesh;
             else
                 World.SchedulePhysicsBake(this);
@@ -367,13 +338,14 @@ namespace VoxelTG.Terrain
             return 0;
         }
 
+        public void ClearParameters(BlockPosition blockPosition)
+        {
+            ClearParameters(blockPosition.ToInt3());
+        }
         public void ClearParameters(int x, int y, int z)
         {
-            BlockParameter key = new BlockParameter(new int3(x, y, z));
-            while (blockParameters.ContainsKey(key))
-                blockParameters.Remove(key);
+            ClearParameters(new int3(x, y, z));
         }
-
         public void ClearParameters(int3 blockPos)
         {
             BlockParameter key = new BlockParameter(blockPos);
@@ -385,41 +357,45 @@ namespace VoxelTG.Terrain
 
         #region // === Editing methods === \\
 
+        public BlockType GetBlock(int3 blockPos)
+        {
+            return blocks[Utils.BlockPosition3DtoIndex(blockPos.x, blockPos.y, blockPos.z)];
+        }
         public BlockType GetBlock(int x, int y, int z)
         {
-            // TODO: -11 = out of range przy rozlewaniu wody
-            return blocks[Index3Dto1D(x, y, z)];
+            return blocks[Utils.BlockPosition3DtoIndex(x, y, z)];
         }
-
         public BlockType GetBlock(BlockPosition blockPos)
         {
-            return blocks[Index3Dto1D(blockPos.x, blockPos.y, blockPos.z)];
+            return blocks[Utils.BlockPosition3DtoIndex(blockPos.x, blockPos.y, blockPos.z)];
         }
 
-        private void SetBlockWithoutRebuild(int x, int y, int z, BlockType blockType)
+        private void SetBlockWithoutRebuild(int x, int y, int z, BlockType blockType, bool destroy = false)
         {
             if (!IsPositionInRange(x, y, z)) return;
 
-            if (GetBlock(x, y + 1, z) == BlockType.GRASS)
-                SetBlockWithoutRebuild(x, y + 1, z, BlockType.AIR);
+            BlockType currentBlock = GetBlock(x, y, z);
 
-            blocks[Index3Dto1D(x, y, z)] = blockType;
+            if (destroy)
+                World.InvokeBlockDestroyEvent(new BlockEventData(this, new BlockPosition(x, y, z), currentBlock));
+
+            blocks[Utils.BlockPosition3DtoIndex(x, y, z)] = blockType;
         }
 
-        public void SetBlock(int3 position, BlockType blockType)
+        public void SetBlock(int3 position, BlockType blockType, bool destroy = false)
         {
-            SetBlock(position.x, position.y, position.z, blockType);
+            SetBlock(position.x, position.y, position.z, blockType, destroy);
         }
-        public void SetBlock(BlockPosition position, BlockType blockType)
+        public void SetBlock(BlockPosition position, BlockType blockType, bool destroy = false)
         {
-            SetBlock(position.x, position.y, position.z, blockType);
+            SetBlock(position.x, position.y, position.z, blockType, destroy);
         }
-        public void SetBlock(int x, int y, int z, BlockType blockType)
+        public void SetBlock(int x, int y, int z, BlockType blockType, bool destroy = false)
         {
             List<JobHandle> jobHandles = new List<JobHandle>();
             List<Chunk> chunksToBuild = new List<Chunk>();
 
-            SetBlockWithoutRebuild(x, y, z, blockType);
+            SetBlockWithoutRebuild(x, y, z, blockType, destroy);
 
             // add current chunk
             BuildMesh(jobHandles);
@@ -431,7 +407,7 @@ namespace VoxelTG.Terrain
                 Chunk tc = neigbourChunks[0];
                 if (tc)
                 {
-                    tc.blocks[Index3Dto1D(0, y, z)] = blockType;
+                    tc.blocks[Utils.BlockPosition3DtoIndex(0, y, z)] = blockType;
                     tc.BuildMesh(jobHandles);
                     chunksToBuild.Add(tc);
                 }
@@ -441,7 +417,7 @@ namespace VoxelTG.Terrain
                 Chunk tc = neigbourChunks[1];
                 if (tc)
                 {
-                    tc.blocks[Index3Dto1D(17, y, z)] = blockType;
+                    tc.blocks[Utils.BlockPosition3DtoIndex(17, y, z)] = blockType;
                     tc.BuildMesh(jobHandles);
                     chunksToBuild.Add(tc);
                 }
@@ -452,7 +428,7 @@ namespace VoxelTG.Terrain
                 Chunk tc = neigbourChunks[2];
                 if (tc)
                 {
-                    tc.blocks[Index3Dto1D(x, y, 0)] = blockType;
+                    tc.blocks[Utils.BlockPosition3DtoIndex(x, y, 0)] = blockType;
                     tc.BuildMesh(jobHandles);
                     chunksToBuild.Add(tc);
                 }
@@ -462,7 +438,7 @@ namespace VoxelTG.Terrain
                 Chunk tc = neigbourChunks[3];
                 if (tc)
                 {
-                    tc.blocks[Index3Dto1D(x, y, 17)] = blockType;
+                    tc.blocks[Utils.BlockPosition3DtoIndex(x, y, 17)] = blockType;
                     tc.BuildMesh(jobHandles);
                     chunksToBuild.Add(tc);
                 }
@@ -485,7 +461,7 @@ namespace VoxelTG.Terrain
             UpdateNeighbourBlocks(new BlockPosition(x, y, z), 10);
         }
 
-        public void SetBlocks(BlockData[] blockDatas)
+        public void SetBlocksWithoutChecks(BlockData[] blockDatas)
         {
             List<JobHandle> jobHandles = new List<JobHandle>();
             List<Chunk> chunksToBuild = new List<Chunk>();
@@ -500,8 +476,7 @@ namespace VoxelTG.Terrain
                 int z = blockDatas[i].position.z;
 
                 BlockType blockType = blockDatas[i].blockType;
-                SetBlockWithoutRebuild(x, y, z, blockType);
-                //blocks[Index3Dto1D(x, y, z)] = blockType;
+                blocks[Utils.BlockPosition3DtoIndex(x, y, z)] = blockType;
 
                 // check neighbours
                 if (x == 16)
@@ -509,7 +484,7 @@ namespace VoxelTG.Terrain
                     Chunk tc = neigbourChunks[0];
                     if (tc)
                     {
-                        tc.blocks[Index3Dto1D(0, y, z)] = blockType;
+                        tc.blocks[Utils.BlockPosition3DtoIndex(0, y, z)] = blockType;
                         neighboursToBuild[0] = true;
                     }
                 }
@@ -518,7 +493,7 @@ namespace VoxelTG.Terrain
                     Chunk tc = neigbourChunks[1];
                     if (tc)
                     {
-                        tc.blocks[Index3Dto1D(17, y, z)] = blockType;
+                        tc.blocks[Utils.BlockPosition3DtoIndex(17, y, z)] = blockType;
                         neighboursToBuild[1] = true;
                     }
                 }
@@ -528,7 +503,7 @@ namespace VoxelTG.Terrain
                     Chunk tc = neigbourChunks[2];
                     if (tc)
                     {
-                        tc.blocks[Index3Dto1D(x, y, 0)] = blockType;
+                        tc.blocks[Utils.BlockPosition3DtoIndex(x, y, 0)] = blockType;
                         neighboursToBuild[2] = true;
                     }
                 }
@@ -537,12 +512,100 @@ namespace VoxelTG.Terrain
                     Chunk tc = neigbourChunks[3];
                     if (tc)
                     {
-                        tc.blocks[Index3Dto1D(x, y, 17)] = blockType;
+                        tc.blocks[Utils.BlockPosition3DtoIndex(x, y, 17)] = blockType;
+                        neighboursToBuild[3] = true;
+                    }
+                }
+            }
+
+            // add current chunk
+            BuildMesh(jobHandles);
+            chunksToBuild.Add(this);
+
+            for (int j = 0; j < 4; j++)
+            {
+                if (neighboursToBuild[j])
+                {
+                    Chunk tc = neigbourChunks[j];
+                    tc.BuildMesh(jobHandles);
+                    chunksToBuild.Add(tc);
+                }
+            }
+
+            NativeArray<JobHandle> njobHandles = new NativeArray<JobHandle>(jobHandles.ToArray(), Allocator.Temp);
+            JobHandle.CompleteAll(njobHandles);
+
+            // build meshes
+            foreach (Chunk tc in chunksToBuild)
+            {
+                tc.ApplyMesh();
+            }
+
+            // clear & dispose
+            jobHandles.Clear();
+            chunksToBuild.Clear();
+
+            njobHandles.Dispose();
+        }
+
+        public void SetBlocks(BlockData[] blockDatas, bool destroy = false)
+        {
+            List<JobHandle> jobHandles = new List<JobHandle>();
+            List<Chunk> chunksToBuild = new List<Chunk>();
+
+            bool[] neighboursToBuild = new bool[4];
+
+            //Vector3Int[] positionsToUpdate = new Vector3Int[6];
+            for (int i = 0; i < blockDatas.Length; i++)
+            {
+                int x = blockDatas[i].position.x;
+                int y = blockDatas[i].position.y;
+                int z = blockDatas[i].position.z;
+
+                BlockType blockType = blockDatas[i].blockType;
+                SetBlockWithoutRebuild(x, y, z, blockType, destroy);
+                //blocks[Utils.BlockPosition3DtoIndex(x, y, z)] = blockType;
+
+                // check neighbours
+                if (x == 16)
+                {
+                    Chunk tc = neigbourChunks[0];
+                    if (tc)
+                    {
+                        tc.blocks[Utils.BlockPosition3DtoIndex(0, y, z)] = blockType;
+                        neighboursToBuild[0] = true;
+                    }
+                }
+                else if (x == 1)
+                {
+                    Chunk tc = neigbourChunks[1];
+                    if (tc)
+                    {
+                        tc.blocks[Utils.BlockPosition3DtoIndex(17, y, z)] = blockType;
+                        neighboursToBuild[1] = true;
+                    }
+                }
+
+                if (z == 16)
+                {
+                    Chunk tc = neigbourChunks[2];
+                    if (tc)
+                    {
+                        tc.blocks[Utils.BlockPosition3DtoIndex(x, y, 0)] = blockType;
+                        neighboursToBuild[2] = true;
+                    }
+                }
+                else if (z == 1)
+                {
+                    Chunk tc = neigbourChunks[3];
+                    if (tc)
+                    {
+                        tc.blocks[Utils.BlockPosition3DtoIndex(x, y, 17)] = blockType;
                         neighboursToBuild[3] = true;
                     }
                 }
 
-                UpdateNeighbourBlocks(new BlockPosition(x, y, z), 10);
+                //UpdateNeighbourBlocks(new BlockPosition(x, y, z), 10);
             }
 
             // add current chunk
@@ -590,12 +653,12 @@ namespace VoxelTG.Terrain
             int[] neighbours = new int[6];
             BlockPosition[] positions = new BlockPosition[]
             {
-            new BlockPosition(x, y + 1, z, out neighbours[0]),
-            new BlockPosition(x, y - 1, z, out neighbours[1]),
-            new BlockPosition(x + 1, y, z, out neighbours[2]),
-            new BlockPosition(x - 1, y, z, out neighbours[3]),
-            new BlockPosition(x, y, z + 1, out neighbours[4]),
-            new BlockPosition(x, y, z - 1, out neighbours[5])
+                new BlockPosition(x, y + 1, z, out neighbours[0]),
+                new BlockPosition(x, y - 1, z, out neighbours[1]),
+                new BlockPosition(x + 1, y, z, out neighbours[2]),
+                new BlockPosition(x - 1, y, z, out neighbours[3]),
+                new BlockPosition(x, y, z + 1, out neighbours[4]),
+                new BlockPosition(x, y, z - 1, out neighbours[5])
             };
             for (int i = 0; i < 6; i++)
             {
@@ -604,9 +667,9 @@ namespace VoxelTG.Terrain
             }
         }
 
-        public void OnBlockUpdate(BlockPosition position)
+        public void OnBlockUpdate(BlockPosition position, params int[] args)
         {
-            BlockType blockType = blocks[Index3Dto1D(position.x, position.y, position.z)];
+            BlockType blockType = blocks[Utils.BlockPosition3DtoIndex(position.x, position.y, position.z)];
 
             int x = position.x;
             int y = position.y;
@@ -627,67 +690,18 @@ namespace VoxelTG.Terrain
             new BlockPosition(x, y - 1, z)
             };
 
-            Dictionary<BlockFace, BlockUpdateEventData> neighbourBlocks = new Dictionary<BlockFace, BlockUpdateEventData>();
-            neighbourBlocks.Add(BlockFace.TOP, new BlockUpdateEventData(this, upDownBlocks[0], GetBlock(upDownBlocks[0])));
-            neighbourBlocks.Add(BlockFace.BOTTOM, new BlockUpdateEventData(this, upDownBlocks[1], GetBlock(upDownBlocks[1]))); // down
+            Dictionary<BlockFace, BlockEventData> neighbourBlocks = new Dictionary<BlockFace, BlockEventData>();
+            neighbourBlocks.Add(BlockFace.TOP, new BlockEventData(this, upDownBlocks[0], GetBlock(upDownBlocks[0])));
+            neighbourBlocks.Add(BlockFace.BOTTOM, new BlockEventData(this, upDownBlocks[1], GetBlock(upDownBlocks[1]))); // down
 
             for (int i = 0; i < 4; i++)
             {
                 Chunk chunk = neighbours[i] < 0 ? this : neigbourChunks[neighbours[i]] == null ? this : neigbourChunks[neighbours[i]];
                 BlockPosition blockPos = sideBlocks[i];
-                neighbourBlocks.Add((BlockFace)i + 2, new BlockUpdateEventData(chunk, blockPos, chunk.GetBlock(blockPos)));
+                neighbourBlocks.Add((BlockFace)i + 2, new BlockEventData(chunk, blockPos, chunk.GetBlock(blockPos)));
             }
 
-            World.InvokeBlockUpdateEvent(blockType, new BlockUpdateEventData(this, position, blockType), neighbourBlocks);
-            return;
-
-            if (blockType == BlockType.GRASS_BLOCK && WorldData.GetBlockState(blocks[Index3Dto1D(upDownBlocks[0])]) == BlockState.SOLID)
-            {
-                AddBlockToBuildList(new BlockData(BlockType.DIRT, position));
-                return;
-            }
-
-            if (blockType == BlockType.WATER)
-            {
-                short sourceDistance = GetParameterValue(new BlockParameter(position, ParameterType.WATER_SOURCE_DISTANCE));
-
-                BlockType belowBlock = blocks[Index3Dto1D(upDownBlocks[1])];
-                if (WorldData.GetBlockState(belowBlock) == BlockState.SOLID || sourceDistance == 8)
-                {
-                    for (int i = 0; i < 4; i++)
-                    {
-                        Chunk chunk = neighbours[i] < 0 ? this : neigbourChunks[neighbours[i]];
-                        BlockPosition blockPos = sideBlocks[i];
-                        BlockParameter param = new BlockParameter(blockPos, ParameterType.WATER_SOURCE_DISTANCE);
-
-                        int index = Index3Dto1D(blockPos);
-                        BlockType type = chunk.blocks[index];
-
-                        if (sourceDistance > 0)
-                        {
-                            if (type == BlockType.AIR || WorldData.GetBlockState(type) == BlockState.PLANTS)
-                            {
-                                chunk.AddBlockToBuildList(new BlockData(BlockType.WATER, blockPos));
-                                chunk.AddParameterToList(param, (short)(sourceDistance - 1));
-                                //break;
-                            }
-                            if (type == BlockType.WATER)
-                            {
-                                if (chunk.GetParameterValue(param) < sourceDistance - 1)
-                                {
-                                    chunk.AddBlockToBuildList(new BlockData(BlockType.WATER, blockPos));
-                                    chunk.AddParameterToList(param, (short)(sourceDistance - 1));
-                                }
-                            }
-                        }
-                    }
-                }
-                else if (belowBlock == BlockType.AIR || WorldData.GetBlockState(belowBlock) == BlockState.PLANTS)
-                {
-                    AddBlockToBuildList(new BlockData(BlockType.WATER, upDownBlocks[1]));
-                    AddParameterToList(new BlockParameter(upDownBlocks[1], ParameterType.WATER_SOURCE_DISTANCE), 8);
-                }
-            }
+            World.InvokeBlockUpdateEvent(new BlockEventData(this, position, blockType), neighbourBlocks, args);
         }
 
         public void AddBlockToBuildList(BlockPosition blockPos, BlockType blockType)

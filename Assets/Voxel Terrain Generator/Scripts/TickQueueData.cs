@@ -8,12 +8,14 @@ namespace VoxelTG.Terrain
         public Chunk chunk;
         public BlockPosition blockPos;
         public int ticks;
+        public int[] args;
 
-        public TickQueueData(Chunk chunk, BlockPosition blockPos, int ticks)
+        public TickQueueData(Chunk chunk, BlockPosition blockPos, int ticks, params int[] args)
         {
             this.chunk = chunk;
             this.blockPos = blockPos;
             this.ticks = ticks;
+            this.args = args;
         }
     }
 }

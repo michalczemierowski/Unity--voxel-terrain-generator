@@ -6,6 +6,7 @@ using UnityEngine;
 using VoxelTG.Jobs;
 using VoxelTG.Listeners.Interfaces;
 using VoxelTG.Terrain.Blocks;
+using static VoxelTG.Terrain.WorldSettings;
 
 /*
  * Michał Czemierowski
@@ -15,9 +16,11 @@ namespace VoxelTG.Terrain
 {
     public class World : MonoBehaviour
     {
+        public static World Instance;
+
         #region // === Variables === \\
 
-        #region public
+        #region public / serializable
 
         public static FastNoise baseNoise;
         public static NativeArray<GeneratorSettings> generatorSettings;
@@ -26,11 +29,7 @@ namespace VoxelTG.Terrain
 
         public static Transform player;
 
-        public static Dictionary<ChunkPos, Chunk> chunks = new Dictionary<ChunkPos, Chunk>();
-
-        #endregion
-
-        #region serializable
+        public static Dictionary<Vector2Int, Chunk> chunks = new Dictionary<Vector2Int, Chunk>();
 
         [SerializeField] private float ticksPerSecond = 20;
         [SerializeField] private float buildChecksPerSecond = 10;
@@ -56,7 +55,7 @@ namespace VoxelTG.Terrain
         private static List<TickQueueData> tickQueue = new List<TickQueueData>();
         private static HashSet<BlockPosition> updatePositions = new HashSet<BlockPosition>();
 
-        private ChunkPos curChunk = new ChunkPos(-1, -1);
+        private Vector2Int curChunk = new Vector2Int(-1, -1);
         private List<Chunk> pooledChunks = new List<Chunk>();
 
         #endregion
@@ -67,9 +66,16 @@ namespace VoxelTG.Terrain
 
         private void Awake()
         {
+            // Singleton
+            if (Instance)
+                Destroy(this);
+            else
+                Instance = this;
+
             seed = 1337;// UnityEngine.Random.Range(1000000000, int.MaxValue);
             baseNoise = new FastNoise(seed, 0.005f);
 
+            // init native conainters
             pendingJobs = new NativeQueue<JobHandle>(Allocator.Persistent);
             meshBakingJobs = new NativeQueue<JobHandle>(Allocator.Persistent);
             generatorSettings = new NativeArray<GeneratorSettings>(generatorSettingsArray, Allocator.Persistent);
@@ -85,7 +91,15 @@ namespace VoxelTG.Terrain
             }
         }
 
-        void Start()
+        private void OnApplicationQuit()
+        {
+            // dispose native containers
+            pendingJobs.Dispose();
+            meshBakingJobs.Dispose();
+            generatorSettings.Dispose();
+        }
+
+        private void Start()
         {
             LoadChunks(true);
 
@@ -96,32 +110,31 @@ namespace VoxelTG.Terrain
             InitializeListeners();
         }
 
-        private void Update()
+        private void FixedUpdate()
         {
             LoadChunks();
-        }
-
-        private void OnApplicationQuit()
-        {
-            pendingJobs.Dispose();
-            meshBakingJobs.Dispose();
-            generatorSettings.Dispose();
         }
 
         #endregion
 
         #region // === Events === \\
 
-        private delegate void OnBlockUpdated(BlockUpdateEventData block, Dictionary<BlockFace, BlockUpdateEventData> neighbours);
-        private static OnBlockUpdated OnBlockUpdatedEvent;
-        private static Dictionary<BlockType, OnBlockUpdated> OnBlockUpdateEvents = new Dictionary<BlockType, OnBlockUpdated>();
+        private delegate void OnBlockUpdate(BlockEventData block, Dictionary<BlockFace, BlockEventData> neighbours, params int[] args);
+        private static OnBlockUpdate OnBlockUpdateEvent;
+
+        private delegate void OnBlockDestroy(BlockEventData block, params int[] args);
+        private static OnBlockDestroy OnBlockDestroyEvent;
+
+        private static Dictionary<BlockType, OnBlockUpdate> OnBlockUpdateEvents = new Dictionary<BlockType, OnBlockUpdate>();
+        private static Dictionary<BlockType, OnBlockDestroy> OnBlockDestroyEvents = new Dictionary<BlockType, OnBlockDestroy>();
 
         private void InitializeEvents()
         {
             int len = System.Enum.GetNames(typeof(BlockType)).Length;
             for (int i = 0; i < len; i++)
             {
-                OnBlockUpdateEvents.Add((BlockType)i, OnBlockUpdatedEvent);
+                OnBlockUpdateEvents.Add((BlockType)i, OnBlockUpdateEvent);
+                OnBlockDestroyEvents.Add((BlockType)i, OnBlockDestroyEvent);
             }
         }
 
@@ -139,16 +152,34 @@ namespace VoxelTG.Terrain
                     OnBlockUpdateEvents[type] += listener.OnBlockUpdate;
                 }
             }
+
+            foreach (IBlockDestroyListener listener in GetComponentsInChildren<IBlockDestroyListener>())
+            {
+                OnBlockDestroyEvents[listener.GetBlockType()] += listener.OnBlockDestroy;
+            }
+
+            foreach (IBlockArrayDestroyListener listener in GetComponentsInChildren<IBlockArrayDestroyListener>())
+            {
+                foreach (BlockType type in listener.GetBlockTypes())
+                {
+                    OnBlockDestroyEvents[type] += listener.OnBlockDestroy;
+                }
+            }
         }
 
-        public static void InvokeBlockUpdateEvent(BlockType blockType, BlockUpdateEventData block, Dictionary<BlockFace, BlockUpdateEventData> neighbours)
+        public static void InvokeBlockUpdateEvent(BlockEventData block, Dictionary<BlockFace, BlockEventData> neighbours, params int[] args)
         {
-            OnBlockUpdateEvents[blockType]?.Invoke(block, neighbours);
+            OnBlockUpdateEvents[block.type]?.Invoke(block, neighbours, args);
+        }
+
+        public static void InvokeBlockDestroyEvent(BlockEventData block, params int[] args)
+        {
+            OnBlockDestroyEvents[block.type]?.Invoke(block, args);
         }
 
         #endregion
 
-        #region // === Chunk methods === \\
+        #region // === Chunk loading methods === \\
 
         /// <summary>
         /// Schedule chunk build job
@@ -165,14 +196,14 @@ namespace VoxelTG.Terrain
                 chunk.gameObject.SetActive(true);
                 pooledChunks.RemoveAt(pooledChunks.Count - 1);
 
-                chunk.chunkPos = new ChunkPos(xPos, zPos);
+                chunk.chunkPos = new Vector2Int(xPos, zPos);
                 chunk.transform.position = new Vector3(xPos, 0, zPos);
             }
             else
             {
                 GameObject chunkGO = Instantiate(terrainChunk, new Vector3(xPos, 0, zPos), Quaternion.identity);
                 chunk = chunkGO.GetComponent<Chunk>();
-                chunk.chunkPos = new ChunkPos(xPos, zPos);
+                chunk.chunkPos = new Vector2Int(xPos, zPos);
             }
 
             // schedule build job
@@ -182,7 +213,7 @@ namespace VoxelTG.Terrain
             chunk.SetMeshRenderersActive(false);
 
             // add chunk to chunk dict
-            chunks.Add(new ChunkPos(xPos, zPos), chunk);
+            chunks.Add(new Vector2Int(xPos, zPos), chunk);
         }
 
         /// <summary>
@@ -192,19 +223,19 @@ namespace VoxelTG.Terrain
         private void LoadChunks(bool instant = false)
         {
             //the current chunk the player is in
-            int curChunkPosX = Mathf.FloorToInt(player.position.x / Chunk.chunkWidth) * Chunk.chunkWidth;
-            int curChunkPosZ = Mathf.FloorToInt(player.position.z / Chunk.chunkWidth) * Chunk.chunkWidth;
+            int curChunkPosX = Mathf.FloorToInt(player.position.x / chunkWidth) * chunkWidth;
+            int curChunkPosZ = Mathf.FloorToInt(player.position.z / chunkWidth) * chunkWidth;
 
             //entered a new chunk
-            if (curChunk.x != curChunkPosX || curChunk.z != curChunkPosZ)
+            if (curChunk.x != curChunkPosX || curChunk.y != curChunkPosZ)
             {
                 curChunk.x = curChunkPosX;
-                curChunk.z = curChunkPosZ;
+                curChunk.y = curChunkPosZ;
 
-                for (int i = curChunkPosX - Chunk.chunkWidth * chunkDist; i <= curChunkPosX + Chunk.chunkWidth * chunkDist; i += Chunk.chunkWidth)
-                    for (int j = curChunkPosZ - Chunk.chunkWidth * chunkDist; j <= curChunkPosZ + Chunk.chunkWidth * chunkDist; j += Chunk.chunkWidth)
+                for (int i = curChunkPosX - chunkWidth * chunkDist; i <= curChunkPosX + chunkWidth * chunkDist; i += chunkWidth)
+                    for (int j = curChunkPosZ - chunkWidth * chunkDist; j <= curChunkPosZ + chunkWidth * chunkDist; j += chunkWidth)
                     {
-                        ChunkPos cp = new ChunkPos(i, j);
+                        Vector2Int cp = new Vector2Int(i, j);
 
                         if (!chunks.ContainsKey(cp))
                         {
@@ -239,19 +270,19 @@ namespace VoxelTG.Terrain
                 }
 
                 // unload far chunks
-                List<ChunkPos> toDestroy = new List<ChunkPos>();
-                foreach (KeyValuePair<ChunkPos, Chunk> c in chunks)
+                List<Vector2Int> toDestroy = new List<Vector2Int>();
+                foreach (KeyValuePair<Vector2Int, Chunk> c in chunks)
                 {
-                    ChunkPos cp = c.Key;
-                    if (Mathf.Abs(curChunkPosX - cp.x) > Chunk.chunkWidth * (chunkDist + 3) ||
-                        Mathf.Abs(curChunkPosZ - cp.z) > Chunk.chunkWidth * (chunkDist + 3))
+                    Vector2Int cp = c.Key;
+                    if (Mathf.Abs(curChunkPosX - cp.x) > chunkWidth * (chunkDist + 3) ||
+                        Mathf.Abs(curChunkPosZ - cp.y) > chunkWidth * (chunkDist + 3))
                     {
                         toDestroy.Add(c.Key);
                     }
                 }
 
                 // add chunks to pool
-                foreach (ChunkPos cp in toDestroy)
+                foreach (Vector2Int cp in toDestroy)
                 {
                     Chunk tc = chunks[cp];
                     tc.DissapearingAnimation();
@@ -281,57 +312,7 @@ namespace VoxelTG.Terrain
 
         #endregion
 
-        #region // === Utils === \\
-
-        /// <summary>
-        /// Convert local chunk position to world position
-        /// </summary>
-        /// <param name="cp">chunk position</param>
-        /// <param name="x">local position x</param>
-        /// <param name="y">local position y</param>
-        /// <param name="z">local position z</param>
-        /// <returns>World block position</returns>
-        public static int3 LocalToWorldPositionInt3(ChunkPos cp, int x, int y, int z)
-        {
-            return new int3(x + cp.x - 1, y, z + cp.z - 1);
-        }
-
-        /// <summary>
-        /// Convert local chunk position to world position
-        /// </summary>
-        /// <param name="cp">chunk position</param>
-        /// <param name="position">local block position</param>
-        /// <returns></returns>
-        public static int3 LocalToWorldPositionInt3(ChunkPos cp, BlockPosition position)
-        {
-            return new int3(position.x + cp.x - 1, position.y, position.z + cp.z - 1);
-        }
-
-        /// <summary>
-        /// Convert local chunk position to world position
-        /// </summary>
-        /// <param name="cp">chunk position</param>
-        /// <param name="position">local block position</param>
-        /// <returns></returns>
-        public static Vector3Int LocalToWorldPositionVector3Int(ChunkPos cp, BlockPosition position)
-        {
-            return new Vector3Int(position.x + cp.x - 1, position.y, position.z + cp.z - 1);
-        }
-
-        /// <summary>
-        /// Convert local chunk position to world position
-        /// </summary>
-        /// <param name="cp">chunk position</param>
-        /// <param name="position">local block position</param>
-        /// <returns></returns>
-        public static int3 LocalToWorldPositionInt3(ChunkPos cp, int3 position)
-        {
-            return new int3(position.x + cp.x - 1, position.y, position.z + cp.z - 1);
-        }
-
-        #endregion
-
-        #region // === Getters === \\
+        #region // === Chunk & Block methods === \\
 
         /// <summary>
         /// Get block at provided position
@@ -342,15 +323,13 @@ namespace VoxelTG.Terrain
         /// <returns></returns>
         public static Block GetBlock(int x, int y, int z)
         {
-            int chunkPosX = Mathf.FloorToInt(x / Chunk.chunkWidth) * Chunk.chunkWidth;
-            int chunkPosZ = Mathf.FloorToInt(z / Chunk.chunkWidth) * Chunk.chunkWidth;
-            ChunkPos cp = new ChunkPos(chunkPosX, chunkPosZ);
+            Chunk chunk = GetChunk(x, z);
+            if (!chunk)
+                return WorldData.GetBlock(BlockType.AIR);
 
-            int bix = x - chunkPosX + 1;
-            int biy = y;
-            int biz = z - chunkPosZ + 1;
+            BlockPosition bp = new BlockPosition(x, y, z);
 
-            return WorldData.GetBlock(chunks[cp].GetBlock(bix, biy, biz));
+            return WorldData.GetBlock(chunk.GetBlock(bp));
         }
 
         /// <summary>
@@ -358,31 +337,20 @@ namespace VoxelTG.Terrain
         /// </summary>
         /// <param name="x">chunk position x</param>
         /// <param name="z">chunk position y</param>
-        /// <returns></returns>
-        public static Chunk GetChunk(int x, int z)
+        /// <returns>chunk</returns>
+        public static Chunk GetChunk(float x, float z)
         {
-            int chunkPosX = Mathf.FloorToInt((float)x / Chunk.chunkWidth) * Chunk.chunkWidth;
-            int chunkPosZ = Mathf.FloorToInt((float)z / Chunk.chunkWidth) * Chunk.chunkWidth;
+            int chunkPosX = Mathf.FloorToInt((x - 1) / chunkWidth) * chunkWidth;
+            int chunkPosZ = Mathf.FloorToInt((z - 1) / chunkWidth) * chunkWidth;
 
-            ChunkPos cp = new ChunkPos(chunkPosX, chunkPosZ);
+            Vector2Int cp = new Vector2Int(chunkPosX, chunkPosZ);
 
-            return chunks[cp];
+            Chunk result;
+            chunks.TryGetValue(cp, out result);
+
+            return result;
         }
 
-        public static Chunk GetChunkByBlockPosition(int x, int z)
-        {
-            int chunkPosX = Mathf.FloorToInt(x / Chunk.chunkWidth) * Chunk.chunkWidth;
-            int chunkPosZ = Mathf.FloorToInt(z / Chunk.chunkWidth) * Chunk.chunkWidth;
-
-            return chunks[new ChunkPos(chunkPosX, chunkPosZ)];
-        }
-        public static Chunk GetChunkByBlockPosition(float x, float z)
-        {
-            int chunkPosX = Mathf.FloorToInt(x / Chunk.chunkWidth) * Chunk.chunkWidth;
-            int chunkPosZ = Mathf.FloorToInt(z / Chunk.chunkWidth) * Chunk.chunkWidth;
-
-            return chunks[new ChunkPos(chunkPosX, chunkPosZ)];
-        }
         #endregion
 
         #region // === Ticks === \\
@@ -430,13 +398,15 @@ namespace VoxelTG.Terrain
         /// <param name="chunk">target chunk</param>
         /// <param name="blockPos">local block position</param>
         /// <param name="ticks">delay (in ticks)</param>
-        public static void ScheduleUpdate(Chunk chunk, BlockPosition blockPos, int ticks)
+        public static bool ScheduleUpdate(Chunk chunk, BlockPosition blockPos, int ticks, params int[] args)
         {
             if (!updatePositions.Contains(blockPos))
             {
-                tickQueue.Add(new TickQueueData(chunk, blockPos, ticks));
+                tickQueue.Add(new TickQueueData(chunk, blockPos, ticks, args));
                 updatePositions.Add(blockPos);
+                return true;
             }
+            return false;
         }
 
         /// <summary>
@@ -445,16 +415,17 @@ namespace VoxelTG.Terrain
         /// </summary>
         /// <param name="chunk">target chunk</param>
         /// <param name="blockPos">local block position</param>
-        /// <param name="minTicks">minimum delay (in ticks)</param>
-        /// <param name="maxTicks">maximum delay (in ticks)</param>
-        public static void ScheduleUpdate(Chunk chunk, BlockPosition blockPos, int minTicks, int maxTicks)
+        /// <param name="ticks">minimum(x) and maximum(y) delay (in ticks)</param>
+        public static bool ScheduleUpdate(Chunk chunk, BlockPosition blockPos, int2 ticks, params int[] args)
         {
             if (!updatePositions.Contains(blockPos))
             {
-                int ticks = UnityEngine.Random.Range(minTicks, maxTicks);
-                tickQueue.Add(new TickQueueData(chunk, blockPos, ticks));
+                int tick = UnityEngine.Random.Range(ticks.x, ticks.y);
+                tickQueue.Add(new TickQueueData(chunk, blockPos, tick, args));
                 updatePositions.Add(blockPos);
+                return true;
             }
+            return false;
         }
 
         /// <summary>
@@ -467,31 +438,65 @@ namespace VoxelTG.Terrain
                 tick.ticks -= 1;
                 if (tick.ticks <= 0)
                 {
-                    tick.chunk.OnBlockUpdate(tick.blockPos);
-
                     tickQueue.Remove(tick);
                     updatePositions.Remove(tick.blockPos);
+                    
+                    tick.chunk.OnBlockUpdate(tick.blockPos, tick.args);
                 }
             }
         }
 
         #endregion
-    }
+        
+        #region // === Utils === \\
 
-
-    public struct ChunkPos
-    {
-        public int x, z;
-        public ChunkPos(int x, int z)
+        /// <summary>
+        /// Convert local chunk position to world position
+        /// </summary>
+        /// <param name="cp">chunk position</param>
+        /// <param name="x">local position x</param>
+        /// <param name="y">local position y</param>
+        /// <param name="z">local position z</param>
+        /// <returns>World block position</returns>
+        public static int3 LocalToWorldPositionInt3(Vector2Int cp, int x, int y, int z)
         {
-            this.x = x;
-            this.z = z;
+            return new int3(x + cp.x - 1, y, z + cp.y - 1);
         }
 
-        public override string ToString()
+        /// <summary>
+        /// Convert local chunk position to world position
+        /// </summary>
+        /// <param name="cp">chunk position</param>
+        /// <param name="position">local block position</param>
+        /// <returns></returns>
+        public static int3 LocalToWorldPositionInt3(Vector2Int cp, BlockPosition position)
         {
-            return "{" + x + ", " + z + "}";
+            return new int3(position.x + cp.x - 1, position.y, position.z + cp.y - 1);
         }
+
+        /// <summary>
+        /// Convert local chunk position to world position
+        /// </summary>
+        /// <param name="cp">chunk position</param>
+        /// <param name="position">local block position</param>
+        /// <returns></returns>
+        public static Vector3Int LocalToWorldPositionVector3Int(Vector2Int cp, BlockPosition position)
+        {
+            return new Vector3Int(position.x + cp.x - 1, position.y, position.z + cp.y - 1);
+        }
+
+        /// <summary>
+        /// Convert local chunk position to world position
+        /// </summary>
+        /// <param name="cp">chunk position</param>
+        /// <param name="position">local block position</param>
+        /// <returns></returns>
+        public static int3 LocalToWorldPositionInt3(Vector2Int cp, int3 position)
+        {
+            return new int3(position.x + cp.x - 1, position.y, position.z + cp.y - 1);
+        }
+
+        #endregion
     }
 
     public struct MeshBakeData

@@ -62,13 +62,17 @@ public class PlayerMovement : MonoBehaviour
         int y = _currentPosition.y;
         int z = _currentPosition.z;
 
-        if (!currentChunk || x - currentChunk.chunkPos.x > 16 || x - currentChunk.chunkPos.x < 1 || z - currentChunk.chunkPos.z > 16 || z - currentChunk.chunkPos.z < 1)
+        if (!currentChunk                                           || 
+            x - currentChunk.chunkPos.x > WorldSettings.chunkWidth  ||
+            x - currentChunk.chunkPos.x < 1                         ||
+            z - currentChunk.chunkPos.y > WorldSettings.chunkWidth  ||
+            z - currentChunk.chunkPos.y < 1)
         {
             currentChunk = World.GetChunk(x, z);
         }
 
         int bix = x - currentChunk.chunkPos.x;
-        int biz = z - currentChunk.chunkPos.z;
+        int biz = z - currentChunk.chunkPos.y;
 
         string debugText = string.Empty;
         debugText += $"x:{x}, y:{y}, z:{z}\n";
@@ -82,7 +86,6 @@ public class PlayerMovement : MonoBehaviour
         DebugUI.Instance?.SetDebugText(debugText);
 
         CheckWater();
-
     }
 
     private void CheckWater()
