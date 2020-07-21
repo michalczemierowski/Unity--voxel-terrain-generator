@@ -58,6 +58,10 @@ namespace VoxelTG.Blocks.Listeners
                 data.chunk.AddParameterToList(new BlockParameter(neighbours[BlockFace.BOTTOM].position, ParameterType.WATER_SOURCE_DISTANCE), 8);
                 data.chunk.AddBlockToBuildList(new BlockData(BlockType.WATER, neighbours[BlockFace.BOTTOM].position));
             }
+            else if(belowBlock == BlockType.WATER)
+            {
+                data.chunk.AddParameterToList(new BlockParameter(neighbours[BlockFace.BOTTOM].position, ParameterType.WATER_SOURCE_DISTANCE), 8);
+            }
         }
     }
 }

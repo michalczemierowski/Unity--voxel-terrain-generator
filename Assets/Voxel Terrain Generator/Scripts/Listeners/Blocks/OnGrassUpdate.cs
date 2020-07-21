@@ -31,11 +31,11 @@ namespace VoxelTG.Blocks.Listeners
 
         public void OnBlockDestroy(BlockEventData data, params int[] args)
         {
-            BlockPosition up = data.position + BlockPosition.up;
-            if (data.chunk.GetBlock(up) == BlockType.GRASS)
+            BlockPosition above = data.position.Above();
+            if (data.chunk.GetBlock(above) == BlockType.GRASS)
             {
-                data.chunk.AddBlockToBuildList(new BlockData(BlockType.AIR, data.position + BlockPosition.up));
-                ParticleManager.InstantiateBlockParticle(BlockType.GRASS, World.LocalToWorldPositionVector3Int(data.chunk.chunkPos, up));
+                data.chunk.AddBlockToBuildList(new BlockData(BlockType.AIR, above));
+                ParticleManager.InstantiateBlockDestroyParticle(ParticleType.BLOCK_DESTROY_PARTICLE, Utils.LocalToWorldPositionVector3Int(data.chunk.chunkPos, above), BlockType.GRASS);
             }
         }
     }

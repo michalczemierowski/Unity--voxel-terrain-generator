@@ -21,7 +21,7 @@ namespace VoxelTG.Blocks.Listeners
         public void OnBlockDestroy(BlockEventData data, params int[] args)
         {
             BlockType type = data.type == BlockType.GRASS_BLOCK ? BlockType.DIRT : data.type;
-            ParticleManager.InstantiateBlockParticle(type, World.LocalToWorldPositionVector3Int(data.chunk.chunkPos, data.position));
+            ParticleManager.InstantiateBlockDestroyParticle(ParticleType.BLOCK_DESTROY_PARTICLE, Utils.LocalToWorldPositionVector3Int(data.chunk.chunkPos, data.position), type);
         }
     }
 }

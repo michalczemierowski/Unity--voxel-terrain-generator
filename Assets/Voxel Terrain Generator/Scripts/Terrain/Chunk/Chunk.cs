@@ -7,7 +7,6 @@ using UnityEngine;
 using VoxelTG.Jobs;
 using VoxelTG.Terrain.Blocks;
 using VoxelTG.Terrain.Chunks;
-// use WorldSettings variables
 using static VoxelTG.Terrain.WorldSettings;
 
 /*
@@ -151,7 +150,7 @@ namespace VoxelTG.Terrain
 
         public static bool IsPositionInRange(int x, int y, int z)
         {
-            return x > 0 && y >= 0 && z > 0 && x < chunkWidth + 1 && z < chunkWidth + 1 && y <= chunkHeight;
+            return x > 0 && y >= 0 && z > 0 && x <= chunkWidth && z <= chunkWidth && y <= chunkHeight;
         }
 
         #endregion
@@ -228,8 +227,8 @@ namespace VoxelTG.Terrain
 
         public void ApplyMesh()
         {
-            Mesh mesh = blockMeshFilter.mesh;
-            mesh.Clear();
+            Mesh blockMesh = blockMeshFilter.mesh;
+            blockMesh.Clear();
 
             Mesh liquidMesh = liquidMeshFilter.mesh;
             liquidMesh.Clear();
@@ -238,9 +237,9 @@ namespace VoxelTG.Terrain
             plantsMesh.Clear();
 
             // blocks
-            mesh.SetVertices<float3>(blockVerticles);
-            mesh.SetTriangles(blockTriangles.ToArray(), 0, false);
-            mesh.SetUVs<float2>(0, blockUVs);
+            blockMesh.SetVertices<float3>(blockVerticles);
+            blockMesh.SetTriangles(blockTriangles.ToArray(), 0, false);
+            blockMesh.SetUVs<float2>(0, blockUVs);
 
             // liquids
             liquidMesh.SetVertices<float3>(liquidVerticles);
@@ -253,12 +252,12 @@ namespace VoxelTG.Terrain
             plantsMesh.SetUVs<float2>(0, plantsUVs);
 
             //mesh.RecalculateNormals();
-            blockMeshFilter.mesh = mesh;
+            blockMeshFilter.mesh = blockMesh;
 
             // bake mesh immediately if player is near
             Vector2 playerPosition = new Vector2(World.player.transform.position.x, World.player.transform.position.z);
             if (Vector2.Distance(new Vector2(chunkPos.x, chunkPos.y), playerPosition) < fixedChunkWidth * 2)
-                blockMeshCollider.sharedMesh = mesh;
+                blockMeshCollider.sharedMesh = blockMesh;
             else
                 World.SchedulePhysicsBake(this);
 
@@ -444,7 +443,7 @@ namespace VoxelTG.Terrain
                 }
             }
 
-            NativeArray<JobHandle> njobHandles = new NativeArray<JobHandle>(jobHandles.ToArray(), Allocator.Temp);
+            NativeArray<JobHandle> njobHandles = new NativeArray<JobHandle>(jobHandles.ToArray(), Allocator.TempJob);
             JobHandle.CompleteAll(njobHandles);
 
             // build meshes
@@ -555,7 +554,6 @@ namespace VoxelTG.Terrain
 
             bool[] neighboursToBuild = new bool[4];
 
-            //Vector3Int[] positionsToUpdate = new Vector3Int[6];
             for (int i = 0; i < blockDatas.Length; i++)
             {
                 int x = blockDatas[i].position.x;
@@ -564,7 +562,6 @@ namespace VoxelTG.Terrain
 
                 BlockType blockType = blockDatas[i].blockType;
                 SetBlockWithoutRebuild(x, y, z, blockType, destroy);
-                //blocks[Utils.BlockPosition3DtoIndex(x, y, z)] = blockType;
 
                 // check neighbours
                 if (x == 16)
@@ -605,7 +602,7 @@ namespace VoxelTG.Terrain
                     }
                 }
 
-                //UpdateNeighbourBlocks(new BlockPosition(x, y, z), 10);
+                UpdateNeighbourBlocks(new BlockPosition(x, y, z), 10);
             }
 
             // add current chunk
@@ -736,7 +733,6 @@ namespace VoxelTG.Terrain
             BlockData[] datas = blocksToBuild.ToArray();
             blocksToBuild.Clear();
             SetBlocks(datas);
-            // TODO: GC alloc
         }
 
         #endregion

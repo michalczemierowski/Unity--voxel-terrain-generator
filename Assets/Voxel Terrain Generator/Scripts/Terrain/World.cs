@@ -72,6 +72,8 @@ namespace VoxelTG.Terrain
             else
                 Instance = this;
 
+            player = GameObject.FindGameObjectWithTag("Player").transform;
+
             seed = 1337;// UnityEngine.Random.Range(1000000000, int.MaxValue);
             baseNoise = new FastNoise(seed, 0.005f);
 
@@ -137,7 +139,6 @@ namespace VoxelTG.Terrain
                 OnBlockDestroyEvents.Add((BlockType)i, OnBlockDestroyEvent);
             }
         }
-
         private void InitializeListeners()
         {
             foreach (IBlockUpdateListener listener in GetComponentsInChildren<IBlockUpdateListener>())
@@ -171,7 +172,6 @@ namespace VoxelTG.Terrain
         {
             OnBlockUpdateEvents[block.type]?.Invoke(block, neighbours, args);
         }
-
         public static void InvokeBlockDestroyEvent(BlockEventData block, params int[] args)
         {
             OnBlockDestroyEvents[block.type]?.Invoke(block, args);
@@ -441,59 +441,9 @@ namespace VoxelTG.Terrain
                     tickQueue.Remove(tick);
                     updatePositions.Remove(tick.blockPos);
                     
-                    tick.chunk.OnBlockUpdate(tick.blockPos, tick.args);
+                    tick.chunk?.OnBlockUpdate(tick.blockPos, tick.args);
                 }
             }
-        }
-
-        #endregion
-        
-        #region // === Utils === \\
-
-        /// <summary>
-        /// Convert local chunk position to world position
-        /// </summary>
-        /// <param name="cp">chunk position</param>
-        /// <param name="x">local position x</param>
-        /// <param name="y">local position y</param>
-        /// <param name="z">local position z</param>
-        /// <returns>World block position</returns>
-        public static int3 LocalToWorldPositionInt3(Vector2Int cp, int x, int y, int z)
-        {
-            return new int3(x + cp.x - 1, y, z + cp.y - 1);
-        }
-
-        /// <summary>
-        /// Convert local chunk position to world position
-        /// </summary>
-        /// <param name="cp">chunk position</param>
-        /// <param name="position">local block position</param>
-        /// <returns></returns>
-        public static int3 LocalToWorldPositionInt3(Vector2Int cp, BlockPosition position)
-        {
-            return new int3(position.x + cp.x - 1, position.y, position.z + cp.y - 1);
-        }
-
-        /// <summary>
-        /// Convert local chunk position to world position
-        /// </summary>
-        /// <param name="cp">chunk position</param>
-        /// <param name="position">local block position</param>
-        /// <returns></returns>
-        public static Vector3Int LocalToWorldPositionVector3Int(Vector2Int cp, BlockPosition position)
-        {
-            return new Vector3Int(position.x + cp.x - 1, position.y, position.z + cp.y - 1);
-        }
-
-        /// <summary>
-        /// Convert local chunk position to world position
-        /// </summary>
-        /// <param name="cp">chunk position</param>
-        /// <param name="position">local block position</param>
-        /// <returns></returns>
-        public static int3 LocalToWorldPositionInt3(Vector2Int cp, int3 position)
-        {
-            return new int3(position.x + cp.x - 1, position.y, position.z + cp.y - 1);
         }
 
         #endregion

@@ -27,6 +27,8 @@ public class Inventory : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (Input.GetKeyDown(KeyCode.Alpha0))
+            currentBlockType = -1;
         for (int i = 0; i < blockTypes.Length; i++)
         {
             if (Input.GetKeyDown((KeyCode)49 + i))
@@ -36,6 +38,8 @@ public class Inventory : MonoBehaviour
 
     public BlockType GetCurrentBlock()
     {
+        if (currentBlockType < 0)
+            return BlockType.AIR;
         return blockTypes[currentBlockType];
     }
 }

@@ -10,21 +10,88 @@ using VoxelTG.Terrain.Blocks;
 */
 public class TerrainModifier : MonoBehaviour
 {
-    public LayerMask groundLayer;
+    [SerializeField] private LayerMask groundLayer;
+    [SerializeField] private Inventory inventory;
 
-    public Inventory inv;
+    public float maxInteractDistance { get; set; } = 8;
+    public bool down { get; set; } = true;
 
-    public float maxDist = 8;
-    public bool down = false;
+    private Transform cameraTransform;
+
+    private void Start()
+    {
+        cameraTransform = Camera.main.transform;
+    }
+
+    private void Update()
+    {
+        HandleInput();
+    }
+
+    private void HandleInput()
+    {
+        bool inputDestroy = down ? Input.GetMouseButtonDown(0) : Input.GetMouseButton(0);
+        bool inputPlace = down ? Input.GetMouseButtonDown(1) : Input.GetMouseButton(1);
+
+        // experimental
+        if (Input.GetKeyDown(KeyCode.F))
+            DestroySphere();
+
+        if (inputDestroy || inputPlace)
+        {
+            RaycastHit hitInfo;
+            // if ray hits terrain
+            if (Physics.Raycast(cameraTransform.position, cameraTransform.forward, out hitInfo, maxInteractDistance, groundLayer))
+            {
+                Vector3 pointInTargetBlock;
+
+                // move towards block position
+                if (inputDestroy)
+                    pointInTargetBlock = hitInfo.point + cameraTransform.forward * .01f;
+                else
+                    pointInTargetBlock = hitInfo.point - cameraTransform.forward * .01f;
+
+                // get block & chunk
+                int3 globalBlockPosition = new int3(Mathf.FloorToInt(pointInTargetBlock.x) + 1, Mathf.FloorToInt(pointInTargetBlock.y), Mathf.FloorToInt(pointInTargetBlock.z) + 1);
+                BlockPosition blockPosition = new BlockPosition(globalBlockPosition);
+                Chunk chunk = World.GetChunk(globalBlockPosition.x, globalBlockPosition.z);
+
+                if (inputDestroy)
+                {
+                    // clear block parameters and remove block
+                    chunk.ClearParameters(blockPosition);
+                    chunk.SetBlock(blockPosition, BlockType.AIR, true);
+                }
+                else if (inputPlace)
+                {
+                    // schedule update if below block is grass block (if above block is solid : grass_block -> dirt_block)
+                    if (chunk.GetBlock(blockPosition.Below()) == BlockType.GRASS_BLOCK)
+                        World.ScheduleUpdate(chunk, blockPosition.Below(), 10, 50);
+
+                    // get selected block type from inventory
+                    Block block = WorldData.GetBlock(inventory.GetCurrentBlock());
+
+                    if (block.shape == BlockShape.HALF_BLOCK)
+                        chunk.SetParameters(new BlockParameter(blockPosition, ParameterType.ROTATION), (short)(Mathf.RoundToInt(cameraTransform.eulerAngles.y / 90) * 90));
+                    if (block.type == BlockType.WATER)
+                        chunk.SetParameters(new BlockParameter(blockPosition, ParameterType.WATER_SOURCE_DISTANCE), 8);
+
+                    chunk.SetBlock(blockPosition, inventory.GetCurrentBlock());
+                }
+            }
+        }
+    }
+
+    #region experimental
 
     private void DestroySphere()
     {
         RaycastHit hitInfo;
-        if (Physics.Raycast(transform.position, transform.forward, out hitInfo, maxDist, groundLayer))
+        if (Physics.Raycast(cameraTransform.position, cameraTransform.forward, out hitInfo, maxInteractDistance, groundLayer))
         {
             Vector3Int pointInTargetBlock;
 
-                pointInTargetBlock = Vector3Int.FloorToInt(hitInfo.point + transform.forward * .01f);//move a little inside the block
+            pointInTargetBlock = Vector3Int.FloorToInt(hitInfo.point + cameraTransform.forward * .01f);//move a little inside the block
 
             Vector3Int blockPosition = new Vector3Int(pointInTargetBlock.x + 1, pointInTargetBlock.y, pointInTargetBlock.z + 1);
 
@@ -44,15 +111,16 @@ public class TerrainModifier : MonoBehaviour
                 }
             }
 
+            BlockType type = inventory.GetCurrentBlock();
             Dictionary<Chunk, List<BlockData>> keyValuePairs = new Dictionary<Chunk, List<BlockData>>();
             foreach (var pos in positions)
             {
                 Chunk chunk = World.GetChunk(pos.x, pos.z);
-                if(!keyValuePairs.ContainsKey(chunk))
+                if (!keyValuePairs.ContainsKey(chunk))
                     keyValuePairs.Add(chunk, new List<BlockData>());
 
                 BlockPosition blockPos = new BlockPosition(pos.x, pos.y, pos.z);
-                keyValuePairs[chunk].Add(new BlockData(BlockType.AIR, blockPos));
+                keyValuePairs[chunk].Add(new BlockData(type, blockPos));
                 //chunk.ClearParameters(blockPos);
             }
 
@@ -63,54 +131,5 @@ public class TerrainModifier : MonoBehaviour
         }
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-        bool leftClick = down ? Input.GetMouseButtonDown(0) : Input.GetMouseButton(0);
-        bool rightClick = down ? Input.GetMouseButtonDown(1) : Input.GetMouseButton(1);
-
-        if (Input.GetKeyDown(KeyCode.F))
-            DestroySphere();
-
-        if (leftClick || rightClick)
-        { 
-            RaycastHit hitInfo;
-            if (Physics.Raycast(transform.position, transform.forward, out hitInfo, maxDist, groundLayer))
-            {
-                Vector3 pointInTargetBlock;
-
-                //destroy
-                if (leftClick)
-                    pointInTargetBlock = hitInfo.point + transform.forward * .01f;//move a little inside the block
-                else
-                    pointInTargetBlock = hitInfo.point - transform.forward * .01f;
-
-                BlockPosition blockPosition = new BlockPosition(Mathf.FloorToInt(pointInTargetBlock.x) + 1, Mathf.FloorToInt(pointInTargetBlock.y), Mathf.FloorToInt(pointInTargetBlock.z) + 1);
-                Chunk tc = World.GetChunk(pointInTargetBlock.x, pointInTargetBlock.z);
-
-                //replace block with air
-                if (leftClick)
-                {
-                    tc.ClearParameters(blockPosition);
-                    tc.SetBlock(blockPosition, BlockType.AIR, true);
-                }
-                else if (rightClick)
-                {
-                    // schedule update if below block is grass block (if above block is solid : grass_block -> dirt_block)
-                    // TODO: checks
-                    if (tc.GetBlock(blockPosition.Below()) == BlockType.GRASS_BLOCK)
-                        World.ScheduleUpdate(tc, blockPosition.Below(), 10, 50);
-
-                    Block block = WorldData.GetBlock(inv.GetCurrentBlock());
-
-                    if (block.shape == BlockShape.HALF_BLOCK)
-                        tc.SetParameters(new BlockParameter(blockPosition, ParameterType.ROTATION), (short)(Mathf.RoundToInt(transform.eulerAngles.y / 90) * 90));
-                    if (block.type == BlockType.WATER)
-                        tc.SetParameters(new BlockParameter(blockPosition, ParameterType.WATER_SOURCE_DISTANCE), (short)8);
-
-                    tc.SetBlock(blockPosition, inv.GetCurrentBlock());
-                }
-            }
-        }
-    }
+    #endregion
 }

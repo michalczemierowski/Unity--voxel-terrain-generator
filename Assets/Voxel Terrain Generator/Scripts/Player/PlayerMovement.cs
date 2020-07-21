@@ -12,21 +12,28 @@ public class PlayerMovement : MonoBehaviour
 
     private float defaultSpeed;
     public float speed = 6.0f;
+    public float acceleration = 10f;
+    public float decleration = 20f;
     public float jumpSpeed = 8.0f;
     public float jumpHeight = 3f;
     public float gravity = -9.81f;
     public float waterSpeedMultipler = 0.5f;
 
+    private float _speed;
+
     public Transform groundCheck;
-    public float groundDistance = .4f;
+    public Vector3 groundDistance = new Vector3(0.4f, 0.4f, 0.4f);
     public LayerMask groundMask;
+
+    [Header("Components")]
+    [SerializeField] private TerrainModifier m_TerrainModifier;
+    [SerializeField] private MouseLook m_MouseLook;
 
     [Space(20)]
     [SerializeField] private GameObject waterImage;
 
     private Rigidbody m_Rigidbody;
     private BoxCollider m_BoxCollider;
-    private Camera m_Camera;
 
     private bool isInWater;
     private bool isGrounded;
@@ -62,10 +69,10 @@ public class PlayerMovement : MonoBehaviour
         int y = _currentPosition.y;
         int z = _currentPosition.z;
 
-        if (!currentChunk                                           || 
-            x - currentChunk.chunkPos.x > WorldSettings.chunkWidth  ||
-            x - currentChunk.chunkPos.x < 1                         ||
-            z - currentChunk.chunkPos.y > WorldSettings.chunkWidth  ||
+        if (!currentChunk ||
+            x - currentChunk.chunkPos.x > WorldSettings.chunkWidth ||
+            x - currentChunk.chunkPos.x < 1 ||
+            z - currentChunk.chunkPos.y > WorldSettings.chunkWidth ||
             z - currentChunk.chunkPos.y < 1)
         {
             currentChunk = World.GetChunk(x, z);
@@ -107,85 +114,102 @@ public class PlayerMovement : MonoBehaviour
             speed = defaultSpeed;
     }
 
-    private void Awake()
-    {
-        World.player = transform;
-    }
-
     // Start is called before the first frame update
     void Start()
     {
         m_Rigidbody = GetComponent<Rigidbody>();
         m_BoxCollider = GetComponent<BoxCollider>();
-        m_Camera = Camera.main;
 
         defaultSpeed = speed;
+
+        currentPosition = new Vector3Int(Mathf.CeilToInt(transform.position.x), Mathf.RoundToInt(transform.position.y), Mathf.CeilToInt(transform.position.z));
     }
 
     void Update()
+    {
+        HandleInput();
+    }
+
+    private void FixedUpdate()
+    {
+        if (fly)
+            HandleFlying();
+        else
+        {
+            HandleWalking();
+            float y = m_Rigidbody.velocity.y + (gravity * Time.fixedDeltaTime);
+            m_Rigidbody.velocity = new Vector3(m_Rigidbody.velocity.x, y, m_Rigidbody.velocity.z);
+        }
+
+
+    }
+
+    private void HandleInput()
     {
         if (Input.GetKeyDown(KeyCode.Q))
             SwitchFlying();
 
         float horizontal = Input.GetAxis("Horizontal");
         float vertical = Input.GetAxis("Vertical");
-        moveVector = new Vector2(horizontal * speed, vertical * speed);
 
-        isGrounded = Physics.CheckSphere(groundCheck.position, groundDistance, groundMask);
+        moveVector = new Vector2(horizontal, vertical).normalized;
+
+        float acc = moveVector.magnitude > 0 ? acceleration : decleration;
+        _speed = Mathf.MoveTowards(_speed, moveVector.magnitude * speed, acc * Time.deltaTime);
+        moveVector *= _speed;
+
+        isGrounded = Physics.CheckBox(groundCheck.position, groundDistance, Quaternion.identity, groundMask);
 
         if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
-        {
             jump = true;
-        }
     }
 
-    private void FixedUpdate()
+    private void HandleWalking()
     {
-        if (fly)
+        Vector3 npos = (transform.forward * moveVector.y) + (transform.right * moveVector.x);
+
+        m_Rigidbody.velocity = new Vector3(npos.x, m_Rigidbody.velocity.y, npos.z);
+        if (isInWater)
         {
-            Vector3 npos = (transform.position + (transform.forward * moveVector.y * Time.deltaTime + transform.right * moveVector.x * Time.deltaTime));
             if (Input.GetKey(KeyCode.Space))
-                npos += Vector3.up * speed * Time.deltaTime;
-            else if (Input.GetKey(KeyCode.LeftShift))
-                npos += Vector3.down * speed * Time.deltaTime;
-
-            transform.position = npos;
+                m_Rigidbody.velocity = new Vector3(m_Rigidbody.velocity.x, 1, m_Rigidbody.velocity.z);//  .MovePosition(transform.position + (transform.up * speed * Time.deltaTime));
         }
-        else
+        else if (jump)
         {
-            Vector3 npos = (transform.forward * moveVector.y) + (transform.right * moveVector.x);
-            m_Rigidbody.velocity = new Vector3(npos.x, m_Rigidbody.velocity.y, npos.z);
-            if (isInWater)
-            {
-                if (Input.GetKey(KeyCode.Space))
-                    m_Rigidbody.velocity = new Vector3(m_Rigidbody.velocity.x, 1, m_Rigidbody.velocity.z);//  .MovePosition(transform.position + (transform.up * speed * Time.deltaTime));
-            }
-            else if (jump)
-            {
-                m_Rigidbody.AddForce(new Vector3(0, Mathf.Sqrt(-2 * gravity * jumpHeight), 0), ForceMode.VelocityChange);
-                jump = false;
-            }
-
-            // ceil x, round y, ceil z
-            currentPosition = new Vector3Int(Mathf.CeilToInt(transform.position.x), Mathf.RoundToInt(transform.position.y), Mathf.CeilToInt(transform.position.z));
+            m_Rigidbody.AddForce(new Vector3(0, Mathf.Sqrt(-2 * gravity * jumpHeight), 0), ForceMode.VelocityChange);
+            jump = false;
         }
+
+        // ceil x, round y, ceil z
+        currentPosition = new Vector3Int(Mathf.CeilToInt(transform.position.x), Mathf.RoundToInt(transform.position.y), Mathf.CeilToInt(transform.position.z));
+    }
+
+    private void HandleFlying()
+    {
+        Vector3 npos = (transform.position + (transform.forward * moveVector.y * Time.deltaTime + transform.right * moveVector.x * Time.deltaTime));
+        if (Input.GetKey(KeyCode.Space))
+            npos += Vector3.up * speed * Time.deltaTime;
+        else if (Input.GetKey(KeyCode.LeftShift))
+            npos += Vector3.down * speed * Time.deltaTime;
+
+        transform.position = npos;
     }
 
     private void SwitchFlying()
     {
-        if(fly)
+        if (fly)
         {
             m_Rigidbody.isKinematic = false;
             m_BoxCollider.enabled = true;
-            GetComponentInChildren<TerrainModifier>().maxDist /= 10;
-            GetComponentInChildren<TerrainModifier>().down = true;
+            m_TerrainModifier.maxInteractDistance /= 10;
+            m_TerrainModifier.down = true;
         }
         else
         {
             m_Rigidbody.isKinematic = true;
             m_BoxCollider.enabled = false;
-            GetComponentInChildren<TerrainModifier>().maxDist *= 10;
-            GetComponentInChildren<TerrainModifier>().down = false;
+            m_TerrainModifier.maxInteractDistance *= 10;
+            m_TerrainModifier.down = false;
         }
         fly = !fly;
     }
