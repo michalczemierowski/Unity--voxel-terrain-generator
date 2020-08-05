@@ -15,13 +15,14 @@ namespace VoxelTG.Blocks.Listeners
     {
         public BlockType[] GetBlockTypes()
         {
-            return (BlockType[])System.Enum.GetValues(typeof(BlockType));
+            // register this event listener to all blocks
+            return Utils.GetAllBlockTypes();
         }
 
         public void OnBlockDestroy(BlockEventData data, params int[] args)
         {
-            BlockType type = data.type == BlockType.GRASS_BLOCK ? BlockType.DIRT : data.type;
-            ParticleManager.InstantiateBlockDestroyParticle(ParticleType.BLOCK_DESTROY_PARTICLE, Utils.LocalToWorldPositionVector3Int(data.chunk.chunkPos, data.position), type);
+            BlockType type = data.blockType == BlockType.GRASS_BLOCK ? BlockType.DIRT : data.blockType;
+            ParticleManager.InstantiateBlockDestroyParticle(ParticleType.BLOCK_DESTROY_PARTICLE, data.WorldPosition, type);
         }
     }
 }

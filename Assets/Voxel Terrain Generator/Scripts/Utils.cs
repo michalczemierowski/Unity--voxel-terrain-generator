@@ -68,7 +68,7 @@ namespace VoxelTG
         /// </summary>
         /// <param name="cp">chunk position</param>
         /// <param name="position">local block position</param>
-        /// <returns></returns>
+        /// <returns>Vector3Int world position</returns>
         public static Vector3Int LocalToWorldPositionVector3Int(Vector2Int cp, BlockPosition position)
         {
             return new Vector3Int(position.x + cp.x - 1, position.y, position.z + cp.y - 1);
@@ -79,10 +79,19 @@ namespace VoxelTG
         /// </summary>
         /// <param name="cp">chunk position</param>
         /// <param name="position">local block position</param>
-        /// <returns></returns>
+        /// <returns>int3 world position</returns>
         public static int3 LocalToWorldPositionInt3(Vector2Int cp, int3 position)
         {
             return new int3(position.x + cp.x - 1, position.y, position.z + cp.y - 1);
+        }
+
+        /// <summary>
+        /// Get all block types
+        /// </summary>
+        /// <returns>Array containing all possible block types</returns>
+        public static BlockType[] GetAllBlockTypes()
+        {
+            return (BlockType[])System.Enum.GetValues(typeof(BlockType));
         }
     }
 }

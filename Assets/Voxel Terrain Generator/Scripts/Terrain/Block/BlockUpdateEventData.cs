@@ -1,4 +1,6 @@
-﻿/*
+﻿using UnityEngine;
+
+/*
  * Michał Czemierowski
  * https://github.com/michalczemierowski
 */
@@ -6,15 +8,19 @@ namespace VoxelTG.Terrain.Blocks
 {
     public struct BlockEventData
     {
-        public Chunk chunk;
-        public BlockPosition position;
-        public BlockType type;
+        public readonly Chunk chunk;
+        public readonly BlockType blockType;
 
-        public BlockEventData(Chunk chunk, BlockPosition blockPos, BlockType blockType)
+        public readonly BlockPosition LocalPosition;
+        public readonly Vector3Int WorldPosition;
+
+        public BlockEventData(Chunk chunk, BlockPosition localPosition, BlockType blockType)
         {
             this.chunk = chunk;
-            this.position = blockPos;
-            this.type = blockType;
+            this.LocalPosition = localPosition;
+            this.blockType = blockType;
+
+            this.WorldPosition = Utils.LocalToWorldPositionVector3Int(chunk.chunkPos, localPosition);
         }
     }
 }

@@ -170,11 +170,11 @@ namespace VoxelTG.Terrain
 
         public static void InvokeBlockUpdateEvent(BlockEventData block, Dictionary<BlockFace, BlockEventData> neighbours, params int[] args)
         {
-            OnBlockUpdateEvents[block.type]?.Invoke(block, neighbours, args);
+            OnBlockUpdateEvents[block.blockType]?.Invoke(block, neighbours, args);
         }
         public static void InvokeBlockDestroyEvent(BlockEventData block, params int[] args)
         {
-            OnBlockDestroyEvents[block.type]?.Invoke(block, args);
+            OnBlockDestroyEvents[block.blockType]?.Invoke(block, args);
         }
 
         #endregion

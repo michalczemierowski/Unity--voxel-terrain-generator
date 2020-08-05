@@ -20,9 +20,9 @@ namespace VoxelTG.Blocks.Listeners
         // TODO: rework
         public void OnBlockUpdate(BlockEventData data, Dictionary<BlockFace, BlockEventData> neighbours, params int[] args)
         {
-            short sourceDistance = data.chunk.GetParameterValue(new BlockParameter(data.position, ParameterType.WATER_SOURCE_DISTANCE));
+            short sourceDistance = data.chunk.GetParameterValue(new BlockParameter(data.LocalPosition, ParameterType.WATER_SOURCE_DISTANCE));
 
-            BlockType belowBlock = neighbours[BlockFace.BOTTOM].type;
+            BlockType belowBlock = neighbours[BlockFace.BOTTOM].blockType;
             if (WorldData.GetBlockState(belowBlock) == BlockState.SOLID)
             {
                 for (int i = 2; i < 6; i++)
@@ -30,9 +30,9 @@ namespace VoxelTG.Blocks.Listeners
                     BlockEventData blockUpdateEventData = neighbours[(BlockFace)i];
                     Chunk chunk = blockUpdateEventData.chunk;
 
-                    BlockParameter param = new BlockParameter(blockUpdateEventData.position, ParameterType.WATER_SOURCE_DISTANCE);
+                    BlockParameter param = new BlockParameter(blockUpdateEventData.LocalPosition, ParameterType.WATER_SOURCE_DISTANCE);
 
-                    int index = Utils.BlockPosition3DtoIndex(blockUpdateEventData.position);
+                    int index = Utils.BlockPosition3DtoIndex(blockUpdateEventData.LocalPosition);
                     BlockType type = chunk.blocks[index];
 
                     if (sourceDistance > 0)
@@ -40,14 +40,14 @@ namespace VoxelTG.Blocks.Listeners
                         if (type == BlockType.AIR || WorldData.GetBlockState(type) == BlockState.PLANTS)
                         {
                             chunk.AddParameterToList(param, (short)(sourceDistance - 1));
-                            chunk.AddBlockToBuildList(new BlockData(BlockType.WATER, blockUpdateEventData.position));
+                            chunk.AddBlockToBuildList(new BlockData(BlockType.WATER, blockUpdateEventData.LocalPosition));
                         }
                         if (type == BlockType.WATER)
                         {
                             if (chunk.GetParameterValue(param) < sourceDistance - 1)
                             {
                                 chunk.AddParameterToList(param, (short)(sourceDistance - 1));
-                                chunk.AddBlockToBuildList(new BlockData(BlockType.WATER, blockUpdateEventData.position));
+                                chunk.AddBlockToBuildList(new BlockData(BlockType.WATER, blockUpdateEventData.LocalPosition));
                             }
                         }
                     }
@@ -55,12 +55,12 @@ namespace VoxelTG.Blocks.Listeners
             }
             else if (belowBlock == BlockType.AIR || WorldData.GetBlockState(belowBlock) == BlockState.PLANTS)
             {
-                data.chunk.AddParameterToList(new BlockParameter(neighbours[BlockFace.BOTTOM].position, ParameterType.WATER_SOURCE_DISTANCE), 8);
-                data.chunk.AddBlockToBuildList(new BlockData(BlockType.WATER, neighbours[BlockFace.BOTTOM].position));
+                data.chunk.AddParameterToList(new BlockParameter(neighbours[BlockFace.BOTTOM].LocalPosition, ParameterType.WATER_SOURCE_DISTANCE), 8);
+                data.chunk.AddBlockToBuildList(new BlockData(BlockType.WATER, neighbours[BlockFace.BOTTOM].LocalPosition));
             }
             else if(belowBlock == BlockType.WATER)
             {
-                data.chunk.AddParameterToList(new BlockParameter(neighbours[BlockFace.BOTTOM].position, ParameterType.WATER_SOURCE_DISTANCE), 8);
+                data.chunk.AddParameterToList(new BlockParameter(neighbours[BlockFace.BOTTOM].LocalPosition, ParameterType.WATER_SOURCE_DISTANCE), 8);
             }
         }
     }

@@ -31,7 +31,7 @@ namespace VoxelTG.Blocks.Listeners
 
         public void OnBlockDestroy(BlockEventData data, params int[] args)
         {
-            BlockPosition above = data.position.Above();
+            BlockPosition above = data.LocalPosition.Above();
             if (data.chunk.GetBlock(above) == BlockType.GRASS)
             {
                 data.chunk.AddBlockToBuildList(new BlockData(BlockType.AIR, above));
