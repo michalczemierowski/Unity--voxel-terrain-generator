@@ -13,6 +13,9 @@ Features:
 
 # Code examples
 *Easy to configure event listeners*
+
+> IBlockUpdateListener - called when neighbour block is placed/removed
+
 ```csharp
 public class OnGrassBlockUpdate : MonoBehaviour, IBlockUpdateListener
 {
@@ -30,6 +33,26 @@ public class OnGrassBlockUpdate : MonoBehaviour, IBlockUpdateListener
             // replace current block with dirt in next update
             data.chunk.AddBlockToBuildList(data.position, BlockType.DIRT);
         }
+    }
+}
+```
+
+> IBlockArrayDestroyListener - called when block is removed
+
+```csharp
+public class OnAnyDestroy : MonoBehaviour, IBlockArrayDestroyListener
+{
+    public BlockType[] GetBlockTypes()
+    {
+        // register this event listener to all blocks
+        return Utils.GetAllBlockTypes();
+    }
+
+    public void OnBlockDestroy(BlockEventData data, params int[] args)
+    {
+        BlockType type = data.blockType == BlockType.GRASS_BLOCK ? BlockType.DIRT : data.blockType;
+        // instantiate particle at block position
+        ParticleManager.InstantiateBlockDestroyParticle(ParticleType.BLOCK_DESTROY_PARTICLE, data.WorldPosition, type);
     }
 }
 ```
