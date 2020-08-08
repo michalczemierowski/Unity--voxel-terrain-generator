@@ -146,15 +146,6 @@ namespace VoxelTG.Terrain
                 neigbourChunks[3].neigbourChunks[2] = this;
         }
 
-        #region // === Utils === \\
-
-        public static bool IsPositionInRange(int x, int y, int z)
-        {
-            return x > 0 && y >= 0 && z > 0 && x <= chunkWidth && z <= chunkWidth && y <= chunkHeight;
-        }
-
-        #endregion
-
         #region // === Mesh methods === \\
 
         public void BuildMesh(NativeQueue<JobHandle> jobHandles, int xPos, int zPos)
@@ -319,6 +310,11 @@ namespace VoxelTG.Terrain
 
         #region // === Parameters === \\
 
+        /// <summary>
+        /// Set parameter of block
+        /// </summary>
+        /// <param name="parameter">parameter type</param>
+        /// <param name="value">parameter value</param>
         public void SetParameters(BlockParameter parameter, short value)
         {
             if (blockParameters.ContainsKey(parameter))
@@ -327,6 +323,11 @@ namespace VoxelTG.Terrain
                 blockParameters.Add(parameter, value);
         }
 
+        /// <summary>
+        /// Get parameter value
+        /// </summary>
+        /// <param name="parameter">parameter</param>
+        /// <returns>value of parameter</returns>
         public short GetParameterValue(BlockParameter parameter)
         {
             if (blockParameters.ContainsKey(parameter))
@@ -337,14 +338,28 @@ namespace VoxelTG.Terrain
             return 0;
         }
 
+        /// <summary>
+        /// Remove all parameters from block
+        /// </summary>
+        /// <param name="blockPosition">position of block</param>
         public void ClearParameters(BlockPosition blockPosition)
         {
             ClearParameters(blockPosition.ToInt3());
         }
+        /// <summary>
+        /// Remove all parameters from block
+        /// </summary>
+        /// <param name="x">x position of block</param>
+        /// <param name="y">y position of block</param>
+        /// <param name="z">z position of block</param>
         public void ClearParameters(int x, int y, int z)
         {
             ClearParameters(new int3(x, y, z));
         }
+        /// <summary>
+        /// Remove all parameters from block
+        /// </summary>
+        /// <param name="blockPos">position of block</param>
         public void ClearParameters(int3 blockPos)
         {
             BlockParameter key = new BlockParameter(blockPos);
@@ -356,22 +371,66 @@ namespace VoxelTG.Terrain
 
         #region // === Editing methods === \\
 
+        /// <summary>
+        /// Get block at position [don't check if not out of range]
+        /// </summary>
+        /// <param name="blockPos">position of block</param>
+        /// <returns>type of block</returns>
         public BlockType GetBlock(int3 blockPos)
         {
             return blocks[Utils.BlockPosition3DtoIndex(blockPos.x, blockPos.y, blockPos.z)];
         }
+        /// <summary>
+        /// Get block at position [don't check if not out of range]
+        /// </summary>
+        /// <param name="x">x position of block</param>
+        /// <param name="y">y position of block</param>
+        /// <param name="z">z position of block</param>
+        /// <returns>type of block</returns>
         public BlockType GetBlock(int x, int y, int z)
         {
             return blocks[Utils.BlockPosition3DtoIndex(x, y, z)];
         }
+        /// <summary>
+        /// Get block at position [don't check if not out of range]
+        /// </summary>
+        /// <param name="blockPos">position of block</param>
+        /// <returns>type of block</returns>
         public BlockType GetBlock(BlockPosition blockPos)
         {
             return blocks[Utils.BlockPosition3DtoIndex(blockPos.x, blockPos.y, blockPos.z)];
         }
 
+        // TODO: add x,y,z and int3
+        /// <summary>
+        /// Try to get block at position [check if not out of range]
+        /// </summary>
+        /// <param name="blockPos">position of block</param>
+        /// <param name="blockType">out type of block at position</param>
+        /// <returns>true if chunk contains block at position</returns>
+        public bool TryGetBlock(BlockPosition blockPos, out BlockType blockType)
+        {
+            if(Utils.IsPositionInChunkBounds(blockPos.x, blockPos.y, blockPos.z))
+            {
+                blockType = blocks[Utils.BlockPosition3DtoIndex(blockPos.x, blockPos.y, blockPos.z)];
+                return true;
+            }
+
+            blockType = BlockType.AIR;
+            return false;
+        }
+
+        /// <summary>
+        /// Set block at position but don't rebuild mesh
+        /// </summary>
+        /// <param name="x">x position of block</param>
+        /// <param name="y">y position of block</param>
+        /// <param name="z">z position of block</param>
+        /// <param name="blockType">type of block you want to place</param>
+        /// <param name="destroy">spawn destroy particle</param>
         private void SetBlockWithoutRebuild(int x, int y, int z, BlockType blockType, bool destroy = false)
         {
-            if (!IsPositionInRange(x, y, z)) return;
+            if (!Utils.IsPositionInChunkBounds(x, y, z)) return;
 
             BlockType currentBlock = GetBlock(x, y, z);
 
@@ -381,14 +440,37 @@ namespace VoxelTG.Terrain
             blocks[Utils.BlockPosition3DtoIndex(x, y, z)] = blockType;
         }
 
+        /// <summary>
+        /// Set block at position and rebuild mesh - use when you want to place one block, else take a look at
+        /// <see cref="SetBlockWithoutRebuild(int, int, int, BlockType, bool)"/> or <see cref="SetBlocks(BlockData[], bool)"/>
+        /// </summary>
+        /// <param name="position">position of block</param>
+        /// <param name="blockType">type of block you want to place</param>
+        /// <param name="destroy">spawn destroy particle</param>
         public void SetBlock(int3 position, BlockType blockType, bool destroy = false)
         {
             SetBlock(position.x, position.y, position.z, blockType, destroy);
         }
+        /// <summary>
+        /// Set block at position and rebuild mesh - use when you want to place one block, else take a look at
+        /// <see cref="SetBlockWithoutRebuild(int, int, int, BlockType, bool)"/> or <see cref="SetBlocks(BlockData[], bool)"/>
+        /// </summary>
+        /// <param name="position">position of block</param>
+        /// <param name="blockType">type of block you want to place</param>
+        /// <param name="destroy">spawn destroy particle</param>
         public void SetBlock(BlockPosition position, BlockType blockType, bool destroy = false)
         {
             SetBlock(position.x, position.y, position.z, blockType, destroy);
         }
+        /// <summary>
+        /// Set block at position and rebuild mesh - use when you want to place one block, else take a look at
+        /// <see cref="SetBlockWithoutRebuild(int, int, int, BlockType, bool)"/> or <see cref="SetBlocks(BlockData[], bool)"/>
+        /// </summary>
+        /// <param name="x">x position of block</param>
+        /// <param name="y">y position of block</param>
+        /// <param name="z">z position of block</param>
+        /// <param name="blockType">type of block you want to place</param>
+        /// <param name="destroy">spawn destroy particle</param>
         public void SetBlock(int x, int y, int z, BlockType blockType, bool destroy = false)
         {
             List<JobHandle> jobHandles = new List<JobHandle>();
@@ -460,6 +542,7 @@ namespace VoxelTG.Terrain
             UpdateNeighbourBlocks(new BlockPosition(x, y, z), 10);
         }
 
+        // TODO: consider removing this one
         public void SetBlocksWithoutChecks(BlockData[] blockDatas)
         {
             List<JobHandle> jobHandles = new List<JobHandle>();
@@ -547,6 +630,11 @@ namespace VoxelTG.Terrain
             njobHandles.Dispose();
         }
 
+        /// <summary>
+        /// Set array of blocks
+        /// </summary>
+        /// <param name="blockDatas">array containing data of each block you want to place</param>
+        /// <param name="destroy">spawn destroy particle</param>
         public void SetBlocks(BlockData[] blockDatas, bool destroy = false)
         {
             List<JobHandle> jobHandles = new List<JobHandle>();
@@ -675,16 +763,16 @@ namespace VoxelTG.Terrain
             int[] neighbours = new int[4];
             BlockPosition[] sideBlocks = new BlockPosition[]
             {
-            new BlockPosition(x, y, z + 1, out neighbours[0]),
-            new BlockPosition(x, y, z - 1, out neighbours[1]),
-            new BlockPosition(x + 1, y, z, out neighbours[2]),
-            new BlockPosition(x - 1, y, z, out neighbours[3])
+                new BlockPosition(x, y, z + 1, out neighbours[0]),
+                new BlockPosition(x, y, z - 1, out neighbours[1]),
+                new BlockPosition(x + 1, y, z, out neighbours[2]),
+                new BlockPosition(x - 1, y, z, out neighbours[3])
             };
 
             BlockPosition[] upDownBlocks = new BlockPosition[]
             {
-            new BlockPosition(x, y + 1, z),
-            new BlockPosition(x, y - 1, z)
+                new BlockPosition(x, y + 1, z),
+                new BlockPosition(x, y - 1, z)
             };
 
             Dictionary<BlockFace, BlockEventData> neighbourBlocks = new Dictionary<BlockFace, BlockEventData>();
@@ -701,28 +789,45 @@ namespace VoxelTG.Terrain
             World.InvokeBlockUpdateEvent(new BlockEventData(this, position, blockType), neighbourBlocks, args);
         }
 
+        /// <summary>
+        /// Add block to build queue and build it in next mesh update
+        /// </summary>
+        /// <param name="blockPos">position of block</param>
+        /// <param name="blockType">type of block you want to place</param>
         public void AddBlockToBuildList(BlockPosition blockPos, BlockType blockType)
         {
             AddBlockToBuildList(new BlockData(blockType, blockPos));
         }
+        /// <summary>
+        /// Add block to build queue and build it in next mesh update
+        /// </summary>
+        /// <param name="data">data of block you want to place</param>
         public void AddBlockToBuildList(BlockData data)
         {
             if (!blocksToBuild.Contains(data))
                 blocksToBuild.Add(data);
         }
 
-        public void AddParameterToList(BlockParameter param, short value)
+        /// <summary>
+        /// Add parameter to parameter queue and add it in next mesh update
+        /// </summary>
+        /// <param name="param">parameter you want to set</param>
+        /// <param name="value">value of parameter</param>
+        /// <param name="overrideIfExists">override value if queue contains parameter of same type</param>
+        public void AddParameterToList(BlockParameter param, short value, bool overrideIfExists = true)
         {
             if (!parametersToAdd.ContainsKey(param))
-            {
                 parametersToAdd.Add(param, value);
-            }
+            else if(overrideIfExists)
+                parametersToAdd[param] = value;
         }
 
+        /// <summary>
+        /// Listener for World build update timer
+        /// </summary>
         private void BuildBlocks()
         {
-            if (blocksToBuild.Count == 0) return;
-
+            // set parameters
             foreach (var param in parametersToAdd)
             {
                 SetParameters(param.Key, param.Value);
@@ -730,9 +835,13 @@ namespace VoxelTG.Terrain
 
             parametersToAdd.Clear();
 
-            BlockData[] datas = blocksToBuild.ToArray();
-            blocksToBuild.Clear();
-            SetBlocks(datas);
+            // update blocks
+            if (blocksToBuild.Count > 0)
+            {
+                BlockData[] datas = blocksToBuild.ToArray();
+                blocksToBuild.Clear();
+                SetBlocks(datas);
+            }
         }
 
         #endregion

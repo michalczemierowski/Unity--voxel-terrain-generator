@@ -84,6 +84,7 @@ public class TerrainModifier : MonoBehaviour
 
     #region experimental
 
+    // TODO: out of range errors
     private void DestroySphere()
     {
         RaycastHit hitInfo;

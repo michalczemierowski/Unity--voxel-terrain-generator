@@ -103,6 +103,7 @@ namespace VoxelTG.Terrain
 
         private void Start()
         {
+            // instantly load chunks
             LoadChunks(true);
 
             InvokeRepeating("ChunkLoading", 1f / buildChecksPerSecond, 1f / buildChecksPerSecond);
@@ -122,9 +123,15 @@ namespace VoxelTG.Terrain
         #region // === Events === \\
 
         private delegate void OnBlockUpdate(BlockEventData block, Dictionary<BlockFace, BlockEventData> neighbours, params int[] args);
+        /// <summary>
+        /// Event is called when any neighbour of block has changed
+        /// </summary>
         private static OnBlockUpdate OnBlockUpdateEvent;
 
         private delegate void OnBlockDestroy(BlockEventData block, params int[] args);
+        /// <summary>
+        /// Event is called when block gets removed
+        /// </summary>
         private static OnBlockDestroy OnBlockDestroyEvent;
 
         private static Dictionary<BlockType, OnBlockUpdate> OnBlockUpdateEvents = new Dictionary<BlockType, OnBlockUpdate>();
@@ -139,6 +146,10 @@ namespace VoxelTG.Terrain
                 OnBlockDestroyEvents.Add((BlockType)i, OnBlockDestroyEvent);
             }
         }
+
+        /// <summary>
+        /// Search for all event listeners and add them to dictionary
+        /// </summary>
         private void InitializeListeners()
         {
             foreach (IBlockUpdateListener listener in GetComponentsInChildren<IBlockUpdateListener>())
@@ -168,13 +179,23 @@ namespace VoxelTG.Terrain
             }
         }
 
-        public static void InvokeBlockUpdateEvent(BlockEventData block, Dictionary<BlockFace, BlockEventData> neighbours, params int[] args)
+        /// <summary>
+        /// Call BlockUpdateEvent
+        /// </summary>
+        /// <param name="blockEventData">data of block that is calling update</param>
+        /// <param name="neighbourBlocksData">data of neighbour blocks</param>
+        public static void InvokeBlockUpdateEvent(BlockEventData blockEventData, Dictionary<BlockFace, BlockEventData> neighbourBlocksData, params int[] args)
         {
-            OnBlockUpdateEvents[block.blockType]?.Invoke(block, neighbours, args);
+            OnBlockUpdateEvents[blockEventData.blockType]?.Invoke(blockEventData, neighbourBlocksData, args);
         }
-        public static void InvokeBlockDestroyEvent(BlockEventData block, params int[] args)
+
+        /// <summary>
+        /// Call BlockDestroyEvent
+        /// </summary>
+        /// <param name="blockEventData">data of block that is calling update</param>
+        public static void InvokeBlockDestroyEvent(BlockEventData blockEventData, params int[] args)
         {
-            OnBlockDestroyEvents[block.blockType]?.Invoke(block, args);
+            OnBlockDestroyEvents[blockEventData.blockType]?.Invoke(blockEventData, args);
         }
 
         #endregion
@@ -190,18 +211,25 @@ namespace VoxelTG.Terrain
         /// <param name="chunk">reference to target chunk</param>
         private void BuildChunk(int xPos, int zPos, NativeQueue<JobHandle> handlers, ref Chunk chunk)
         {
-            if (pooledChunks.Count > 0)//look in the poo first
+            // if pool contains chunk
+            if (pooledChunks.Count > 0)
             {
+                // get chunk from pool
                 chunk = pooledChunks[pooledChunks.Count - 1];
+                // enable chunk
                 chunk.gameObject.SetActive(true);
+                // remove it from pool
                 pooledChunks.RemoveAt(pooledChunks.Count - 1);
 
+                // move chunk to target position
                 chunk.chunkPos = new Vector2Int(xPos, zPos);
                 chunk.transform.position = new Vector3(xPos, 0, zPos);
             }
             else
             {
+                // instantiate new chunk
                 GameObject chunkGO = Instantiate(terrainChunk, new Vector3(xPos, 0, zPos), Quaternion.identity);
+                // move chunk to target position
                 chunk = chunkGO.GetComponent<Chunk>();
                 chunk.chunkPos = new Vector2Int(xPos, zPos);
             }
@@ -449,6 +477,9 @@ namespace VoxelTG.Terrain
         #endregion
     }
 
+    /// <summary>
+    /// Struct containing data needed to bake colliders
+    /// </summary>
     public struct MeshBakeData
     {
         public MeshCollider meshCollider;

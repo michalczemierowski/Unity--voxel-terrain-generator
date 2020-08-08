@@ -6,6 +6,9 @@
 */
 namespace VoxelTG.Terrain.Blocks
 {
+    /// <summary>
+    /// Contains data used in block event listeners
+    /// </summary>
     public struct BlockEventData
     {
         public readonly Chunk chunk;

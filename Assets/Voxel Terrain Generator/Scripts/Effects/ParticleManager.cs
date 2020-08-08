@@ -34,6 +34,7 @@ namespace VoxelTG.Effects
 
         private void Start()
         {
+            // init queue for particle of each type
             foreach (ParticleType particleType in System.Enum.GetValues(typeof(ParticleType)))
             {
                 particlesPool.Add(particleType, new Queue<ParticleSystem>());
@@ -42,9 +43,15 @@ namespace VoxelTG.Effects
             StartCoroutine(BlockParticlesPoolCleaner(0.5f));
         }
 
-        public static void InstantiateBlockDestroyParticle(ParticleType particleType, Vector3Int blockPosition, BlockType blockType = BlockType.AIR)
+        /// <summary>
+        /// Instantiate block destroy particle of type <see cref="ParticleType"/> at specified world position
+        /// </summary>
+        /// <param name="particleType"></param>
+        /// <param name="worldPosition"></param>
+        /// <param name="blockType"></param>
+        public static void InstantiateBlockDestroyParticle(ParticleType particleType, Vector3Int worldPosition, BlockType blockType = BlockType.AIR)
         {
-            ParticleSystem particle = SpawnParticle(ParticleType.BLOCK_DESTROY_PARTICLE, blockPosition);
+            ParticleSystem particle = SpawnParticle(particleType, worldPosition);
 
             if (blockType != BlockType.AIR)
             {
@@ -53,9 +60,12 @@ namespace VoxelTG.Effects
             }
 
             particle.Play();
-            DestroyBlockParticle(particleType, particle, particle.main.duration);
+            Instance.StartCoroutine(DestroyBlockParticleEnumerator(particleType, particle, particle.main.duration));
         }
 
+        /// <summary>
+        /// Instantiate particle GameObject
+        /// </summary>
         private static ParticleSystem SpawnParticle(ParticleType type, Vector3Int blockPosition)
         {
             ParticleSystem result = null;
@@ -84,11 +94,10 @@ namespace VoxelTG.Effects
             return result;
         }
 
-        private static void DestroyBlockParticle(ParticleType type, ParticleSystem particle, float time)
-        {
-            Instance.StartCoroutine(DestroyBlockParticleEnumerator(type, particle, time));
-        }
-
+        /// <summary>
+        /// Get particle mesh by BlockType
+        /// </summary>
+        /// <param name="type">type of block</param>
         private static Mesh CreateBlockParticleMeh(BlockType type)
         {
             Mesh particleMesh;
@@ -149,6 +158,9 @@ namespace VoxelTG.Effects
 
         #region IEnumerators
 
+        /// <summary>
+        /// Disable and add do pool particles after their lifetime
+        /// </summary>
         private static IEnumerator DestroyBlockParticleEnumerator(ParticleType type, ParticleSystem particle, float time)
         {
             yield return new WaitForSecondsRealtime(time);
@@ -156,6 +168,10 @@ namespace VoxelTG.Effects
             particle.gameObject.SetActive(false);
         }
 
+        /// <summary>
+        /// Remove particles from pool if there are too many
+        /// </summary>
+        /// <param name="repeatTime">time between checks</param>
         private static IEnumerator BlockParticlesPoolCleaner(float repeatTime)
         {
             var wait = new WaitForSecondsRealtime(repeatTime);

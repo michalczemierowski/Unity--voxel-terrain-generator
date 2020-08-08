@@ -3,6 +3,7 @@ using Unity.Mathematics;
 using UnityEngine;
 using VoxelTG.Terrain;
 using VoxelTG.Terrain.Blocks;
+using static VoxelTG.Terrain.WorldSettings;
 
 /*
  * Michał Czemierowski
@@ -13,30 +14,64 @@ namespace VoxelTG
     [BurstCompile]
     public static class Utils
     {
+
+        /// <summary>
+        /// Custom clamp method used in BlockPosition
+        /// ex. ClampInRange(40, 0, 16) will return 8 (40 - 16 - 16 = 8)
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="min"></param>
+        /// <param name="max"></param>
+        /// <returns></returns>
         public static int ClampInRange(int value, int min, int max)
         {
             int result = value % max;
             return result < min ? max - math.abs(result) : result;
         }
 
+        /// <summary>
+        /// Convert 3D position to index
+        /// </summary>
+        /// <returns>index that can be used in Chunk.blocks</returns>
         public static int BlockPosition3DtoIndex(BlockPosition pos)
         {
-            return (pos.z * WorldSettings.fixedChunkWidth * WorldSettings.chunkHeight) + (pos.y * WorldSettings.fixedChunkWidth) + pos.x;
+            return (pos.z * fixedChunkWidth * chunkHeight) + (pos.y * fixedChunkWidth) + pos.x;
         }
 
+        /// <summary>
+        /// Convert 3D position to index
+        /// </summary>
+        /// <returns>index that can be used in Chunk.blocks</returns>
         public static int BlockPosition3DtoIndex(int3 pos)
         {
-            return (pos.z * WorldSettings.fixedChunkWidth * WorldSettings.chunkHeight) + (pos.y * WorldSettings.fixedChunkWidth) + pos.x;
+            return (pos.z * fixedChunkWidth * chunkHeight) + (pos.y * fixedChunkWidth) + pos.x;
         }
 
+        /// <summary>
+        /// Convert 3D position to index
+        /// </summary>
+        /// <returns>index that can be used in Chunk.blocks</returns>
         public static int BlockPosition3DtoIndex(int x, int y, int z)
         {
-            return (z * WorldSettings.fixedChunkWidth * WorldSettings.chunkHeight) + (y * WorldSettings.fixedChunkWidth) + x;
+            return (z * fixedChunkWidth * chunkHeight) + (y * fixedChunkWidth) + x;
         }
 
+        /// <summary>
+        /// Convert 2D position to index
+        /// </summary>
+        /// <returns>index that can be used in Chunk.biomeTypes</returns>
         public static int BlockPosition2DtoIndex(int x, int z)
         {
-            return x * WorldSettings.fixedChunkWidth + z;
+            return x * fixedChunkWidth + z;
+        }
+
+        /// <summary>
+        /// Check if position is inside chunk bounds
+        /// </summary>
+        /// <returns>true if position is inside chunk bounds, else - false</returns>
+        public static bool IsPositionInChunkBounds(int x, int y, int z)
+        {
+            return x > 0 && y >= 0 && z > 0 && x <= chunkWidth && z <= chunkWidth && y <= chunkHeight;
         }
 
         /// <summary>

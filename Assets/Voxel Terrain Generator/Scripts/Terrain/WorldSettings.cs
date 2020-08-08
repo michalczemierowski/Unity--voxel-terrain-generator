@@ -9,8 +9,8 @@ namespace VoxelTG.Terrain
     public static class WorldSettings
     {
         public const int chunkWidth = 16;
-        public const int chunkHeight = 64;
-        public const int waterHeight = 28;
+        public const int chunkHeight = 128;
+        public const int waterHeight = 60;
         public const int fixedChunkWidth = chunkWidth + 2;
 
         public const int maxTreeCount = 10;

@@ -886,10 +886,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   fly: 0
-  speed: 5
+  speed: 6
   acceleration: 15
   decleration: 25
-  jumpSpeed: 4
+  jumpSpeed: 5
   jumpHeight: 1.25
   gravity: -19.62
   waterSpeedMultipler: 1
