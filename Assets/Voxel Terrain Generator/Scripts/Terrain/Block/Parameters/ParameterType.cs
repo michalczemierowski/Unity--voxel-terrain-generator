@@ -7,6 +7,7 @@ using Unity.Mathematics;
 */
 namespace VoxelTG.Terrain.Blocks
 {
+    [System.Serializable]
     public struct BlockParameter : IEquatable<BlockParameter>
     {
         public int3 blockPos;

@@ -886,7 +886,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   fly: 0
-  speed: 6
+  speed: 25
   acceleration: 15
   decleration: 25
   jumpSpeed: 5
@@ -1022,7 +1022,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e940b6753c425cf47ba994799eeb313a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  mouseSensitivity: {x: 500, y: 500}
+  mouseSensitivity: {x: 6, y: 6}
+  minimumRotationY: -90
+  maximumRotationY: 90
 --- !u!1 &1120727380
 GameObject:
   m_ObjectHideFlags: 0

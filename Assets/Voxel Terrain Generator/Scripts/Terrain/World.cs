@@ -1,4 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Runtime.Serialization.Formatters.Binary;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
@@ -58,9 +62,41 @@ namespace VoxelTG.Terrain
         private Vector2Int curChunk = new Vector2Int(-1, -1);
         private List<Chunk> pooledChunks = new List<Chunk>();
 
+        public WorldSave worldSave = new WorldSave();
+
         #endregion
 
         #endregion
+
+        private void SaveChunkData()
+        {
+            BinaryFormatter formatter = new BinaryFormatter();
+            string path = Application.persistentDataPath + "/world0";
+
+            FileStream stream = new FileStream(path, FileMode.Create);
+
+            worldSave.playerPosition = SerializableVector3.FromVector3(player.position);
+            worldSave.playerEulerY = player.eulerAngles.y;
+
+            formatter.Serialize(stream, worldSave);
+            stream.Close();
+
+            Debug.Log($"SAVED {worldSave.savedChunks.Count} CHUNKS");
+        }
+
+        private void LoadChunkData()
+        {
+            string path = Application.persistentDataPath + "/world0";
+            if (File.Exists(path))
+            {
+                FileStream stream = new FileStream(path, FileMode.Open);
+                if(stream.Length > 0)
+                {
+                    BinaryFormatter formatter = new BinaryFormatter();
+                    worldSave = formatter.Deserialize(stream) as WorldSave;
+                }
+            }
+        }
 
         #region // === Monobehaviour === \\
 
@@ -72,7 +108,11 @@ namespace VoxelTG.Terrain
             else
                 Instance = this;
 
+            LoadChunkData();
+
             player = GameObject.FindGameObjectWithTag("Player").transform;
+            player.eulerAngles = new Vector3(player.eulerAngles.x, worldSave.playerEulerY, player.eulerAngles.z);
+            player.position = worldSave.playerPosition.ToVector3();
 
             seed = 1337;// UnityEngine.Random.Range(1000000000, int.MaxValue);
             baseNoise = new FastNoise(seed, 0.005f);
@@ -95,6 +135,7 @@ namespace VoxelTG.Terrain
 
         private void OnApplicationQuit()
         {
+            SaveChunkData();
             // dispose native containers
             pendingJobs.Dispose();
             meshBakingJobs.Dispose();
@@ -235,7 +276,22 @@ namespace VoxelTG.Terrain
             }
 
             // schedule build job
-            chunk.BuildMesh(handlers, xPos, zPos);
+            SerializableVector2Int serializableChunkPos = SerializableVector2Int.FromVector2Int(chunk.chunkPos);
+            if (worldSave.savedChunks.ContainsKey(serializableChunkPos))
+            {
+                ChunkSaveData data = worldSave.savedChunks[serializableChunkPos];
+                // convert byte[] to BlockType[]
+                chunk.blocks.CopyFrom(Array.ConvertAll(data.blocks, value => (BlockType)value)); //data.blocks);
+                //chunk.blockParameters = new NativeHashMap<BlockParameter, short>(data.blockParameters.Length, Allocator.Persistent);
+                //for (int i = 0; i < data.blockParameters.Length; i++)
+                //{
+                //    chunk.blockParameters.Add(data.blockParameters[i], data.blockParameterValues[i]);
+                //}
+
+                chunk.BuildMesh(handlers);
+            }
+            else
+                chunk.GenerateTerrainDataAndBuildMesh(handlers, xPos, zPos);
 
             // disable mesh renderers
             chunk.SetMeshRenderersActive(false);
@@ -405,7 +461,7 @@ namespace VoxelTG.Terrain
                 }
             }
 
-            if (meshBakingJobs.Count > 0)
+            while (meshBakingJobs.Count > 0)
             {
                 if (meshBakingJobs.Peek().IsCompleted)
                 {
@@ -489,6 +545,63 @@ namespace VoxelTG.Terrain
         {
             this.meshCollider = meshCollider;
             this.mesh = mesh;
+        }
+    }
+
+    [Serializable]
+    public struct ChunkSaveData
+    {
+        //public BlockParameter[] blockParameters;
+        //public short[] blockParameterValues;
+        public byte[] blocks;
+
+        public ChunkSaveData(BlockType[] blocks)
+        {
+            // convert enum to byte to reduce file size and file size
+            this.blocks = Array.ConvertAll(blocks, value => (byte)value);
+        }
+    }
+
+    [Serializable]
+    public class WorldSave
+    {
+        public SerializableVector3 playerPosition;
+        public float playerEulerY;
+        public Dictionary<SerializableVector2Int, ChunkSaveData> savedChunks = new Dictionary<SerializableVector2Int, ChunkSaveData>();
+    }
+
+    [Serializable]
+    public struct SerializableVector2Int
+    {
+        public int x;
+        public int y;
+
+        public Vector2Int ToVector2Int()
+        {
+            return new Vector2Int(x, y);
+        }
+
+        public static SerializableVector2Int FromVector2Int(Vector2Int from)
+        {
+            return new SerializableVector2Int() { x = from.x, y = from.y };
+        }
+    }
+
+    [Serializable]
+    public struct SerializableVector3
+    {
+        public float x;
+        public float y;
+        public float z;
+
+        public Vector3 ToVector3()
+        {
+            return new Vector3(x, y, z);
+        }
+
+        public static SerializableVector3 FromVector3(Vector3 from)
+        {
+            return new SerializableVector3() { x = from.x, y = from.y, z = from.z };
         }
     }
 }

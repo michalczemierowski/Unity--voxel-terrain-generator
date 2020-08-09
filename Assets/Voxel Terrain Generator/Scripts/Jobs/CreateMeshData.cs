@@ -16,9 +16,9 @@ namespace VoxelTG.Jobs
     {
         #region /= Variables
 
-        public int chunkPosX, chunkPosZ;
-
+        [ReadOnly]
         public NativeArray<BlockType> blockData;
+        [ReadOnly]
         public NativeArray<BiomeType> biomeTypes;
         public NativeHashMap<BlockParameter, short> blockParameters;
 
@@ -33,9 +33,6 @@ namespace VoxelTG.Jobs
         public NativeList<float3> plantsVerticles;
         public NativeList<int> plantsTriangles;
         public NativeList<float2> plantsUVs;
-
-        public Unity.Mathematics.Random random;
-        public FastNoise baseNoise;
 
         #endregion
 
@@ -80,6 +77,8 @@ namespace VoxelTG.Jobs
                                     uvs = liquidUVs;
                                     tris = liquidTriangles;
 
+                                    // set to full by default to not save full blocks in game saves
+                                    param = 8;
                                     blockParameters.TryGetValue(new BlockParameter(new int3(x, y, z), ParameterType.WATER_SOURCE_DISTANCE), out param);
 
                                     BlockstateLiquid(drawFace, x, y, z);
@@ -210,7 +209,8 @@ namespace VoxelTG.Jobs
 
         private void BlockstateLiquid(NativeArray<bool> sides, int x, int y, int z)
         {
-            short waterSourceDistance = blockParameters[new BlockParameter(new int3(x, y, z), ParameterType.WATER_SOURCE_DISTANCE)];
+            short waterSourceDistance = 8;
+            blockParameters.TryGetValue(new BlockParameter(new int3(x, y, z), ParameterType.WATER_SOURCE_DISTANCE), out waterSourceDistance);
             NativeArray<int> nearbyWaterSources = new NativeArray<int>(4, Allocator.Temp);
 
             short value;
@@ -265,16 +265,6 @@ namespace VoxelTG.Jobs
         #endregion
 
         #region Utils
-
-        private float RandomFloat(float min, float max)
-        {
-            return random.NextFloat(min, max);
-        }
-
-        private int RandomInt(int min, int max)
-        {
-            return random.NextInt(min, max);
-        }
 
         private bool AreTypesEqual(BlockType type, int x, int y, int z)
         {

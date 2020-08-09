@@ -109,8 +109,8 @@ namespace VoxelTG.Jobs
 
                         if (lastBlock == BlockType.GRASS)       // assing random block type to grass
                             blockParameters.TryAdd(new BlockParameter(new int3(x, y, z), ParameterType.BLOCK_TYPE), (short)RandomInt(0, 3));
-                        else if (lastBlock == BlockType.WATER)  // set source distance to 8 (full water block)
-                            blockParameters.TryAdd(new BlockParameter(new int3(x, y, z), ParameterType.WATER_SOURCE_DISTANCE), 8);
+                        //else if (lastBlock == BlockType.WATER)  // set source distance to 8 (full water block)
+                        //    blockParameters.TryAdd(new BlockParameter(new int3(x, y, z), ParameterType.WATER_SOURCE_DISTANCE), 8);
                     }
                 }
             }
