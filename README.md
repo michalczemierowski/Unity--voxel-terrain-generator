@@ -6,6 +6,7 @@ Features:
 * Cave generation
 * Terrain modification
 * Multithreading  
+* Saving/Loading terrain  
 
 ## Screenshots:
 ![Screenshot 0](https://michalczemierowski.github.io/img/screenshots/voxel_terrain_generator-0.jpg)
