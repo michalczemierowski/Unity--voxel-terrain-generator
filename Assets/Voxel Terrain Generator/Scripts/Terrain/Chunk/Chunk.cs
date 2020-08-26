@@ -348,6 +348,66 @@ namespace VoxelTG.Terrain
         /// <param name="value">parameter value</param>
         public void SetParameters(BlockParameter parameter, short value)
         {
+            int3 blockPos = parameter.blockPos;
+            // check neighbours
+            if (blockPos.x == 16)
+            {
+                Chunk chunk = neigbourChunks[0];
+                if (chunk)
+                {
+                    BlockParameter neighbourParameter = parameter;
+                    neighbourParameter.blockPos = new int3(0, blockPos.y, blockPos.z);
+
+                    if (chunk.blockParameters.ContainsKey(neighbourParameter))
+                        chunk.blockParameters[neighbourParameter] = value;
+                    else
+                        chunk.blockParameters.Add(neighbourParameter, value);
+                }
+            }
+            else if (blockPos.x == 1)
+            {
+                Chunk chunk = neigbourChunks[1];
+                if (chunk)
+                {
+                    BlockParameter neighbourParameter = parameter;
+                    neighbourParameter.blockPos = new int3(17, blockPos.y, blockPos.z);
+
+                    if (chunk.blockParameters.ContainsKey(neighbourParameter))
+                        chunk.blockParameters[neighbourParameter] = value;
+                    else
+                        chunk.blockParameters.Add(neighbourParameter, value);
+                }
+            }
+
+            if (blockPos.z == 16)
+            {
+                Chunk chunk = neigbourChunks[2];
+                if (chunk)
+                {
+                    BlockParameter neighbourParameter = parameter;
+                    neighbourParameter.blockPos = new int3(blockPos.x, blockPos.y, 0);
+
+                    if (chunk.blockParameters.ContainsKey(neighbourParameter))
+                        chunk.blockParameters[neighbourParameter] = value;
+                    else
+                        chunk.blockParameters.Add(neighbourParameter, value);
+                }
+            }
+            else if (blockPos.z == 1)
+            {
+                Chunk chunk = neigbourChunks[3];
+                if (chunk)
+                {
+                    BlockParameter neighbourParameter = parameter;
+                    neighbourParameter.blockPos = new int3(blockPos.x, blockPos.y, 17);
+
+                    if (chunk.blockParameters.ContainsKey(neighbourParameter))
+                        chunk.blockParameters[neighbourParameter] = value;
+                    else
+                        chunk.blockParameters.Add(neighbourParameter, value);
+                }
+            }
+
             if (blockParameters.ContainsKey(parameter))
                 blockParameters[parameter] = value;
             else
@@ -394,6 +454,49 @@ namespace VoxelTG.Terrain
         public void ClearParameters(int3 blockPos)
         {
             BlockParameter key = new BlockParameter(blockPos);
+            // check neighbours
+            if (blockPos.x == 16)
+            {
+                Chunk chunk = neigbourChunks[0];
+                if (chunk)
+                {
+                    BlockParameter neighbourKey = new BlockParameter(new int3(0, blockPos.y, blockPos.z));
+                    while (chunk.blockParameters.ContainsKey(neighbourKey))
+                        chunk.blockParameters.Remove(neighbourKey);
+                }
+            }
+            else if (blockPos.x == 1)
+            {
+                Chunk chunk = neigbourChunks[1];
+                if (chunk)
+                {
+                    BlockParameter neighbourKey = new BlockParameter(new int3(17, blockPos.y, blockPos.z));
+                    while (chunk.blockParameters.ContainsKey(neighbourKey))
+                        chunk.blockParameters.Remove(neighbourKey);
+                }
+            }
+
+            if (blockPos.z == 16)
+            {
+                Chunk chunk = neigbourChunks[2];
+                if (chunk)
+                {
+                    BlockParameter neighbourKey = new BlockParameter(new int3(blockPos.x, blockPos.y, 0));
+                    while (chunk.blockParameters.ContainsKey(neighbourKey))
+                        chunk.blockParameters.Remove(neighbourKey);
+                }
+            }
+            else if (blockPos.z == 1)
+            {
+                Chunk chunk = neigbourChunks[3];
+                if (chunk)
+                {
+                    BlockParameter neighbourKey = new BlockParameter(new int3(blockPos.x, blockPos.y, 17));
+                    while (chunk.blockParameters.ContainsKey(neighbourKey))
+                        chunk.blockParameters.Remove(neighbourKey);
+                }
+            }
+
             while (blockParameters.ContainsKey(key))
                 blockParameters.Remove(key);
         }
@@ -464,9 +567,13 @@ namespace VoxelTG.Terrain
             if (!Utils.IsPositionInChunkBounds(x, y, z)) return;
 
             BlockType currentBlock = GetBlock(x, y, z);
+            BlockPosition blockPosition = new BlockPosition(x, y, z);
+
+            if(currentBlock == BlockType.WATER && blockType != BlockType.WATER)
+                ClearParameters(blockPosition);
 
             if (destroy)
-                World.InvokeBlockDestroyEvent(new BlockEventData(this, new BlockPosition(x, y, z), currentBlock));
+                World.InvokeBlockDestroyEvent(new BlockEventData(this, blockPosition, currentBlock));
 
             blocks[Utils.BlockPosition3DtoIndex(x, y, z)] = blockType;
             needToSaveBlockData = true;

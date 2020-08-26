@@ -78,8 +78,8 @@ namespace VoxelTG.Jobs
                                     tris = liquidTriangles;
 
                                     // set to full by default to not save full blocks in game saves
-                                    param = 8;
-                                    blockParameters.TryGetValue(new BlockParameter(new int3(x, y, z), ParameterType.WATER_SOURCE_DISTANCE), out param);
+                                    if (!blockParameters.TryGetValue(new BlockParameter(new int3(x, y, z), ParameterType.WATER_SOURCE_DISTANCE), out param))
+                                        param = 8;
 
                                     BlockstateLiquid(drawFace, x, y, z);
                                     break;
@@ -209,8 +209,10 @@ namespace VoxelTG.Jobs
 
         private void BlockstateLiquid(NativeArray<bool> sides, int x, int y, int z)
         {
-            short waterSourceDistance = 8;
-            blockParameters.TryGetValue(new BlockParameter(new int3(x, y, z), ParameterType.WATER_SOURCE_DISTANCE), out waterSourceDistance);
+            short waterSourceDistance;
+            if(!blockParameters.TryGetValue(new BlockParameter(new int3(x, y, z), ParameterType.WATER_SOURCE_DISTANCE), out waterSourceDistance))
+                waterSourceDistance = 8;
+                
             NativeArray<int> nearbyWaterSources = new NativeArray<int>(4, Allocator.Temp);
 
             short value;

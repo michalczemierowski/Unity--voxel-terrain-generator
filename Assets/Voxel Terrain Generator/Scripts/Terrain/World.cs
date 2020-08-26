@@ -136,9 +136,11 @@ namespace VoxelTG.Terrain
         private void OnApplicationQuit()
         {
             SaveChunkData();
+
             // dispose native containers
             pendingJobs.Dispose();
             meshBakingJobs.Dispose();
+            biomeNoises.Dispose();
             generatorSettings.Dispose();
         }
 

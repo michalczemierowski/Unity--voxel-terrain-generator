@@ -14,7 +14,7 @@ OcclusionCullingSettings:
 RenderSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 9
-  m_Fog: 1
+  m_Fog: 0
   m_FogColor: {r: 0.7924528, g: 0.7924528, b: 0.7924528, a: 1}
   m_FogMode: 3
   m_FogDensity: 0.005
@@ -26,7 +26,7 @@ RenderSettings:
   m_AmbientIntensity: 1
   m_AmbientMode: 3
   m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
-  m_SkyboxMaterial: {fileID: 10304, guid: 0000000000000000f000000000000000, type: 0}
+  m_SkyboxMaterial: {fileID: 2100000, guid: 7c893d0f2f7f1c242aa765790e16c511, type: 2}
   m_HaloStrength: 0.5
   m_FlareStrength: 1
   m_FlareFadeSpeed: 3
@@ -249,7 +249,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ticksPerSecond: 20
   buildChecksPerSecond: 10
-  chunkDist: 4
+  chunkDist: 8
   terrainChunk: {fileID: 6546764858940181633, guid: 5ce7861e514decf459c0596a9a9e7c6c,
     type: 3}
   generatorSettingsArray:
@@ -265,6 +265,7 @@ MonoBehaviour:
     chanceForGrass: 0.25
     heightMapMultipler: 10
     plantsBlock: 10
+    waterBlock: 8
     topBlock: 2
     belowBlock: 1
   - noiseSettings:
@@ -279,22 +280,15 @@ MonoBehaviour:
     chanceForGrass: 0.05
     heightMapMultipler: 10
     plantsBlock: 10
+    waterBlock: 8
     topBlock: 2
     belowBlock: 1
-  - noiseSettings:
-      frequency: 0.006
-      interp: 2
-      noiseType: 4
-      octaves: 3
-      lancuarity: 2
-      gain: 0.5
-      fractalType: 0
-    baseLandHeightMultipler: 0.5
-    chanceForGrass: 0
-    heightMapMultipler: 10
-    plantsBlock: 0
-    topBlock: 3
-    belowBlock: 1
+  worldSave:
+    playerPosition:
+      x: 0
+      y: 0
+      z: 0
+    playerEulerY: 0
 --- !u!4 &220957753
 Transform:
   m_ObjectHideFlags: 0
@@ -886,7 +880,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   fly: 0
-  speed: 25
+  speed: 8
   acceleration: 15
   decleration: 25
   jumpSpeed: 5
@@ -1022,7 +1016,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e940b6753c425cf47ba994799eeb313a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  mouseSensitivity: {x: 6, y: 6}
+  mouseSensitivity: {x: 1, y: 1}
   minimumRotationY: -90
   maximumRotationY: 90
 --- !u!1 &1120727380

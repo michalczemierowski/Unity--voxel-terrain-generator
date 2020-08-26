@@ -17,6 +17,7 @@ namespace VoxelTG.Terrain
         public float heightMapMultipler;
         [Space(15)]
         public BlockType plantsBlock;
+        public BlockType waterBlock;
         public BlockType topBlock;
         public BlockType belowBlock;
         // TODO
