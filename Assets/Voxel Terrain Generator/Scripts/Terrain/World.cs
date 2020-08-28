@@ -177,8 +177,15 @@ namespace VoxelTG.Terrain
         /// </summary>
         private static OnBlockDestroy OnBlockDestroyEvent;
 
+        private delegate void OnBlockPlace(BlockEventData block, params int[] args);
+        /// <summary>
+        /// Event is called when block is placed by player
+        /// </summary>
+        private static OnBlockPlace OnBlockPlaceEvent;
+
         private static Dictionary<BlockType, OnBlockUpdate> OnBlockUpdateEvents = new Dictionary<BlockType, OnBlockUpdate>();
         private static Dictionary<BlockType, OnBlockDestroy> OnBlockDestroyEvents = new Dictionary<BlockType, OnBlockDestroy>();
+        private static Dictionary<BlockType, OnBlockPlace> OnBlockPlaceEvents = new Dictionary<BlockType, OnBlockPlace>();
 
         private void InitializeEvents()
         {
@@ -187,6 +194,7 @@ namespace VoxelTG.Terrain
             {
                 OnBlockUpdateEvents.Add((BlockType)i, OnBlockUpdateEvent);
                 OnBlockDestroyEvents.Add((BlockType)i, OnBlockDestroyEvent);
+                OnBlockPlaceEvents.Add((BlockType)i, OnBlockPlaceEvent);
             }
         }
 
@@ -220,6 +228,19 @@ namespace VoxelTG.Terrain
                     OnBlockDestroyEvents[type] += listener.OnBlockDestroy;
                 }
             }
+
+            foreach (IBlockPlaceListener listener in GetComponentsInChildren<IBlockPlaceListener>())
+            {
+                OnBlockPlaceEvents[listener.GetBlockType()] += listener.OnBlockPlaced;
+            }
+
+            foreach (IBlockArrayPlaceListener listener in GetComponentsInChildren<IBlockArrayPlaceListener>())
+            {
+                foreach (BlockType type in listener.GetBlockTypes())
+                {
+                    OnBlockPlaceEvents[type] += listener.OnBlockPlaced;
+                }
+            }
         }
 
         /// <summary>
@@ -239,6 +260,15 @@ namespace VoxelTG.Terrain
         public static void InvokeBlockDestroyEvent(BlockEventData blockEventData, params int[] args)
         {
             OnBlockDestroyEvents[blockEventData.blockType]?.Invoke(blockEventData, args);
+        }
+
+        /// <summary>
+        /// Call BlockDestroyEvent
+        /// </summary>
+        /// <param name="blockEventData">data of block that is calling update</param>
+        public static void InvokeBlockPlaceEvent(BlockEventData blockEventData, params int[] args)
+        {
+            OnBlockPlaceEvents[blockEventData.blockType]?.Invoke(blockEventData, args);
         }
 
         #endregion
@@ -334,7 +364,8 @@ namespace VoxelTG.Terrain
                 // if instant == true, wait for all jobs to complete
                 if (instant)
                 {
-                    JobHandle.CompleteAll(pendingJobs.ToArray(Allocator.TempJob));
+                    NativeArray<JobHandle> jobHandlesTemp = pendingJobs.ToArray(Allocator.TempJob);
+                    JobHandle.CompleteAll(jobHandlesTemp);
 
                     foreach (Chunk chunk in terrainChunks)
                     {
@@ -342,13 +373,17 @@ namespace VoxelTG.Terrain
                         chunk.SetMeshRenderersActive(true);
                     }
 
-                    JobHandle.CompleteAll(meshBakingJobs.ToArray(Allocator.TempJob));
+                    NativeArray<JobHandle> meshBakingJobsTemp = meshBakingJobs.ToArray(Allocator.TempJob);
+                    JobHandle.CompleteAll(meshBakingJobsTemp);
 
                     while (terrainCollisionMeshes.Count > 0)
                     {
                         MeshBakeData data = terrainCollisionMeshes.Dequeue();
                         data.meshCollider.sharedMesh = data.mesh;
                     }
+
+                    meshBakingJobsTemp.Dispose();
+                    jobHandlesTemp.Dispose();
 
                     meshBakingJobs.Clear();
                     pendingJobs.Clear();

@@ -1,4 +1,5 @@
-﻿using VoxelTG.Terrain;
+﻿using System.Collections.Generic;
+using VoxelTG.Terrain;
 using VoxelTG.Terrain.Blocks;
 
 /*
@@ -7,18 +8,18 @@ using VoxelTG.Terrain.Blocks;
 */
 namespace VoxelTG.Listeners.Interfaces
 {
-    public interface IBlockArrayDestroyListener
+    public interface IBlockPlaceListener
     {
         /// <summary>
         /// Method called at initiation of event listeners
         /// </summary>
-        /// <returns>Array of block types you want to listen for updates</returns>
-        BlockType[] GetBlockTypes();
+        /// <returns>Block type you want to listen for updates</returns>
+        BlockType GetBlockType();
 
         /// <summary>
-        /// Method called on block update
+        /// Method called when block is placed by player
         /// </summary>
         /// <param name="data">current block data</param>
-        void OnBlockDestroy(BlockEventData data, params int[] args);
+        void OnBlockPlaced(BlockEventData data, params int[] args);
     }
 }

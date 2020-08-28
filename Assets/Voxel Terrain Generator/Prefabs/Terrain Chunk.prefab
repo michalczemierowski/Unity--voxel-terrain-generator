@@ -59,7 +59,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: ea9d51d893911d74498698acd723098d, type: 2}
+  - {fileID: 2100000, guid: d72e8adc9dd7cca4490c42b43aad2b13, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -147,6 +147,7 @@ MonoBehaviour:
   plantsMeshFilter: {fileID: 1000597921120095070}
   blockMeshCollider: {fileID: 1423145590833403560}
   neigbourChunks: []
+  chunkPos: {x: 0, y: 0}
 --- !u!114 &8552906591877171409
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -312,7 +313,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: ea9d51d893911d74498698acd723098d, type: 2}
+  - {fileID: 2100000, guid: d72e8adc9dd7cca4490c42b43aad2b13, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

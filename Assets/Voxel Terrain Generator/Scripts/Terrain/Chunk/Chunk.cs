@@ -682,6 +682,7 @@ namespace VoxelTG.Terrain
             chunksToBuild.Clear();
             njobHandles.Dispose();
 
+            World.InvokeBlockPlaceEvent(new BlockEventData(this, new BlockPosition(x, y, z), blockType));
             UpdateNeighbourBlocks(new BlockPosition(x, y, z), 10);
         }
 

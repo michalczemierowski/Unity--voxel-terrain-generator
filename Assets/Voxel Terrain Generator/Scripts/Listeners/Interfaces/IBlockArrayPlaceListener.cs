@@ -7,7 +7,7 @@ using VoxelTG.Terrain.Blocks;
 */
 namespace VoxelTG.Listeners.Interfaces
 {
-    public interface IBlockArrayDestroyListener
+    public interface IBlockArrayPlaceListener
     {
         /// <summary>
         /// Method called at initiation of event listeners
@@ -19,6 +19,6 @@ namespace VoxelTG.Listeners.Interfaces
         /// Method called on block update
         /// </summary>
         /// <param name="data">current block data</param>
-        void OnBlockDestroy(BlockEventData data, params int[] args);
+        void OnBlockPlaced(BlockEventData data, params int[] args);
     }
 }
