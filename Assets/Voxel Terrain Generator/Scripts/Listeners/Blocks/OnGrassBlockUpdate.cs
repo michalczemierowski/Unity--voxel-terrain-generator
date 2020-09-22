@@ -20,10 +20,22 @@ namespace VoxelTG.Blocks.Listeners
         public void OnBlockUpdate(BlockEventData data, Dictionary<BlockFace, BlockEventData> neighbours, params int[] args)
         {
             // if above block is solid block
-            if (WorldData.GetBlockState(neighbours[BlockFace.TOP].blockType) == BlockState.SOLID)
+            BlockState aboveBlockState = WorldData.GetBlockState(neighbours[BlockFace.TOP].blockType);
+            if (aboveBlockState == BlockState.SOLID)
             {
                 // replace current block with dirt in next update
                 data.chunk.AddBlockToBuildList(data.LocalPosition, BlockType.DIRT);
+            }
+            else if(aboveBlockState == BlockState.LIQUID)
+            {
+                if(args.Length > 0 && args[0] == 1)
+                {
+                    data.chunk.AddBlockToBuildList(data.LocalPosition, BlockType.DIRT);
+                }
+                else
+                {
+                    World.ScheduleUpdate(data.chunk, data.LocalPosition, 200, 1);
+                }
             }
         }
     }

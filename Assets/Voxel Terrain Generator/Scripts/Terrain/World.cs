@@ -446,11 +446,11 @@ namespace VoxelTG.Terrain
         {
             Chunk chunk = GetChunk(x, z);
             if (!chunk)
-                return WorldData.GetBlock(BlockType.AIR);
+                return WorldData.GetBlockData(BlockType.AIR);
 
             BlockPosition bp = new BlockPosition(x, y, z);
 
-            return WorldData.GetBlock(chunk.GetBlock(bp));
+            return WorldData.GetBlockData(chunk.GetBlock(bp));
         }
 
         /// <summary>

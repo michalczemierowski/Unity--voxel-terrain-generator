@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 1423145590833403560}
   m_Layer: 8
   m_Name: BlocksChunk
-  m_TagString: Untagged
+  m_TagString: Terrain
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -92,7 +92,7 @@ MeshCollider:
   m_Enabled: 1
   serializedVersion: 3
   m_Convex: 0
-  m_CookingOptions: 30
+  m_CookingOptions: -1
   m_Mesh: {fileID: 0}
 --- !u!1 &6546764858940181633
 GameObject:
@@ -108,7 +108,7 @@ GameObject:
   - component: {fileID: 2561588065128844108}
   m_Layer: 8
   m_Name: Terrain Chunk
-  m_TagString: Untagged
+  m_TagString: Terrain
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -189,7 +189,7 @@ GameObject:
   - component: {fileID: 299887314897536619}
   m_Layer: 8
   m_Name: LiquidChunk
-  m_TagString: Water
+  m_TagString: Terrain
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

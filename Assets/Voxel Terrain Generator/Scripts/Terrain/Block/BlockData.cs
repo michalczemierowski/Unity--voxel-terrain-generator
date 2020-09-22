@@ -8,11 +8,13 @@ namespace VoxelTG.Terrain.Blocks
     {
         public BlockType blockType;
         public BlockPosition position;
+        public bool callUpdate;
 
-        public BlockData(BlockType blockType, BlockPosition position)
+        public BlockData(BlockType blockType, BlockPosition position, bool callUpdate = true)
         {
             this.blockType = blockType;
             this.position = position;
+            this.callUpdate = callUpdate;
         }
     }
 }
