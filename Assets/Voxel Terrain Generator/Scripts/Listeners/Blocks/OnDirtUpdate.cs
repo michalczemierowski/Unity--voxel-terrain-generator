@@ -19,10 +19,8 @@ namespace VoxelTG.Blocks.Listeners
 
         public void OnBlockUpdate(BlockEventData data, Dictionary<BlockFace, BlockEventData> neighbours, params int[] args)
         {
-            BlockState aboveBlockState = WorldData.GetBlockState(neighbours[BlockFace.TOP].blockType);
             // if above block is not solid and there is grass block nearby - build grass block
-            if (aboveBlockState != BlockState.SOLID &&
-                aboveBlockState != BlockState.LIQUID && (
+            if (WorldData.GetBlockState(neighbours[BlockFace.TOP].blockType) != BlockState.SOLID && (
                 neighbours[BlockFace.BACK].blockType == BlockType.GRASS_BLOCK ||
                 neighbours[BlockFace.FRONT].blockType == BlockType.GRASS_BLOCK ||
                 neighbours[BlockFace.LEFT].blockType == BlockType.GRASS_BLOCK ||

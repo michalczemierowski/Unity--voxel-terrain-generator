@@ -101,7 +101,7 @@ namespace VoxelTG.Effects
         private static Mesh CreateBlockParticleMeh(BlockType type)
         {
             Mesh particleMesh;
-            Block block = WorldData.GetBlockData(type);
+            Block block = WorldData.GetBlock(type);
 
             float offsetX = UnityEngine.Random.Range(0f, 1 - onBDPuvSize) / Terrain.Blocks.TilePos.textureSize;
             float offsetY = UnityEngine.Random.Range(0f, onBDPuvSize) / Terrain.Blocks.TilePos.textureSize;

@@ -42,26 +42,6 @@ namespace VoxelTG.Jobs
             GenerateTrees();
         }
 
-        private BiomeType GetBiomeFromNoiseValue(float noise)
-        {
-            BiomeType biomeType = (BiomeType)(math.clamp((math.round(noise * possibleBiomes)), 0, possibleBiomes-1));
-            switch(noise)
-            {
-                case float val when (val <= 0.4f - biomeTransition):
-                    return BiomeType.PLAINS;
-                case float val when (val > 0.4f - biomeTransition && val < 0.4f + biomeTransition):
-                    return random.NextBool() ? BiomeType.PLAINS : BiomeType.FOREST;
-
-                case float val when (val <= 0.6f):
-                    return BiomeType.FOREST;
-                case float val when (val <= 0.75f):
-                    return BiomeType.MOUNTAIN_PLAINS;
-                case float val when (val >= 0.85f):
-                    return BiomeType.MOUNTAINS;
-            }
-            return biomeType;
-        }
-
         private void GenerateBlockTypes()
         {
             BlockType lastBlock = BlockType.AIR;
@@ -73,9 +53,7 @@ namespace VoxelTG.Jobs
                     int bix = chunkPosX + x - 1;
                     int biz = chunkPosZ + z - 1;
 
-                    float biomeHeight = (baseNoise.GetSimplex(bix / biomeSize, biz / biomeSize) + 1) / 2f;
-                    BiomeType biomeType = GetBiomeFromNoiseValue(biomeHeight);
-                    biomeHeight = biomeHeight * biomeHeightMultipler;
+                    BiomeType biomeType = (BiomeType)math.round((baseNoise.GetSimplex(bix / biomeSize, biz / biomeSize) + 1) / possibleBiomes);
                     biomeTypes[Utils.BlockPosition2DtoIndex(x, z)] = biomeType;
 
                     FastNoise noise = noises[(int)biomeType];
@@ -89,8 +67,8 @@ namespace VoxelTG.Jobs
                     float simplex2 = noise.GetSimplex(bix * 3f, biz * 3f) * (noise.GetSimplex(bix * 0.3f, biz * 0.3f) + 0.5f) * settings.heightMapMultipler;
 
                     float heightMap = (simplex1 + simplex2);
-                    //int baseLandHeight = (int)math.round((chunkHeight * baseLandHeightMultipler + heightMap) * (biomeHeight + 0.9f));
-                    int baseLandHeight = (int)math.round((chunkHeight * baseLandHeightMultipler) + (chunkHeight * baseLandHeightMultipler * biomeHeight) + heightMap);
+
+                    int baseLandHeight = (int)math.round(chunkHeight * baseLandHeightMultipler + heightMap);
 
                     float caveMask = noise.GetSimplex(bix * 0.3f, biz * 0.3f) + 0.3f;
 
@@ -152,15 +130,6 @@ namespace VoxelTG.Jobs
                 {
                     int x = RandomInt(minpos, maxpos);
                     int z = RandomInt(minpos, maxpos);
-
-                    // check biome
-                    int bix = chunkPosX + x - 1;
-                    int biz = chunkPosZ + z - 1;
-
-                    float biomeHeight = (baseNoise.GetSimplex(bix / biomeSize, biz / biomeSize) + 1) / 2f;
-                    BiomeType biomeType = GetBiomeFromNoiseValue(biomeHeight);
-                    if (biomeType != BiomeType.FOREST)
-                        continue;
 
                     bool doContinue = false;
                     for (int j = 0; j < treePositions.Length; j++)

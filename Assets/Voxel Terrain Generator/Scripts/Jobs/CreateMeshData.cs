@@ -60,7 +60,7 @@ namespace VoxelTG.Jobs
                             int3 blockPos = new int3(x - 1, y, z - 1);
                             int numFaces = 0;
 
-                            Block block = WorldData.GetBlockData(blockType);
+                            Block block = WorldData.GetBlock(blockType);
 
                             short param = 0;
 

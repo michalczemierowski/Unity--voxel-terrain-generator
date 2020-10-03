@@ -10,8 +10,7 @@ public class MouseLook : MonoBehaviour
     [SerializeField] private float minimumRotationY;
     [SerializeField] private float maximumRotationY;
 
-    [System.NonSerialized]
-    public static Transform cameraTransform;
+    private Transform cameraTransform;
     private Quaternion cameraOriginalRotation;
     private Quaternion transformOriginalRotation;
 

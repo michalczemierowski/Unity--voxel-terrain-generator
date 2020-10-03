@@ -30,7 +30,7 @@ namespace VoxelTG.Terrain
 
         #endregion
 
-        public static Block GetBlockData(BlockType type)
+        public static Block GetBlock(BlockType type)
         {
             switch (type)
             {
@@ -134,5 +134,5 @@ namespace VoxelTG.Terrain
     public enum BlockFace : byte { TOP, BOTTOM, FRONT, BACK, LEFT, RIGHT }
     public enum BlockShape : byte { CUBE, LIQUID, GRASS, HALF_BLOCK }
 
-    public enum BiomeType { FOREST, PLAINS, MOUNTAIN_PLAINS, MOUNTAINS }
+    public enum BiomeType { FOREST, STONE_TEST, HIGH_TEST }
 }

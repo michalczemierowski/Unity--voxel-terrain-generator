@@ -19,6 +19,7 @@ namespace VoxelTG.Blocks.Listeners
 
         public void OnBlockPlaced(BlockEventData data, params int[] args)
         {
+            Debug.Log("ON STONE PLACED");
         }
     }
 }

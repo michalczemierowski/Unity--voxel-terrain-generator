@@ -25,6 +25,10 @@ public class PlayerMovement : MonoBehaviour
     public Vector3 groundDistance = new Vector3(0.4f, 0.4f, 0.4f);
     public LayerMask groundMask;
 
+    [Header("Components")]
+    [SerializeField] private TerrainModifier m_TerrainModifier;
+    [SerializeField] private MouseLook m_MouseLook;
+
     [Space(20)]
     [SerializeField] private GameObject waterImage;
 
@@ -142,7 +146,7 @@ public class PlayerMovement : MonoBehaviour
 
     private void HandleInput()
     {
-        if (Input.GetKeyDown(KeyCode.Z))
+        if (Input.GetKeyDown(KeyCode.Q))
             SwitchFlying();
 
         float horizontal = Input.GetAxis("Horizontal");
@@ -197,11 +201,15 @@ public class PlayerMovement : MonoBehaviour
         {
             m_Rigidbody.isKinematic = false;
             m_BoxCollider.enabled = true;
+            m_TerrainModifier.maxInteractDistance /= 10;
+            m_TerrainModifier.down = true;
         }
         else
         {
             m_Rigidbody.isKinematic = true;
             m_BoxCollider.enabled = false;
+            m_TerrainModifier.maxInteractDistance *= 10;
+            m_TerrainModifier.down = false;
         }
         fly = !fly;
     }
