@@ -5,6 +5,9 @@ TagManager:
   serializedVersion: 2
   tags:
   - Water
+  - Pickup
+  - Terrain
+  - entity
   layers:
   - Default
   - TransparentFX
@@ -15,7 +18,7 @@ TagManager:
   - 
   - 
   - Terrain
-  - 
+  - Entity
   - 
   - 
   - 

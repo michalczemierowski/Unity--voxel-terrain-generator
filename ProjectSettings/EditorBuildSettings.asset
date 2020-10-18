@@ -6,6 +6,11 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Voxel Terrain Generator/Scenes/Game.unity
+    path: Assets/Scenes/Main.unity
+    guid: ee9d6a3d85c095b4984a51b5ef3022b8
+  - enabled: 1
+    path: Assets/Scenes/Game.unity
     guid: 9fc0d4010bbf28b4594072e72b8655ab
-  m_configObjects: {}
+  m_configObjects:
+    com.unity.addressableassets: {fileID: 11400000, guid: 2785c4f996eb25d46b26214f5c76f7ba,
+      type: 2}
