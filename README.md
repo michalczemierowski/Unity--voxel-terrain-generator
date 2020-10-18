@@ -1,12 +1,16 @@
  # Voxel Terrain Generator
-Unity Version: **2019.3.2f1**
+Unity Version: **2020.1.6f1**
 
 Features:
-* Procedurally generated terrain  
-* Cave generation
+* Procedurally generated terrain
+* Daylight cycle
 * Terrain modification
 * Multithreading  
-* Saving/Loading terrain  
+* Saving/Loading terrain 
+* Items, tools, weapons
+* Inventory system (WIP)
+* Menu, async scene loading
+* Entities (WIP)
 
 ## Screenshots:
 ![Screenshot 0](https://michalczemierowski.github.io/img/screenshots/voxel_terrain_generator-0.jpg)
