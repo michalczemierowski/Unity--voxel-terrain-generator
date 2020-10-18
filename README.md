@@ -8,9 +8,9 @@ Features:
 * Multithreading  
 * Saving/Loading terrain 
 * Items, tools, weapons
-* Inventory system (WIP)
 * Menu, async scene loading
-* Entities (WIP)
+* Toolbar system
+* Living entities (early stage of development)
 
 ## Screenshots:
 ![Screenshot 0](https://michalczemierowski.github.io/img/screenshots/voxel_terrain_generator-0.jpg)
