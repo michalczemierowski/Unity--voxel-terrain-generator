@@ -21,7 +21,7 @@ namespace VoxelTG.Entities.Items
         /// </summary>
         public void Pickup()
         {
-            if (UIManager.Instance.inventoryUI.AddItemToInventory(inventoryItemData))
+            if (UIManager.InventoryUI.AddItemToInventory(inventoryItemData))
             {
                 Destroy(gameObject);
             }

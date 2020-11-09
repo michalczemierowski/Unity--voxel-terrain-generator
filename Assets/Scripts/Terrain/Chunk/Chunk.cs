@@ -943,10 +943,10 @@ namespace VoxelTG.Terrain
 
                 SerializableVector2Int serializableChunkPos = SerializableVector2Int.FromVector2Int(ChunkPosition);
                 // add new key or update existing data
-                if (World.Instance.worldSave.savedChunks.ContainsKey(serializableChunkPos))
-                    World.Instance.worldSave.savedChunks[serializableChunkPos] = data;
+                if (World.WorldSave.savedChunks.ContainsKey(serializableChunkPos))
+                    World.WorldSave.savedChunks[serializableChunkPos] = data;
                 else
-                    World.Instance.worldSave.savedChunks.Add(serializableChunkPos, data);
+                    World.WorldSave.savedChunks.Add(serializableChunkPos, data);
 
                 //blockParameterKeys.Dispose();
                 //blockParameterValues.Dispose();

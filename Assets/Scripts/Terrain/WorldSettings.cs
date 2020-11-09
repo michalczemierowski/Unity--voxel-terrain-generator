@@ -10,7 +10,7 @@ namespace VoxelTG.Terrain
     {
         public const int chunkWidth = 16;
         public const int chunkHeight = 128;
-        public const int waterHeight = 48;
+        public const int waterHeight = 58;
         public const int fixedChunkWidth = chunkWidth + 2;
 
         public const int maxTreeCount = 10;
@@ -19,7 +19,7 @@ namespace VoxelTG.Terrain
         public const float chanceForGrass = 0.15f;
 
         public const int possibleBiomes = 4;
-        public const float biomeSize = 8f;
+        public const float biomeSize = 1f;
         public const float biomeHeightMultipler = 4f;
         public const float biomeTransition = 0.005f;
     }

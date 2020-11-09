@@ -12,8 +12,6 @@ namespace VoxelTG.Effects.VFX
 {
     public class ParticleManager : MonoBehaviour
     {
-        public static ParticleManager Instance;
-
         [SerializeField] private GameObject onBlockDestroyParticle;
         [SerializeField] private GameObject onBlockPlaceParticle;
         [SerializeField] private GameObject onBulletHitParticle;
@@ -23,16 +21,8 @@ namespace VoxelTG.Effects.VFX
         private static int targetPoolSize = 32;
         private static Dictionary<ParticleType, Queue<ParticleSystem>> particlesPool = new Dictionary<ParticleType, Queue<ParticleSystem>>();
 
-        // onBlockDestroyParticle == onBDP
-        private static float onBDPuvSize = 0.25f;
+        private static float blockDestroyParticleUvSize = 0.25f;
 
-        private void Awake()
-        {
-            if (Instance)
-                Destroy(this);
-            else
-                Instance = this;
-        }
 
         private void Start()
         {
@@ -51,7 +41,7 @@ namespace VoxelTG.Effects.VFX
         /// <param name="particleType"></param>
         /// <param name="worldPosition"></param>
         /// <param name="blockType"></param>
-        public static void InstantiateBlockParticle(ParticleType particleType, Vector3 worldPosition, BlockType blockType = BlockType.AIR, bool roundToBlockPosition = false)
+        public void InstantiateBlockParticle(ParticleType particleType, Vector3 worldPosition, BlockType blockType = BlockType.AIR, bool roundToBlockPosition = false)
         {
             ParticleSystem particle = SpawnParticle(particleType, worldPosition, roundToBlockPosition);
 
@@ -62,7 +52,7 @@ namespace VoxelTG.Effects.VFX
             }
 
             particle.Play();
-            Instance.StartCoroutine(DestroyBlockParticleEnumerator(particleType, particle, particle.main.duration));
+            StartCoroutine(DestroyBlockParticleEnumerator(particleType, particle, particle.main.duration));
         }
 
         /// <summary>
@@ -70,19 +60,19 @@ namespace VoxelTG.Effects.VFX
         /// </summary>
         /// <param name="particleType"></param>
         /// <param name="worldPosition"></param>
-        public static void InstantiateParticle(ParticleType particleType, Vector3 worldPosition, bool roundToBlockPosition = false)
+        public void InstantiateParticle(ParticleType particleType, Vector3 worldPosition, bool roundToBlockPosition = false)
         {
             ParticleSystem particle = SpawnParticle(particleType, worldPosition, roundToBlockPosition);
 
             particle.Play();
-            Instance.StartCoroutine(DestroyBlockParticleEnumerator(particleType, particle, particle.main.duration));
+            StartCoroutine(DestroyBlockParticleEnumerator(particleType, particle, particle.main.duration));
         }
 
 
         /// <summary>
         /// Instantiate particle GameObject
         /// </summary>
-        private static ParticleSystem SpawnParticle(ParticleType type, Vector3 blockPosition, bool centerBlockPosition = false)
+        private ParticleSystem SpawnParticle(ParticleType type, Vector3 blockPosition, bool centerBlockPosition = false)
         {
             ParticleSystem result = null;
             Vector3 position = centerBlockPosition ? new Vector3(blockPosition.x + 0.5f, blockPosition.y, blockPosition.z + 0.5f) : blockPosition;
@@ -108,13 +98,13 @@ namespace VoxelTG.Effects.VFX
             switch (type)
             {
                 case ParticleType.BLOCK_DESTROY:
-                    result = Instantiate(Instance.onBlockDestroyParticle, position, Quaternion.identity).GetComponent<ParticleSystem>();
+                    result = Instantiate(onBlockDestroyParticle, position, Quaternion.identity).GetComponent<ParticleSystem>();
                     break;
                 case ParticleType.BLOCK_PLACE:
-                    result = Instantiate(Instance.onBlockPlaceParticle, position, Quaternion.identity).GetComponent<ParticleSystem>();
+                    result = Instantiate(onBlockPlaceParticle, position, Quaternion.identity).GetComponent<ParticleSystem>();
                     break;
                 case ParticleType.BULLET_HIT:
-                    result = Instantiate(Instance.onBulletHitParticle, position, Quaternion.identity).GetComponent<ParticleSystem>();
+                    result = Instantiate(onBulletHitParticle, position, Quaternion.identity).GetComponent<ParticleSystem>();
                     Vector3 direction = (Player.MouseLook.cameraTransform.position - position).normalized;
                     result.transform.rotation =  Quaternion.LookRotation(direction);
                     break;
@@ -132,10 +122,10 @@ namespace VoxelTG.Effects.VFX
             Mesh particleMesh;
             Block block = WorldData.GetBlockData(type);
 
-            float offsetX = UnityEngine.Random.Range(0f, 1 - onBDPuvSize) / Terrain.Blocks.BlockUVs.textureSize;
-            float offsetY = UnityEngine.Random.Range(0f, onBDPuvSize) / Terrain.Blocks.BlockUVs.textureSize;
-            float size = onBDPuvSize / Terrain.Blocks.BlockUVs.textureSize;
-
+            float offsetX = UnityEngine.Random.Range(0f, 1 - blockDestroyParticleUvSize) / Terrain.Blocks.BlockUVs.textureSize;
+            float offsetY = UnityEngine.Random.Range(0f, blockDestroyParticleUvSize) / Terrain.Blocks.BlockUVs.textureSize;
+            float size = blockDestroyParticleUvSize / Terrain.Blocks.BlockUVs.textureSize;
+            
             if (particleMeshes.ContainsKey(type))
             {
                 particleMesh = particleMeshes[type];
@@ -190,7 +180,7 @@ namespace VoxelTG.Effects.VFX
         /// <summary>
         /// Disable and add do pool particles after their lifetime
         /// </summary>
-        private static IEnumerator DestroyBlockParticleEnumerator(ParticleType type, ParticleSystem particle, float time)
+        private IEnumerator DestroyBlockParticleEnumerator(ParticleType type, ParticleSystem particle, float time)
         {
             yield return new WaitForSecondsRealtime(time);
             particlesPool[type].Enqueue(particle);
@@ -201,7 +191,7 @@ namespace VoxelTG.Effects.VFX
         /// Remove particles from pool if there are too many
         /// </summary>
         /// <param name="repeatTime">time between checks</param>
-        private static IEnumerator BlockParticlesPoolCleaner(float repeatTime)
+        private IEnumerator BlockParticlesPoolCleaner(float repeatTime)
         {
             var wait = new WaitForSecondsRealtime(repeatTime);
             while (true)

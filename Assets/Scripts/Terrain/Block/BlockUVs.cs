@@ -224,23 +224,29 @@ namespace VoxelTG.Terrain.Blocks
 
         #region liquids uvs
 
-        public static readonly BlockUVs WATER_UV = new BlockUVs
-        {
-            uv0 = new float2(
-                1 / textureSize + .001f,
-                1 / textureSize + .001f),
-            uv1 = new float2(
-                1 / textureSize + .001f,
-                (1 + 1) / textureSize - .001f),
-            uv2 = new float2(
-                (1 + 1) / textureSize - .001f,
-                (1 + 1) / textureSize - .001f),
-            uv3 = new float2(
-                (1 + 1) / textureSize - .001f,
-                1 / textureSize + .001f),
-        };
+        public static readonly BlockUVs WATER_UV = CreateUVs(0,0, textureSizeX: 1);
 
         #endregion
+
+        private static BlockUVs CreateUVs(int x, int y, float textureSizeX = textureSize, float textureSizeY = textureSize)
+        {
+            return new BlockUVs
+            {
+                uv0 = new float2(
+                 x / textureSizeX + .001f,
+                 y / textureSizeY + .001f),
+                uv1 = new float2(
+                 x / textureSizeX + .001f,
+                 (y + 1) / textureSizeY - .001f),
+                uv2 = new float2(
+                 (x + 1) / textureSizeX - .001f,
+                 (y + 1) / textureSizeY - .001f),
+                uv3 = new float2(
+                 (x + 1) / textureSizeX - .001f,
+                 y / textureSizeY + .001f),
+            };
+        }
+        
 
         #region plants uvs
 
@@ -306,7 +312,7 @@ namespace VoxelTG.Terrain.Blocks
                     return GRASS_BLOCK_TOP_UV;
                 case TextureTile.GRASS_BLOCK_SIDE:
                     return GRASS_BLOCK_SIDE_UV;
-                
+
                 case TextureTile.STONE:
                     return STONE_UV;
                 case TextureTile.COBBLESTONE:
@@ -330,7 +336,7 @@ namespace VoxelTG.Terrain.Blocks
 
                 case TextureTile.WATER:
                     return WATER_UV;
-                
+
                 case TextureTile.GRASS_0:
                     return GRASS_UV_0;
                 case TextureTile.GRASS_1:

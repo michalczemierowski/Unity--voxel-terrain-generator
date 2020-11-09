@@ -25,13 +25,13 @@ namespace VoxelTG.UI
         public string loadingSceneMessage = "LOADING SCENE";
         public string buildingTerrainMessage = "BUILDING TERRAIN";
 
-        void Start()
+        private void Start()
         {
             if(loadingScreen.activeSelf)
                 loadingScreen.SetActive(false);
         }
 
-        void Awake()
+        private void Awake()
         {
             DontDestroyOnLoad(gameObject);
         }
@@ -49,6 +49,7 @@ namespace VoxelTG.UI
             progressText.text = loadingSceneMessage;
 
             float progress = 0;
+            // scene loading progress
             while(!load.isDone)
             {
                 progress = load.progress / 2;
@@ -56,6 +57,7 @@ namespace VoxelTG.UI
                 yield return null;
             }
 
+            // chunk loading progress
             while(World.LoadedChunks < World.TotalChunks)
             {
                 progressText.text = $"{buildingTerrainMessage} {World.LoadedChunks}/{World.TotalChunks}";

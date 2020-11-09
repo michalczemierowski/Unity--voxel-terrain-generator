@@ -45,7 +45,7 @@ namespace VoxelTG.Player.Inventory
 
         public InventoryItemData(ItemType toolType, int itemCount = 1)
         {
-            this.inventoryItem = UIManager.Instance.inventoryUI.GetToolItemData(toolType);
+            this.inventoryItem = UIManager.InventoryUI.GetToolItemData(toolType);
             this.itemIcon = inventoryItem ? inventoryItem.itemIcon : null;
             this._itemCount = itemCount;
             this.positionX = 0;
@@ -54,7 +54,7 @@ namespace VoxelTG.Player.Inventory
 
         public InventoryItemData(BlockType blockType, int itemCount = 1)
         {
-            this.inventoryItem = UIManager.Instance.inventoryUI.GetMaterialItemData(blockType);
+            this.inventoryItem = UIManager.InventoryUI.GetMaterialItemData(blockType);
             this.itemIcon = inventoryItem ? inventoryItem.itemIcon : null;
             this._itemCount = itemCount;
             this.positionX = 0;

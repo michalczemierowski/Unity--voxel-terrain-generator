@@ -62,8 +62,7 @@ namespace VoxelTG.Player
 
         private void Start()
         {
-            uiManager = UIManager.Instance;
-            inventoryUI = uiManager.inventoryUI;
+            inventoryUI = UIManager.InventoryUI;
             flashLightController = GetComponentInChildren<FlashLightController>();
 
             inventoryUI.OnActiveToolbarSlotUpdate += OnActiveToolbarSlotUpdate;

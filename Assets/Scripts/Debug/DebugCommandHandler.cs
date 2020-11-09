@@ -75,9 +75,9 @@ namespace VoxelTG.DebugUtils
                     int.TryParse(content[2], out count);
 
                 if (itemType == ItemType.MATERIAL)
-                    UIManager.Instance.inventoryUI.AddItemToInventory(new InventoryItemData(blockType, count));
+                    UIManager.InventoryUI.AddItemToInventory(new InventoryItemData(blockType, count));
                 else if (itemType != ItemType.NONE)
-                    UIManager.Instance.inventoryUI.AddItemToInventory(new InventoryItemData(itemType, count));
+                    UIManager.InventoryUI.AddItemToInventory(new InventoryItemData(itemType, count));
             }
         }
     }

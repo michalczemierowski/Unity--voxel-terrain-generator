@@ -25,7 +25,7 @@ namespace VoxelTG.Blocks.Listeners
                 return;
 
             BlockType type = data.blockType == BlockType.GRASS_BLOCK ? BlockType.DIRT : data.blockType;
-            ParticleManager.InstantiateBlockParticle(ParticleType.BLOCK_DESTROY, data.WorldPosition, type, true);
+            World.ParticleManager.InstantiateBlockParticle(ParticleType.BLOCK_DESTROY, data.WorldPosition, type, true);
         }
     }
 }

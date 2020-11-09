@@ -11,8 +11,14 @@ namespace VoxelTG.UI
     {
         public static UIManager Instance;
 
-        public Image miningProgressImage;
-        public InventoryUI inventoryUI;
+        [SerializeField] private GameObject inWaterOverlay;
+        public static GameObject InWaterOverlay => Instance.inWaterOverlay;
+
+        [SerializeField] private Image miningProgressImage;
+        public static Image MiningProgressImage => Instance.miningProgressImage;
+
+        [SerializeField] private InventoryUI inventoryUI;
+        public static InventoryUI InventoryUI => Instance.inventoryUI;
 
         private void Awake()
         {

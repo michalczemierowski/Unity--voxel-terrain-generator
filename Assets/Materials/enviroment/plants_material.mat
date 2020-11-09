@@ -7,25 +7,28 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Ground
-  m_Shader: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
-  m_ShaderKeywords: _ALPHATEST_ON _ENVIRONMENTREFLECTIONS_OFF _SPECULARHIGHLIGHTS_OFF
-    _SPECULAR_SETUP
-  m_LightmapFlags: 4
+  m_Name: plants_material
+  m_Shader: {fileID: -6465566751694194690, guid: 71b4ef1c9f2bed745b6a60d76522be8a,
+    type: 3}
+  m_ShaderKeywords: _ALPHATEST_ON
+  m_LightmapFlags: 2
   m_EnableInstancingVariants: 1
-  m_DoubleSidedGI: 0
-  m_CustomRenderQueue: 2450
-  stringTagMap:
-    RenderType: TransparentCutout
+  m_DoubleSidedGI: 1
+  m_CustomRenderQueue: 2000
+  stringTagMap: {}
   disabledShaderPasses: []
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
-    - _BaseMap:
-        m_Texture: {fileID: 2800000, guid: d91af521df3977f41b60123a35357aee, type: 3}
+    - BiomeTexture:
+        m_Texture: {fileID: 2800000, guid: 2f1f5f9273700d746afb35d452de4f51, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
-    - _BiomeColorSubGraph_9E199617_Texture2D2D0B7E4B_1457537478:
+    - _BaseMap:
+        m_Texture: {fileID: 2800000, guid: 52ff186be68ad304f884c60269506175, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _BiomeColorSubGraph_76A9273_Texture2D2D0B7E4B_1457537478:
         m_Texture: {fileID: 2800000, guid: a34a5fd0e605a62418c3147128419bbf, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
@@ -77,17 +80,16 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
-    - _Texture2DAsset_A0C1AADF_Out_0:
-        m_Texture: {fileID: 2800000, guid: a34a5fd0e605a62418c3147128419bbf, type: 3}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
     m_Floats:
-    - Vector1_E4CC465A: 0
-    - Vector1_FE444801: 0
+    - Vector1_24834904: 1
+    - Vector1_4379098: 0
+    - Vector1_790DC95F: 2
+    - Vector1_A27CE783: 2
+    - Vector1_BF19FA29: 0
     - _AlphaClip: 1
     - _Blend: 0
     - _BumpScale: 1
-    - _Cull: 2
+    - _Cull: 0
     - _Cutoff: 0.25
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
@@ -106,19 +108,20 @@ Material:
     - _Shininess: 0
     - _Smoothness: 0
     - _SmoothnessSource: 1
-    - _SmoothnessTextureChannel: 0
+    - _SmoothnessTextureChannel: 1
     - _SpecSource: 0
-    - _SpecularHighlights: 0
+    - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _Surface: 0
     - _UVSec: 0
     - _WorkflowMode: 0
     - _ZWrite: 1
+    - chunk_size: 16
     m_Colors:
+    - Color_AF3B1077: {r: 1, g: 1, b: 1, a: 1}
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 1.4980392, g: 1.4980392, b: 1.4980392, a: 1}
-    - _MainColor: {r: 1, g: 1, b: 1, a: 1}
     - _SpecColor: {r: 0.0627451, g: 0.0627451, b: 0.0627451, a: 0}
   m_BuildTextureStacks: []
 --- !u!114 &2947953035724700756

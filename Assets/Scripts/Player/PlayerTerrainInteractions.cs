@@ -14,7 +14,7 @@ using VoxelTG.UI;
  * Michał Czemierowski
  * https://github.com/michalczemierowski
 */
-namespace VoxelTG.Player
+namespace VoxelTG.Player.Interactions
 {
     public class PlayerTerrainInteractions : MonoBehaviour
     {
@@ -25,7 +25,8 @@ namespace VoxelTG.Player
 
         [SerializeField] private LayerMask groundLayer;
         [Space]
-        [SerializeField] private GameObject selectedBlockOutline;
+        [SerializeField] private GameObject selectedBlockOutlinePrefab;
+        private GameObject selectedBlockOutline;
 
         private InventoryUI inventoryUI;
 
@@ -43,10 +44,11 @@ namespace VoxelTG.Player
         private void Start()
         {
             cameraTransform = Camera.main.transform;
-            miningProgressImage = UIManager.Instance.miningProgressImage;
-            inventoryUI = UIManager.Instance.inventoryUI;
+            miningProgressImage = UIManager.MiningProgressImage;
+            inventoryUI = UIManager.InventoryUI;
 
             inventoryUI.OnActiveToolbarSlotUpdate += OnActiveToolbarSlotUpdate;
+            selectedBlockOutline = Instantiate(selectedBlockOutlinePrefab, Vector3.zero, Quaternion.identity);
         }
 
         private void OnActiveToolbarSlotUpdate(InventoryItemData oldItem, InventoryItemData newItem)

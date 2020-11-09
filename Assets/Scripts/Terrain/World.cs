@@ -13,13 +13,16 @@ using VoxelTG.Jobs;
 using VoxelTG.Listeners.Interfaces;
 using VoxelTG.Player;
 using VoxelTG.Terrain.Blocks;
+using VoxelTG.Entities.Items;
+using VoxelTG.Effects.VFX;
 using static VoxelTG.Terrain.WorldSettings;
+using VoxelTG.Terrain;
 
 /*
  * Michał Czemierowski
  * https://github.com/michalczemierowski
 */
-namespace VoxelTG.Terrain
+namespace VoxelTG
 {
     public class World : MonoBehaviour
     {
@@ -27,19 +30,30 @@ namespace VoxelTG.Terrain
 
         #region  static
 
+        /// <summary>
+        /// singleton
+        /// </summary>
         public static World Instance;
+
+        // TODO: xml docs
         public static int LoadedChunks { get; private set; }
         public static int TotalChunks { get; private set; }
+        public static int Seed { get; private set; }
+        public static int RenderDistance { get; private set; }
+        public static int CurrentTick { get; private set; }
 
-        public static FastNoise baseNoise;
+        public static FastNoise baseNoise { get; private set; }
         public static NativeArray<GeneratorSettings> generatorSettings;
         public static NativeArray<FastNoise> biomeNoises;
-        public static int seed;
-        public static Dictionary<Vector2Int, Chunk> chunks = new Dictionary<Vector2Int, Chunk>();
+        public static WorldSave WorldSave { get; private set; } = new WorldSave();
+        public static Dictionary<Vector2Int, Chunk> chunks { get; private set; } = new Dictionary<Vector2Int, Chunk>();
 
         #endregion
 
         #region public / serializable
+
+        [Header("Prefabs")]
+        [SerializeField] private GameObject playerPrefab;
 
         [Header("References")]
         [SerializeField] private EntityManager entityManager;
@@ -48,22 +62,18 @@ namespace VoxelTG.Terrain
         [SerializeField] private SoundManager soundManager;
         public static SoundManager SoundManager => Instance.soundManager;
 
+        [SerializeField] private DroppedItemsManager droppedItemsManager;
+        public static DroppedItemsManager DroppedItemsManager => Instance.droppedItemsManager;
+
+        [SerializeField] private ParticleManager particleManager;
+        public static ParticleManager ParticleManager => Instance.particleManager;
+
         [Header("Settings")]
         [SerializeField] private float ticksPerSecond = 20;
         [SerializeField] private float buildChecksPerSecond = 10;
-        public int chunkDist = 4;
-        public GameObject terrainChunk;
+        [SerializeField] public GameObject chunkPrefab;
 
         public GeneratorSettings[] generatorSettingsArray;
-
-        [Header("Daylight cycle settings")]
-        [SerializeField] private Light directionalLight;
-        [SerializeField] private AnimationCurve sunIntensityCurve;
-        [SerializeField] private AnimationCurve sunRotationXCurve;
-        [SerializeField] private int ticksInDay = 32000;
-        [SerializeField] private Gradient timeColors;
-        [SerializeField] private Gradient fogColors;
-        [SerializeField] private AnimationCurve fogDensityCurve;
 
         #endregion
 
@@ -75,9 +85,6 @@ namespace VoxelTG.Terrain
         private Queue<Chunk> terrainChunks = new Queue<Chunk>();
         private static Queue<Chunk> terrainCollisionMeshes = new Queue<Chunk>();
 
-        public delegate void TimeToBuild();
-        public static event TimeToBuild timeToBuild;
-
         // TODO: try to reduce GC alloc
         private static List<TickQueueData> tickQueue = new List<TickQueueData>();
         private static HashSet<BlockPosition> updatePositions = new HashSet<BlockPosition>();
@@ -85,12 +92,16 @@ namespace VoxelTG.Terrain
         private Vector2Int curChunk = new Vector2Int(-1, -1);
         private List<Chunk> pooledChunks = new List<Chunk>();
 
-        public WorldSave worldSave = new WorldSave();
-
-        private int currentTick;
         private int maxChunksToBuildAtOnce;
 
         #endregion
+
+        #endregion
+
+        #region events
+
+        public static event Action timeToBuild;
+        public static event Action<int> onTick;
 
         #endregion
 
@@ -103,13 +114,13 @@ namespace VoxelTG.Terrain
 
             FileStream stream = new FileStream(path, FileMode.Create);
 
-            worldSave.playerPosition = SerializableVector3.FromVector3(PlayerController.PlayerTransform.position);
-            worldSave.playerEulerY = PlayerController.PlayerTransform.eulerAngles.y;
+            WorldSave.playerPosition = SerializableVector3.FromVector3(PlayerController.PlayerTransform.position);
+            WorldSave.playerEulerY = PlayerController.PlayerTransform.eulerAngles.y;
 
-            formatter.Serialize(stream, worldSave);
+            formatter.Serialize(stream, WorldSave);
             stream.Close();
 
-            Debug.Log($"SAVED {worldSave.savedChunks.Count} CHUNKS");
+            Debug.Log($"SAVED {WorldSave.savedChunks.Count} CHUNKS");
         }
 
         private void LoadChunkData()
@@ -121,7 +132,7 @@ namespace VoxelTG.Terrain
                 if (stream.Length > 0)
                 {
                     BinaryFormatter formatter = new BinaryFormatter();
-                    worldSave = formatter.Deserialize(stream) as WorldSave;
+                    WorldSave = formatter.Deserialize(stream) as WorldSave;
                 }
             }
         }
@@ -147,10 +158,14 @@ namespace VoxelTG.Terrain
             else
                 Instance = this;
 
-            chunkDist = Settings.GetSetting(SettingsType.RENDER_DISTANCE);
+            // instantiate player gameobject
+            GameObject playerObject = Instantiate(Instance.playerPrefab);
+            playerObject.SetActive(false);
+
+            RenderDistance = Settings.GetSetting(SettingsType.RENDER_DISTANCE);
             maxChunksToBuildAtOnce = Settings.GetSetting(SettingsType.MAX_CHUNKS_TO_BUILD_AT_ONCE);
 
-            TotalChunks = 4 * chunkDist * chunkDist;
+            TotalChunks = 4 * RenderDistance * RenderDistance;
 
             PathFinding.Init();
 
@@ -163,20 +178,20 @@ namespace VoxelTG.Terrain
 
             // TODO: seed is always the same
             //seed = UnityEngine.Random.Range(0, int.MaxValue);
-            seed = 420;
-            baseNoise = new FastNoise(seed, 0.005f);
+            Seed = 420;
+            baseNoise = new FastNoise(Seed, 0.005f);
 
             // init native conainters
             pendingJobs = new NativeQueue<JobHandle>(Allocator.Persistent);
             meshBakingJobs = new NativeQueue<JobHandle>(Allocator.Persistent);
             generatorSettings = new NativeArray<GeneratorSettings>(generatorSettingsArray, Allocator.Persistent);
-            biomeNoises = new NativeArray<FastNoise>(generatorSettingsArray.Length, Allocator.Persistent);
+            World.biomeNoises = new NativeArray<FastNoise>(generatorSettingsArray.Length, Allocator.Persistent);
 
             // load noises from settings
             for (int i = 0; i < generatorSettingsArray.Length; i++)
             {
                 NoiseSettings noiseSettings = generatorSettingsArray[i].noiseSettings;
-                FastNoise noise = new FastNoise(seed, noiseSettings.frequency, noiseSettings.interp, noiseSettings.noiseType,
+                FastNoise noise = new FastNoise(Seed, noiseSettings.frequency, noiseSettings.interp, noiseSettings.noiseType,
                                                 noiseSettings.octaves, noiseSettings.lancuarity, noiseSettings.gain, noiseSettings.fractalType);
                 biomeNoises[i] = noise;
             }
@@ -219,10 +234,10 @@ namespace VoxelTG.Terrain
 
         private void Start()
         {
-            PlayerController.PlayerTransform.gameObject.SetActive(false);
+            //PlayerController.PlayerTransform.gameObject.SetActive(false);
 
             // init time to start game with day
-            currentTick = ticksInDay / 2;
+            // CurrentTick = ticksInDay / 2;
 
             // load chunks
             LoadChunks();
@@ -374,7 +389,7 @@ namespace VoxelTG.Terrain
             else
             {
                 // instantiate new chunk
-                GameObject chunkGO = Instantiate(terrainChunk, new Vector3(positionX, 0, positionZ), Quaternion.identity);
+                GameObject chunkGO = Instantiate(chunkPrefab, new Vector3(positionX, 0, positionZ), Quaternion.identity);
                 // move chunk to target position
                 chunk = chunkGO.GetComponent<Chunk>();
                 chunk.ChunkPosition = new Vector2Int(positionX, positionZ);
@@ -382,9 +397,9 @@ namespace VoxelTG.Terrain
 
             // schedule build job
             SerializableVector2Int serializableChunkPos = SerializableVector2Int.FromVector2Int(chunk.ChunkPosition);
-            if (worldSave.savedChunks.ContainsKey(serializableChunkPos))
+            if (WorldSave.savedChunks.ContainsKey(serializableChunkPos))
             {
-                ChunkSaveData data = worldSave.savedChunks[serializableChunkPos];
+                ChunkSaveData data = WorldSave.savedChunks[serializableChunkPos];
                 // convert byte[] to BlockType[]
                 chunk.blocks.CopyFrom(Array.ConvertAll(data.blocks, value => (BlockType)value)); //data.blocks);
                 //chunk.blockParameters = new NativeHashMap<BlockParameter, short>(data.blockParameters.Length, Allocator.Persistent);
@@ -421,9 +436,9 @@ namespace VoxelTG.Terrain
                 curChunk.x = curChunkPosX;
                 curChunk.y = curChunkPosZ;
 
-                for (int x = curChunkPosX - chunkWidth * chunkDist; x <= curChunkPosX + chunkWidth * chunkDist; x += chunkWidth)
+                for (int x = curChunkPosX - chunkWidth * RenderDistance; x <= curChunkPosX + chunkWidth * RenderDistance; x += chunkWidth)
                 {
-                    for (int z = curChunkPosZ - chunkWidth * chunkDist; z <= curChunkPosZ + chunkWidth * chunkDist; z += chunkWidth)
+                    for (int z = curChunkPosZ - chunkWidth * RenderDistance; z <= curChunkPosZ + chunkWidth * RenderDistance; z += chunkWidth)
                     {
                         Vector2Int cp = new Vector2Int(x, z);
 
@@ -469,8 +484,8 @@ namespace VoxelTG.Terrain
                 foreach (KeyValuePair<Vector2Int, Chunk> c in chunks)
                 {
                     Vector2Int cp = c.Key;
-                    if (Mathf.Abs(curChunkPosX - cp.x) > chunkWidth * (chunkDist + 3) ||
-                        Mathf.Abs(curChunkPosZ - cp.y) > chunkWidth * (chunkDist + 3))
+                    if (Mathf.Abs(curChunkPosX - cp.x) > chunkWidth * (RenderDistance + 3) ||
+                        Mathf.Abs(curChunkPosZ - cp.y) > chunkWidth * (RenderDistance + 3))
                     {
                         toDestroy.Add(c.Key);
                     }
@@ -714,29 +729,17 @@ namespace VoxelTG.Terrain
                     tick.chunk?.OnBlockUpdate(tick.blockPos, tick.args);
                 }
             }
-
-            currentTick++;
-            if (currentTick >= ticksInDay)
-            {
-                currentTick = 1;
-            }
-
-            float time = (float)currentTick / ticksInDay;
-
-            directionalLight.intensity = sunIntensityCurve.Evaluate(time);
-            directionalLight.color = timeColors.Evaluate(time);
-            directionalLight.transform.eulerAngles = new Vector3(Utils.RoundToDecimalPlace(sunRotationXCurve.Evaluate(time) * 180, 1), 0, 0);
-
-            RenderSettings.fogDensity = fogDensityCurve.Evaluate(time);
-            RenderSettings.fogColor = fogColors.Evaluate(time);
-
-            RenderSettings.ambientSkyColor = timeColors.Evaluate(time);
+            CurrentTick++;
+            onTick?.Invoke(CurrentTick);
         }
 
         #endregion
 
         #region  // == STATIC == \\
 
+        /// <summary>
+        /// Called when scene is
+        /// </summary>
         public static void OnFirstLoadDone()
         {
             Vector2Int playerWorldPos = new Vector2Int((int)PlayerController.PlayerTransform.position.x, (int)PlayerController.PlayerTransform.position.z);

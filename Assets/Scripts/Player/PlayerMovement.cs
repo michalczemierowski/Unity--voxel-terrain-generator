@@ -130,15 +130,8 @@ namespace VoxelTG.Player
 
         private void CheckWater()
         {
-            // TODO: move to UImanager
-            if (nearbyBlocks[1] == BlockType.WATER)
-            {
-                waterImage.SetActive(true);
-            }
-            else
-            {
-                waterImage.SetActive(false);
-            }
+            bool headInWater = nearbyBlocks[1] == BlockType.WATER;
+            UIManager.InWaterOverlay.SetActive(headInWater);
 
             isInWater = nearbyBlocks[1] == BlockType.WATER || nearbyBlocks[2] == BlockType.WATER;
 

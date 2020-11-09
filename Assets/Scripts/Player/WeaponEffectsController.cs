@@ -9,62 +9,65 @@ using VoxelTG.Terrain.Blocks;
  * Michał Czemierowski
  * https://github.com/michalczemierowski
 */
-public class WeaponEffectsController : MonoBehaviour
+namespace VoxelTG.Player.Interactions
 {
-    private Animator animator;
-    public Animator Animator
+    public class WeaponEffectsController : MonoBehaviour
     {
-        get
+        private Animator animator;
+        public Animator Animator
         {
-            if (!animator)
+            get
             {
-                Debug.LogWarning("There is no animator on " + gameObject.name, this);
+                if (!animator)
+                {
+                    Debug.LogWarning("There is no animator on " + gameObject.name, this);
+                }
+
+                return animator;
             }
-
-            return animator;
         }
-    }
 
-    [SerializeField] private ParticleSystem shootParticle;
-    [SerializeField] private Light shootLight;
-    [SerializeField] private float shootLightTime = 0.05f;
-    [SerializeField] private SoundType shootSoundType;
+        [SerializeField] private ParticleSystem shootParticle;
+        [SerializeField] private Light shootLight;
+        [SerializeField] private float shootLightTime = 0.05f;
+        [SerializeField] private SoundType shootSoundType;
 
-    public SoundSettings shootSoundSettings;
+        public SoundSettings shootSoundSettings;
 
-    private void Start()
-    {
-        animator = GetComponent<Animator>();
-    }
+        private void Start()
+        {
+            animator = GetComponent<Animator>();
+        }
 
-    public void OnShoot()
-    {
-        // particle
-        if(shootParticle != null)
-            shootParticle.Play();
+        public void OnShoot()
+        {
+            // particle
+            if (shootParticle != null)
+                shootParticle.Play();
 
-        // light
-        if (shootLight != null)
-            StartCoroutine(nameof(LightEnableDisableCoroutine));
+            // light
+            if (shootLight != null)
+                StartCoroutine(nameof(LightEnableDisableCoroutine));
 
-        // sound
-        if (shootSoundType != SoundType.NONE)
-            World.SoundManager.PlaySound(shootSoundType, transform.position, shootSoundSettings);
-    }
+            // sound
+            if (shootSoundType != SoundType.NONE)
+                World.SoundManager.PlaySound(shootSoundType, transform.position, shootSoundSettings);
+        }
 
-    /// <summary>
-    /// Called when bullet hits ground
-    /// </summary>
-    public void OnBulletHitTerrain(RaycastHit hitInfo, Chunk chunk, BlockPosition blockPosition, BlockType blockType)
-    {
-        //SoundManager.Instance.PlaySound(SoundType.DESTROY_WOOD, hitInfo.point, SoundSettings.DEFAULT);
-        ParticleManager.InstantiateBlockParticle(ParticleType.BULLET_HIT, hitInfo.point, blockType);
-    }
+        /// <summary>
+        /// Called when bullet hits ground
+        /// </summary>
+        public void OnBulletHitTerrain(RaycastHit hitInfo, Chunk chunk, BlockPosition blockPosition, BlockType blockType)
+        {
+            //SoundManager.Instance.PlaySound(SoundType.DESTROY_WOOD, hitInfo.point, SoundSettings.DEFAULT);
+            World.ParticleManager.InstantiateBlockParticle(ParticleType.BULLET_HIT, hitInfo.point, blockType);
+        }
 
-    private IEnumerator LightEnableDisableCoroutine()
-    {
-        shootLight.enabled = true;
-        yield return new WaitForSeconds(shootLightTime);
-        shootLight.enabled = false;
+        private IEnumerator LightEnableDisableCoroutine()
+        {
+            shootLight.enabled = true;
+            yield return new WaitForSeconds(shootLightTime);
+            shootLight.enabled = false;
+        }
     }
 }

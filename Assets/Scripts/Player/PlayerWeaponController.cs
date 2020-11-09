@@ -16,7 +16,7 @@ using VoxelTG.UI;
  * Michał Czemierowski
  * https://github.com/michalczemierowski
 */
-namespace VoxelTG.Player
+namespace VoxelTG.Player.Interactions
 {
     [RequireComponent(typeof(PlayerController))]
     public class PlayerWeaponController : MonoBehaviour
@@ -43,7 +43,7 @@ namespace VoxelTG.Player
         private void Start()
         {
             cameraTransform = Camera.main.transform;
-            inventoryUI = UIManager.Instance.inventoryUI;
+            inventoryUI = UIManager.InventoryUI;
             playerController = GetComponent<PlayerController>();
 
             inventoryUI.OnActiveToolbarSlotUpdate += OnActiveToolbarSlotUpdate;
@@ -133,10 +133,15 @@ namespace VoxelTG.Player
                             BlockType blockType = chunk.GetBlock(blockPosition);
 
                             currentWeaponFX.OnBulletHitTerrain(hitInfo, chunk, blockPosition, blockType);
-                            // if block is destroyed
-                            if (DamageBlock(globalBlockPosition, blockType, currentWeapon.blockDamage))
+
+                            // cannot destroy base layer (at y == 0)
+                            if (globalBlockPosition.y > 0)
                             {
-                                chunk.SetBlock(blockPosition, BlockType.AIR, new SetBlockSettings(true, false, false, 10));
+                                bool shouldBeDestroyed = DamageBlock(globalBlockPosition, blockType, currentWeapon.blockDamage);
+                                if (shouldBeDestroyed)
+                                {
+                                    chunk.SetBlock(blockPosition, BlockType.AIR, new SetBlockSettings(true, false, false, 10));
+                                }
                             }
                         }
                         if (hitInfo.transform.tag.EndsWith("entity"))

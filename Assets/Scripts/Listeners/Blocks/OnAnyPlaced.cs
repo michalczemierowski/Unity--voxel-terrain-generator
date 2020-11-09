@@ -24,7 +24,7 @@ namespace VoxelTG.Blocks.Listeners
             if (data.blockType == BlockType.AIR)
                 return;
 
-            ParticleManager.InstantiateBlockParticle(ParticleType.BLOCK_PLACE, data.WorldPosition, data.blockType, true);
+            World.ParticleManager.InstantiateBlockParticle(ParticleType.BLOCK_PLACE, data.WorldPosition, data.blockType, true);
         }
     }
 }
