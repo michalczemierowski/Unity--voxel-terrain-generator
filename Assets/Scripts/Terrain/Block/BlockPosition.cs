@@ -58,19 +58,46 @@ namespace VoxelTG.Terrain.Blocks
             return new int3(x, y, z);
         }
 
+        public BlockPosition RemoveOffset()
+        {
+            return new BlockPosition()
+            {
+                x = Utils.ClampInRange(x - 1, 1, WorldSettings.chunkWidth),
+                y = this.y,
+                z = Utils.ClampInRange(z - 1, 1, WorldSettings.chunkWidth)
+            };
+        }
+
+        /// <summary>
+        /// Get block position with Y reduced by 1
+        /// </summary>
         public BlockPosition Below()
         {
             if (y < 1)
                 return this;
 
-            return new BlockPosition(x, y - 1, z, false);
+            return new BlockPosition()
+            {
+                x = x,
+                y = y - 1,
+                z = z
+            };
         }
+
+        /// <summary>
+        /// Get block position with Y increased by 1
+        /// </summary>
         public BlockPosition Above()
         {
             if (y == WorldSettings.chunkHeight)
                 return this;
 
-            return new BlockPosition(x, y + 1, z, false);
+            return new BlockPosition()
+            {
+                x = x,
+                y = y + 1,
+                z = z
+            };
         }
 
         public void Add(int x, int y, int z, bool clamp = true)
@@ -89,19 +116,6 @@ namespace VoxelTG.Terrain.Blocks
             }
         }
 
-        public static BlockPosition WorldSettingsToBlockPosition(float x, float y, float z)
-        {
-            while (x > WorldSettings.chunkWidth)
-                x -= WorldSettings.chunkWidth;
-            while (x < 1)
-                x += WorldSettings.chunkWidth;
-            while (z > WorldSettings.chunkWidth)
-                z -= WorldSettings.chunkWidth;
-            while (z < 1)
-                z += WorldSettings.chunkWidth;
-
-            return new BlockPosition(Mathf.FloorToInt(x) + 1, Mathf.FloorToInt(y), Mathf.FloorToInt(z) + 1);
-        }
 
         public override string ToString()
         {
@@ -110,20 +124,32 @@ namespace VoxelTG.Terrain.Blocks
 
         public static BlockPosition operator +(BlockPosition bp1, BlockPosition bp2)
         {
-            return new BlockPosition(bp1.x + bp2.x, bp1.y + bp2.y, bp1.z + bp2.z);
+            return new BlockPosition() { x = bp1.x + bp2.x, y = bp1.y + bp2.y, z = bp1.z + bp2.z };
         }
         public static BlockPosition operator -(BlockPosition bp1, BlockPosition bp2)
         {
-            return new BlockPosition(bp1.x - bp2.x, bp1.y - bp2.y, bp1.z - bp2.z);
+            return new BlockPosition() { x = bp1.x - bp2.x, y = bp1.y - bp2.y, z = bp1.z - bp2.z };
         }
         public static BlockPosition operator *(BlockPosition bp1, int m)
         {
-            return new BlockPosition(bp1.x * m, bp1.y * m, bp1.z * m);
+            return new BlockPosition() { x = bp1.x * m, y = bp1.y * m, z = bp1.z * m };
         }
 
-        public static readonly BlockPosition up = new BlockPosition(0, 1, 0);
-        public static readonly BlockPosition down = new BlockPosition(0, -1, 0);
-        public static readonly BlockPosition left = new BlockPosition(0, -1, 0);
-        public static readonly BlockPosition right = new BlockPosition(0, 1, 0);
+        /// <summary>
+        /// [x: 0, y: 1, z: 0]
+        /// </summary>
+        public static readonly BlockPosition up = new BlockPosition() { x = 0, y = 1, z = 0 };
+        /// <summary>
+        /// [x: 0, y: -1, z: 0]
+        /// </summary>
+        public static readonly BlockPosition down = new BlockPosition() { x = 0, y = -1, z = 0 };
+        /// <summary>
+        /// [x: -1, y: 0, z: 0]
+        /// </summary>
+        public static readonly BlockPosition left = new BlockPosition() { x = -1, y = 0, z = 0 };
+        /// <summary>
+        /// [x: 1, y: 0, z: 0]
+        /// </summary>
+        public static readonly BlockPosition right = new BlockPosition() { x = 1, y = 0, z = 0 };
     }
 }

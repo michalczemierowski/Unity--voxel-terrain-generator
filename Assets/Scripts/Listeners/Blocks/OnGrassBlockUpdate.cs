@@ -24,7 +24,6 @@ namespace VoxelTG.Blocks.Listeners
             if (aboveBlockState == BlockState.SOLID)
             {
                 // replace current block with dirt in next update
-                Debug.Log(data.LocalPosition);
                 data.chunk.AddBlockToBuildList(data.LocalPosition, BlockType.DIRT);
             }
             else if(aboveBlockState == BlockState.LIQUID)

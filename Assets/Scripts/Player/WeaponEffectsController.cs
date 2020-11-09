@@ -49,7 +49,7 @@ public class WeaponEffectsController : MonoBehaviour
 
         // sound
         if (shootSoundType != SoundType.NONE)
-            SoundManager.Instance.PlaySound(shootSoundType, transform.position, shootSoundSettings);
+            World.SoundManager.PlaySound(shootSoundType, transform.position, shootSoundSettings);
     }
 
     /// <summary>

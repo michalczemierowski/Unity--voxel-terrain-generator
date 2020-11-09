@@ -12,7 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e0a20800cc863d04fb93ae13e58d4489, type: 3}
   m_Name: STONE
   m_EditorClassIdentifier: VTGAssembly:VoxelTG.Player.Inventory:InventoryItemMaterial
+  itemName: 
   maxStack: 256
-  itemIcon: {fileID: -7224233472205812633, guid: 9c2a687c7f1a53740953a6a015b4fb37,
+  itemIcon: {fileID: -1548102220123060151, guid: 9c2a687c7f1a53740953a6a015b4fb37,
     type: 3}
-  blockType: 3
+  blockType: 4

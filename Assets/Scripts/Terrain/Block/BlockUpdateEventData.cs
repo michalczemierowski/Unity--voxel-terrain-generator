@@ -11,10 +11,22 @@ namespace VoxelTG.Terrain.Blocks
     /// </summary>
     public struct BlockEventData
     {
+        /// <summary>
+        /// Chunk on which update happens
+        /// </summary>
         public readonly Chunk chunk;
+        /// <summary>
+        /// Type of block that is calling update
+        /// </summary>
         public readonly BlockType blockType;
 
+        /// <summary>
+        /// Local (chunk) space event position
+        /// </summary>
         public readonly BlockPosition LocalPosition;
+        /// <summary>
+        /// World space event position
+        /// </summary>
         public readonly Vector3Int WorldPosition;
 
         public BlockEventData(Chunk chunk, BlockPosition localPosition, BlockType blockType)
@@ -23,7 +35,7 @@ namespace VoxelTG.Terrain.Blocks
             this.LocalPosition = localPosition;
             this.blockType = blockType;
 
-            this.WorldPosition = Utils.LocalToWorldPositionVector3Int(chunk.chunkPos, localPosition);
+            this.WorldPosition = Utils.LocalToWorldPositionVector3Int(chunk.ChunkPosition, localPosition);
         }
     }
 }

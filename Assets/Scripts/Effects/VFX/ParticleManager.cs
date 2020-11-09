@@ -132,9 +132,9 @@ namespace VoxelTG.Effects.VFX
             Mesh particleMesh;
             Block block = WorldData.GetBlockData(type);
 
-            float offsetX = UnityEngine.Random.Range(0f, 1 - onBDPuvSize) / Terrain.Blocks.TilePos.textureSize;
-            float offsetY = UnityEngine.Random.Range(0f, onBDPuvSize) / Terrain.Blocks.TilePos.textureSize;
-            float size = onBDPuvSize / Terrain.Blocks.TilePos.textureSize;
+            float offsetX = UnityEngine.Random.Range(0f, 1 - onBDPuvSize) / Terrain.Blocks.BlockUVs.textureSize;
+            float offsetY = UnityEngine.Random.Range(0f, onBDPuvSize) / Terrain.Blocks.BlockUVs.textureSize;
+            float size = onBDPuvSize / Terrain.Blocks.BlockUVs.textureSize;
 
             if (particleMeshes.ContainsKey(type))
             {
@@ -142,10 +142,10 @@ namespace VoxelTG.Effects.VFX
 
                 particleMesh.uv = new Vector2[]
                 {
-                    block.sidePos.uv0 + new float2(offsetX, offsetY),
-                    block.sidePos.uv0 + new float2(offsetX, offsetY + size),
-                    block.sidePos.uv0 + new float2(offsetX + size, offsetY + size),
-                    block.sidePos.uv0 + new float2(offsetX + size, offsetY)
+                    block.sideUVs.uv0 + new float2(offsetX, offsetY),
+                    block.sideUVs.uv0 + new float2(offsetX, offsetY + size),
+                    block.sideUVs.uv0 + new float2(offsetX + size, offsetY + size),
+                    block.sideUVs.uv0 + new float2(offsetX + size, offsetY)
                 };
 
                 particleMesh.RecalculateNormals();
@@ -164,10 +164,10 @@ namespace VoxelTG.Effects.VFX
             };
             particleMesh.uv = new Vector2[]
             {
-                block.sidePos.uv0 + new float2(offsetX, offsetY),
-                block.sidePos.uv0 + new float2(offsetX, offsetY + size),
-                block.sidePos.uv0 + new float2(offsetX + size, offsetY + size),
-                block.sidePos.uv0 + new float2(offsetX + size, offsetY)
+                block.sideUVs.uv0 + new float2(offsetX, offsetY),
+                block.sideUVs.uv0 + new float2(offsetX, offsetY + size),
+                block.sideUVs.uv0 + new float2(offsetX + size, offsetY + size),
+                block.sideUVs.uv0 + new float2(offsetX + size, offsetY)
             };
             particleMesh.triangles = new int[]
             {

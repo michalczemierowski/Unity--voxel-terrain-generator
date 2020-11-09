@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: VTGAssembly:VoxelTG.Player.Inventory:InventoryItemWeapon
   itemName: M1911
   maxStack: 1
-  itemIcon: {fileID: 4083888779694647004, guid: 48e4c8eb818f9814cb070ef9b4c42017,
-    type: 3}
+  itemIcon: {fileID: 21300000, guid: 9f76122188e12cf48a7cee25eae866f3, type: 3}
   itemType: 3
   damage: 6
   fireRate: 3

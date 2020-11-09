@@ -11,11 +11,24 @@ namespace VoxelTG.UI
 {
     public class ToolbarUI : MonoBehaviour
     {
+        /// <summary>
+        /// Toolbar background images
+        /// </summary>
         [SerializeField] private Image[] toolbarBackgroundImage;
+        /// <summary>
+        /// Toolbar item count texts
+        /// </summary>
         [SerializeField] private TMP_Text[] toolbarSlotCount;
+        /// <summary>
+        /// Toolbar item icon images
+        /// </summary>
         [SerializeField] private Image[] toolbarSlotIcon;
 
-        public int GetToolbarCount()
+        /// <summary>
+        /// How many toolbar slots are available
+        /// </summary>
+        /// <returns></returns>
+        public int GetToolbarSlotCount()
         {
             return toolbarBackgroundImage.Length;
         }
@@ -35,6 +48,10 @@ namespace VoxelTG.UI
             toolbarSlotCount[slot].text = inventorySlotData.itemCount.ToString();
         }
 
+        /// <summary>
+        /// Remove item from toolbar slot
+        /// </summary>
+        /// <param name="slot">toolbar slot index</param>
         public void ClearToolbarSlot(int slot)
         {
             toolbarSlotIcon[slot].color = new Color(0, 0, 0, 0);

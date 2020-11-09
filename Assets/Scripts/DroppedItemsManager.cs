@@ -12,12 +12,16 @@ namespace VoxelTG.Entities.Items
 {
     public class DroppedItemsManager : MonoBehaviour
     {
+        // TODO: move to World.DroppedItemsManager
         public static DroppedItemsManager Instance;
         [SerializeField] private GameObject materialItemPrefab;
         [SerializeField] private GameObject toolItemPrefab;
 
         [SerializeField] private bool pickupItemOnCollision;
-        public bool PickupItemOnCollision { get => pickupItemOnCollision; }
+        /// <summary>
+        /// If true player will pickup dopped items on collision
+        /// </summary>
+        public bool PickupItemOnCollision => pickupItemOnCollision;
 
         private void Awake()
         {
@@ -27,6 +31,14 @@ namespace VoxelTG.Entities.Items
                 Instance = this;
         }
 
+        /// <summary>
+        /// Drop tool/weapon item (axe, gun etc.)
+        /// </summary>
+        /// <param name="itemType">type of item</param>
+        /// <param name="position">dropped item position (in world space)</param>
+        /// <param name="count">dropped item count</param>
+        /// <param name="velocity">velocity multipler (camera.forward * velocity)</param>
+        /// <param name="handObjectToCopy">GameObject that will be displayed in dropped item</param>
         public void DropItemTool(ItemType itemType, Vector3 position, int count = 1, float velocity = 0f, GameObject handObjectToCopy = null)
         {
             if (itemType == ItemType.NONE)
@@ -57,6 +69,14 @@ namespace VoxelTG.Entities.Items
             }
         }
 
+        /// <summary>
+        /// Drop material item (dirt, stone etc.)
+        /// </summary>
+        /// <param name="blockType">type of material</param>
+        /// <param name="position">doppped item position (in world space)</param>
+        /// <param name="count">dropped item count</param>
+        /// <param name="velocity">velocity multipler (camera.forward * velocity)</param>
+        /// <param name="rotate">should object be rotated same as camera</param>
         public void DropItemMaterial(BlockType blockType, Vector3 position, int count = 1, float velocity = 0f, bool rotate = false)
         {
             if (blockType == BlockType.AIR)
@@ -95,60 +115,60 @@ namespace VoxelTG.Entities.Items
             verts[2] = new Vector3(startPosX + cubeSize, startPosY + cubeSize, startPosZ + cubeSize);
             verts[3] = new Vector3(startPosX + cubeSize, startPosY + cubeSize, startPosZ);
 
-            uv[0] = block.topPos.uv0;
-            uv[1] = block.topPos.uv1;
-            uv[2] = block.topPos.uv2;
-            uv[3] = block.topPos.uv3;
+            uv[0] = block.topUVs.uv0;
+            uv[1] = block.topUVs.uv1;
+            uv[2] = block.topUVs.uv2;
+            uv[3] = block.topUVs.uv3;
 
             verts[4] = new Vector3(startPosX, startPosY, startPosZ);
             verts[5] = new Vector3(startPosX + cubeSize, startPosY, startPosZ);
             verts[6] = new Vector3(startPosX + cubeSize, startPosY, startPosZ + cubeSize);
             verts[7] = new Vector3(startPosX, startPosY, startPosZ + cubeSize);
 
-            uv[4] = block.bottomPos.uv0;
-            uv[5] = block.bottomPos.uv1;
-            uv[6] = block.bottomPos.uv2;
-            uv[7] = block.bottomPos.uv3;
+            uv[4] = block.botUvs.uv0;
+            uv[5] = block.botUvs.uv1;
+            uv[6] = block.botUvs.uv2;
+            uv[7] = block.botUvs.uv3;
 
             verts[8] = new Vector3(startPosX, startPosY, startPosZ);
             verts[9] = new Vector3(startPosX, startPosY + cubeSize, startPosZ);
             verts[10] = new Vector3(startPosX + cubeSize, startPosY + cubeSize, startPosZ);
             verts[11] = new Vector3(startPosX + cubeSize, startPosY, startPosZ);
 
-            uv[8] = block.sidePos.uv0;
-            uv[9] = block.sidePos.uv1;
-            uv[10] = block.sidePos.uv2;
-            uv[11] = block.sidePos.uv3;
+            uv[8] = block.sideUVs.uv0;
+            uv[9] = block.sideUVs.uv1;
+            uv[10] = block.sideUVs.uv2;
+            uv[11] = block.sideUVs.uv3;
 
             verts[12] = new Vector3(startPosX + cubeSize, startPosY, startPosZ + cubeSize);
             verts[13] = new Vector3(startPosX + cubeSize, startPosY + cubeSize, startPosZ + cubeSize);
             verts[14] = new Vector3(startPosX, startPosY + cubeSize, startPosZ + cubeSize);
             verts[15] = new Vector3(startPosX, startPosY, startPosZ + cubeSize);
 
-            uv[12] = block.sidePos.uv0;
-            uv[13] = block.sidePos.uv1;
-            uv[14] = block.sidePos.uv2;
-            uv[15] = block.sidePos.uv3;
+            uv[12] = block.sideUVs.uv0;
+            uv[13] = block.sideUVs.uv1;
+            uv[14] = block.sideUVs.uv2;
+            uv[15] = block.sideUVs.uv3;
 
             verts[16] = new Vector3(startPosX + cubeSize, startPosY, startPosZ);
             verts[17] = new Vector3(startPosX + cubeSize, startPosY + cubeSize, startPosZ);
             verts[18] = new Vector3(startPosX + cubeSize, startPosY + cubeSize, startPosZ + cubeSize);
             verts[19] = new Vector3(startPosX + cubeSize, startPosY, startPosZ + cubeSize);
 
-            uv[16] = block.sidePos.uv0;
-            uv[17] = block.sidePos.uv1;
-            uv[18] = block.sidePos.uv2;
-            uv[19] = block.sidePos.uv3;
+            uv[16] = block.sideUVs.uv0;
+            uv[17] = block.sideUVs.uv1;
+            uv[18] = block.sideUVs.uv2;
+            uv[19] = block.sideUVs.uv3;
 
             verts[20] = new Vector3(startPosX, startPosY, startPosZ + cubeSize);
             verts[21] = new Vector3(startPosX, startPosY + cubeSize, startPosZ + cubeSize);
             verts[22] = new Vector3(startPosX, startPosY + cubeSize, startPosZ);
             verts[23] = new Vector3(startPosX, startPosY, startPosZ);
 
-            uv[20] = block.sidePos.uv0;
-            uv[21] = block.sidePos.uv1;
-            uv[22] = block.sidePos.uv2;
-            uv[23] = block.sidePos.uv3;
+            uv[20] = block.sideUVs.uv0;
+            uv[21] = block.sideUVs.uv1;
+            uv[22] = block.sideUVs.uv2;
+            uv[23] = block.sideUVs.uv3;
 
             int[] triangles = new int[36];
             int counter = 0;

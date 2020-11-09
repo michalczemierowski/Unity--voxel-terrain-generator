@@ -19,7 +19,7 @@ namespace VoxelTG.Terrain
         public const float chanceForGrass = 0.15f;
 
         public const int possibleBiomes = 4;
-        public const float biomeSize = 16f;
+        public const float biomeSize = 8f;
         public const float biomeHeightMultipler = 4f;
         public const float biomeTransition = 0.005f;
     }

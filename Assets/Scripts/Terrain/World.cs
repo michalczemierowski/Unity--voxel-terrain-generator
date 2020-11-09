@@ -7,6 +7,8 @@ using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
+using VoxelTG.Effects.SFX;
+using VoxelTG.Entities;
 using VoxelTG.Jobs;
 using VoxelTG.Listeners.Interfaces;
 using VoxelTG.Player;
@@ -39,6 +41,14 @@ namespace VoxelTG.Terrain
 
         #region public / serializable
 
+        [Header("References")]
+        [SerializeField] private EntityManager entityManager;
+        public static EntityManager EntityManager => Instance.entityManager;
+
+        [SerializeField] private SoundManager soundManager;
+        public static SoundManager SoundManager => Instance.soundManager;
+
+        [Header("Settings")]
         [SerializeField] private float ticksPerSecond = 20;
         [SerializeField] private float buildChecksPerSecond = 10;
         public int chunkDist = 4;
@@ -68,7 +78,7 @@ namespace VoxelTG.Terrain
         public delegate void TimeToBuild();
         public static event TimeToBuild timeToBuild;
 
-        // ticks
+        // TODO: try to reduce GC alloc
         private static List<TickQueueData> tickQueue = new List<TickQueueData>();
         private static HashSet<BlockPosition> updatePositions = new HashSet<BlockPosition>();
 
@@ -142,6 +152,8 @@ namespace VoxelTG.Terrain
 
             TotalChunks = 4 * chunkDist * chunkDist;
 
+            PathFinding.Init();
+
             // TODO: enable this later
             //LoadChunkData();
 
@@ -178,6 +190,9 @@ namespace VoxelTG.Terrain
             {
                 chunk.DisposeAndSaveData();
             }
+
+            PathFinding.Dispose();
+
             SaveChunkData();
 
             // dispose native containers
@@ -336,11 +351,11 @@ namespace VoxelTG.Terrain
         /// <summary>
         /// Schedule chunk build job
         /// </summary>
-        /// <param name="xPos">x position of chunk</param>
-        /// <param name="zPos">z position of chunk</param>
-        /// <param name="handlers">list of job handles</param>
+        /// <param name="positionX">x position of chunk</param>
+        /// <param name="positionZ">z position of chunk</param>
+        /// <param name="jobHandles">list of job handles</param>
         /// <param name="chunk">reference to target chunk</param>
-        private void BuildChunk(int xPos, int zPos, NativeQueue<JobHandle> handlers, ref Chunk chunk)
+        private void BuildChunk(int positionX, int positionZ, NativeQueue<JobHandle> jobHandles, ref Chunk chunk)
         {
             // if pool contains chunk
             if (pooledChunks.Count > 0)
@@ -353,20 +368,20 @@ namespace VoxelTG.Terrain
                 pooledChunks.RemoveAt(pooledChunks.Count - 1);
 
                 // move chunk to target position
-                chunk.chunkPos = new Vector2Int(xPos, zPos);
-                chunk.transform.position = new Vector3(xPos, 0, zPos);
+                chunk.ChunkPosition = new Vector2Int(positionX, positionZ);
+                chunk.transform.position = new Vector3(positionX, 0, positionZ);
             }
             else
             {
                 // instantiate new chunk
-                GameObject chunkGO = Instantiate(terrainChunk, new Vector3(xPos, 0, zPos), Quaternion.identity);
+                GameObject chunkGO = Instantiate(terrainChunk, new Vector3(positionX, 0, positionZ), Quaternion.identity);
                 // move chunk to target position
                 chunk = chunkGO.GetComponent<Chunk>();
-                chunk.chunkPos = new Vector2Int(xPos, zPos);
+                chunk.ChunkPosition = new Vector2Int(positionX, positionZ);
             }
 
             // schedule build job
-            SerializableVector2Int serializableChunkPos = SerializableVector2Int.FromVector2Int(chunk.chunkPos);
+            SerializableVector2Int serializableChunkPos = SerializableVector2Int.FromVector2Int(chunk.ChunkPosition);
             if (worldSave.savedChunks.ContainsKey(serializableChunkPos))
             {
                 ChunkSaveData data = worldSave.savedChunks[serializableChunkPos];
@@ -378,16 +393,16 @@ namespace VoxelTG.Terrain
                 //    chunk.blockParameters.Add(data.blockParameters[i], data.blockParameterValues[i]);
                 //}
 
-                chunk.BuildMesh(handlers);
+                chunk.BuildMesh(jobHandles);
             }
             else
-                chunk.GenerateTerrainDataAndBuildMesh(handlers, xPos, zPos);
+                chunk.GenerateTerrainDataAndBuildMesh(jobHandles, positionX, positionZ);
 
             // disable mesh renderers
             chunk.SetMeshRenderersActive(false);
 
             // add chunk to chunk dict
-            chunks.Add(new Vector2Int(xPos, zPos), chunk);
+            chunks.Add(new Vector2Int(positionX, positionZ), chunk);
         }
 
         /// <summary>
@@ -406,19 +421,20 @@ namespace VoxelTG.Terrain
                 curChunk.x = curChunkPosX;
                 curChunk.y = curChunkPosZ;
 
-                for (int i = curChunkPosX - chunkWidth * chunkDist; i <= curChunkPosX + chunkWidth * chunkDist; i += chunkWidth)
-                    for (int j = curChunkPosZ - chunkWidth * chunkDist; j <= curChunkPosZ + chunkWidth * chunkDist; j += chunkWidth)
+                for (int x = curChunkPosX - chunkWidth * chunkDist; x <= curChunkPosX + chunkWidth * chunkDist; x += chunkWidth)
+                {
+                    for (int z = curChunkPosZ - chunkWidth * chunkDist; z <= curChunkPosZ + chunkWidth * chunkDist; z += chunkWidth)
                     {
-                        Vector2Int cp = new Vector2Int(i, j);
+                        Vector2Int cp = new Vector2Int(x, z);
 
                         if (!chunks.ContainsKey(cp))
                         {
-                            Chunk c = null;
-                            BuildChunk(i, j, pendingJobs, ref c);
-                            terrainChunks.Enqueue(c);
+                            Chunk chunk = null;
+                            BuildChunk(x, z, pendingJobs, ref chunk);
+                            terrainChunks.Enqueue(chunk);
                         }
                     }
-
+                }
                 // if instant == true, wait for all jobs to complete
                 // if (instant)
                 // {
@@ -547,6 +563,23 @@ namespace VoxelTG.Terrain
             return new BlockPosition();
         }
 
+        public static BlockPosition GetTopBlock(Vector2Int worldPositon)
+        {
+            Chunk chunk = GetChunk(worldPositon.x, worldPositon.y);
+            BlockPosition blockPosition = new BlockPosition(new int3(worldPositon.x, 0, worldPositon.y));
+            for (int y = chunkHeight - 1; y >= 0; y--)
+            {
+                blockPosition.y = y;
+                int index = Utils.BlockPosition3DtoIndex(blockPosition);
+                if (chunk.blocks[index] != BlockType.AIR)
+                {
+                    return blockPosition;
+                }
+            }
+
+            return new BlockPosition();
+        }
+
         /// <summary>
         /// Get chunk at provided position
         /// </summary>
@@ -560,10 +593,21 @@ namespace VoxelTG.Terrain
 
             Vector2Int cp = new Vector2Int(chunkPosX, chunkPosZ);
 
-            Chunk result;
-            chunks.TryGetValue(cp, out result);
+            if (chunks.TryGetValue(cp, out Chunk result))
+                return result;
 
-            return result;
+            return null;
+        }
+
+        public static bool TryGetChunk(float x, float z, out Chunk chunk)
+        {
+            int chunkPosX = Mathf.FloorToInt(x / chunkWidth) * chunkWidth;
+            int chunkPosZ = Mathf.FloorToInt(z / chunkWidth) * chunkWidth;
+
+            Vector2Int cp = new Vector2Int(chunkPosX, chunkPosZ);
+
+            chunks.TryGetValue(cp, out chunk);
+            return chunk != null;
         }
 
         #endregion
@@ -678,7 +722,7 @@ namespace VoxelTG.Terrain
             }
 
             float time = (float)currentTick / ticksInDay;
-  
+
             directionalLight.intensity = sunIntensityCurve.Evaluate(time);
             directionalLight.color = timeColors.Evaluate(time);
             directionalLight.transform.eulerAngles = new Vector3(Utils.RoundToDecimalPlace(sunRotationXCurve.Evaluate(time) * 180, 1), 0, 0);

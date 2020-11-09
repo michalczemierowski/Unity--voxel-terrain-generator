@@ -25,8 +25,7 @@ namespace VoxelTG.Player
 
         [SerializeField] private LayerMask groundLayer;
         [Space]
-        [SerializeField] private GameObject destroyingBlockPreview;
-        [SerializeField] private GameObject placingBlockPreview;
+        [SerializeField] private GameObject selectedBlockOutline;
 
         private InventoryUI inventoryUI;
 
@@ -63,7 +62,6 @@ namespace VoxelTG.Player
                 if (newItem.BlockType != lastSelectedBlock)
                 {
                     lastSelectedBlock = newItem.BlockType;
-                    DroppedItemsManager.Instance.CreateCube(placingBlockPreview.GetComponent<MeshFilter>().mesh, newItem.BlockType, 0.75f, 1.125f, -0.125f, 1.125f);
                 }
             }
             else if (newItem.IsTool())
@@ -76,18 +74,20 @@ namespace VoxelTG.Player
                 handleDestroyingBlocks = false;
                 handlePlacingBlocks = false;
 
-                SetDestroyingPreviewActive(false);
-                SetPlacingPreviewActive(false);
+                selectedBlockOutline.SetActive(false);
             }
         }
 
         private void Update()
         {
-            HandleInput();
-
-            if (handleDestroyingBlocks || handlePlacingBlocks)
+            if (PlayerController.AreControlsActive)
             {
-                HandleHover();
+                HandleInput();
+
+                if (handleDestroyingBlocks || handlePlacingBlocks)
+                {
+                    HandleHover();
+                }
             }
         }
 
@@ -140,23 +140,12 @@ namespace VoxelTG.Player
                     // get block & chunk
                     Vector3 globalBlockPosition = new Vector3(Mathf.FloorToInt(pointInTargetBlock.x) + 1, Mathf.FloorToInt(pointInTargetBlock.y), Mathf.FloorToInt(pointInTargetBlock.z) + 1);
 
-                    if (handlePlacingBlocks)
-                    {
-                        SetPlacingPreviewActive(true);
-                        SetDestroyingPreviewActive(false);
-                        placingBlockPreview.transform.position = globalBlockPosition;
-                    }
-                    else
-                    {
-                        SetPlacingPreviewActive(false);
-                        SetDestroyingPreviewActive(true);
-                        destroyingBlockPreview.transform.position = globalBlockPosition;
-                    }
+                    selectedBlockOutline.SetActive(true);
+                    selectedBlockOutline.transform.position = globalBlockPosition;
                 }
                 else
                 {
-                    SetPlacingPreviewActive(false);
-                    SetDestroyingPreviewActive(false);
+                    selectedBlockOutline.SetActive(false);
                     if (miningProgressImage.fillAmount != 0)
                     {
                         miningBlockPosition = new int3(-1, -1, -1);
@@ -165,10 +154,7 @@ namespace VoxelTG.Player
                 }
             }
             else
-            {
-                SetDestroyingPreviewActive(false);
-                SetPlacingPreviewActive(false);
-            }
+                selectedBlockOutline.SetActive(false);
         }
 
         private void HandlePlacing()
@@ -247,7 +233,7 @@ namespace VoxelTG.Player
                 }
                 else if (inputPlace)
                 {
-                    if(WorldData.CanPlaceGrass(chunk.GetBlock(blockPosition)) && chunk.GetBlock(blockPosition.Above()) == BlockType.GRASS)
+                    if (WorldData.CanPlaceGrass(chunk.GetBlock(blockPosition)) && chunk.GetBlock(blockPosition.Above()) == BlockType.GRASS)
                     {
                         chunk.SetBlock(blockPosition.Above(), BlockType.AIR, SetBlockSettings.DESTROY);
                     }
@@ -259,22 +245,6 @@ namespace VoxelTG.Player
         {
             miningBlockPosition = new int3(-1, -1, -1);
             miningProgressImage.fillAmount = 0;
-        }
-
-        public void SetDestroyingPreviewActive(bool active)
-        {
-            if (active && !handleDestroyingBlocks)
-                active = false;
-
-            destroyingBlockPreview.SetActive(active);
-        }
-
-        public void SetPlacingPreviewActive(bool active)
-        {
-            if (active && !handlePlacingBlocks)
-                active = false;
-
-            placingBlockPreview.SetActive(active);
         }
     }
 }

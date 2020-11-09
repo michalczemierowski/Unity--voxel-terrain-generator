@@ -104,19 +104,18 @@ namespace VoxelTG.Player
             int z = _currentPosition.z;
 
             if (!currentChunk ||
-                x - currentChunk.chunkPos.x > WorldSettings.chunkWidth ||
-                x - currentChunk.chunkPos.x < 1 ||
-                z - currentChunk.chunkPos.y > WorldSettings.chunkWidth ||
-                z - currentChunk.chunkPos.y < 1)
+                x - currentChunk.ChunkPosition.x > WorldSettings.chunkWidth ||
+                x - currentChunk.ChunkPosition.x < 1 ||
+                z - currentChunk.ChunkPosition.y > WorldSettings.chunkWidth ||
+                z - currentChunk.ChunkPosition.y < 1)
             {
                 currentChunk = World.GetChunk(x, z);
             }
 
-            int bix = x - currentChunk.chunkPos.x;
-            int biz = z - currentChunk.chunkPos.y;
+            int bix = x - currentChunk.ChunkPosition.x;
+            int biz = z - currentChunk.ChunkPosition.y;
 
-            string debugText = string.Empty;
-            debugText += $"[ x:{x}, y:{y}, z:{z} ]";
+            string positionString = $"[ x:{x}, y:{y}, z:{z} ]";
 
             for (int _y = 0; _y < 4; _y++)
             {
@@ -124,13 +123,14 @@ namespace VoxelTG.Player
                 //debugText += nearbyBlocks[_y].ToString() + "\n";
             }
 
-            DebugConsole.SetPositionText(debugText);
+            DebugConsole.SetPositionText(positionString);
 
             CheckWater();
         }
 
         private void CheckWater()
         {
+            // TODO: move to UImanager
             if (nearbyBlocks[1] == BlockType.WATER)
             {
                 waterImage.SetActive(true);
@@ -148,8 +148,7 @@ namespace VoxelTG.Player
                 movementSpeed = defaultSpeed;
         }
 
-        // Start is called before the first frame update
-        void Start()
+        private void Start()
         {
             m_Rigidbody = GetComponent<Rigidbody>();
             m_BoxCollider = GetComponent<BoxCollider>();
@@ -160,9 +159,15 @@ namespace VoxelTG.Player
             currentPosition = new Vector3Int(Mathf.CeilToInt(transform.position.x), Mathf.RoundToInt(transform.position.y), Mathf.CeilToInt(transform.position.z));
         }
 
-        void Update()
+        private void Update()
         {
-            HandleInput();
+            if(PlayerController.AreControlsActive)
+                HandleInput();
+            else
+            {
+                isWalking = false;
+                moveVector = Vector2.zero;
+            }
         }
 
         private void FixedUpdate()
@@ -175,8 +180,6 @@ namespace VoxelTG.Player
                 float y = m_Rigidbody.velocity.y + (gravity * Time.fixedDeltaTime);
                 m_Rigidbody.velocity = new Vector3(m_Rigidbody.velocity.x, y, m_Rigidbody.velocity.z);
             }
-
-
         }
 
         private void HandleInput()
@@ -188,9 +191,7 @@ namespace VoxelTG.Player
             float vertical = Input.GetAxis("Vertical");
 
             if (horizontal == 0 && vertical == 0)
-            {
                 isWalking = false;
-            }
             else
                 isWalking = true;
 

@@ -32,7 +32,7 @@ namespace VoxelTG.Terrain
         public NativeArray<BlockType> blocks;
         public NativeArray<BiomeType> biomeTypes;
 
-        public Vector2Int chunkPos;
+        public Vector2Int ChunkPosition;
         public bool needToSaveBlockData { get; private set; }
 
         #endregion
@@ -106,7 +106,7 @@ namespace VoxelTG.Terrain
 
         public void DisposeAndSaveData()
         {
-            if(!blocks.IsCreated)
+            if (!blocks.IsCreated)
                 return;
             // save game before quitting
             SaveDataInWorldDictionary();
@@ -141,10 +141,10 @@ namespace VoxelTG.Terrain
             yield return new WaitForEndOfFrame();
             Vector2Int[] positions = new Vector2Int[]
             {
-                new Vector2Int(chunkPos.x + chunkWidth, chunkPos.y),
-                new Vector2Int(chunkPos.x - chunkWidth, chunkPos.y),
-                new Vector2Int(chunkPos.x, chunkPos.y + chunkWidth),
-                new Vector2Int(chunkPos.x, chunkPos.y - chunkWidth)
+                new Vector2Int(ChunkPosition.x + chunkWidth, ChunkPosition.y),
+                new Vector2Int(ChunkPosition.x - chunkWidth, ChunkPosition.y),
+                new Vector2Int(ChunkPosition.x, ChunkPosition.y + chunkWidth),
+                new Vector2Int(ChunkPosition.x, ChunkPosition.y - chunkWidth)
             };
 
             neigbourChunks = new Chunk[]
@@ -287,7 +287,7 @@ namespace VoxelTG.Terrain
 
             // bake mesh immediately if player is near
             Vector2 playerPosition = new Vector2(PlayerController.PlayerTransform.position.x, PlayerController.PlayerTransform.position.z);
-            if (Vector2.Distance(new Vector2(chunkPos.x, chunkPos.y), playerPosition) < fixedChunkWidth * 2)
+            if (Vector2.Distance(new Vector2(ChunkPosition.x, ChunkPosition.y), playerPosition) < fixedChunkWidth * 2)
                 blockMeshCollider.sharedMesh = blockMesh;
             else
                 World.SchedulePhysicsBake(this);
@@ -555,7 +555,7 @@ namespace VoxelTG.Terrain
         /// <returns>true if chunk contains block at position</returns>
         public bool TryGetBlock(BlockPosition blockPos, out BlockType blockType)
         {
-            if(Utils.IsPositionInChunkBounds(blockPos.x, blockPos.y, blockPos.z))
+            if (Utils.IsPositionInChunkBounds(blockPos.x, blockPos.y, blockPos.z))
             {
                 blockType = blocks[Utils.BlockPosition3DtoIndex(blockPos.x, blockPos.y, blockPos.z)];
                 return true;
@@ -579,25 +579,25 @@ namespace VoxelTG.Terrain
 
             BlockType currentBlock = GetBlock(blockPosition);
 
-            if(currentBlock == BlockType.WATER && blockType != BlockType.WATER)
+            if (currentBlock == BlockType.WATER && blockType != BlockType.WATER)
                 ClearParameters(blockPosition);
 
             if (blockSettings.callDestroyEvent)
                 World.InvokeBlockDestroyEvent(new BlockEventData(this, blockPosition, currentBlock));
-            if(blockSettings.callPlaceEvent)
+            if (blockSettings.callPlaceEvent)
                 World.InvokeBlockPlaceEvent(new BlockEventData(this, blockPosition, blockType));
-            if(blockSettings.dropItemPickup)
+            if (blockSettings.dropItemPickup)
             {
-                Vector3 worldPosition = Utils.LocalToWorldPositionVector3Int(chunkPos, blockPosition) + new Vector3(0.5f, 0.5f, 0.5f);
+                Vector3 worldPosition = Utils.LocalToWorldPositionVector3Int(ChunkPosition, blockPosition) + new Vector3(0.5f, 0.5f, 0.5f);
 
                 ItemType dropItemType = ItemType.MATERIAL;
                 BlockType dropBlockType = currentBlock;
                 int count = 1;
-                
+
                 WorldData.GetCustomBlockDrops(currentBlock, ref dropItemType, ref dropBlockType, ref count);
 
-                if(dropItemType == ItemType.MATERIAL)
-                    DroppedItemsManager.Instance.DropItemMaterial(dropBlockType, worldPosition, count: count, velocity: blockSettings.droppedItemVelocity, rotate:blockSettings.rotateDroppedItem);
+                if (dropItemType == ItemType.MATERIAL)
+                    DroppedItemsManager.Instance.DropItemMaterial(dropBlockType, worldPosition, count: count, velocity: blockSettings.droppedItemVelocity, rotate: blockSettings.rotateDroppedItem);
                 // TODO: check if name starts with tool etc.
                 else
                     // TODO: item objects pool
@@ -628,7 +628,7 @@ namespace VoxelTG.Terrain
         /// <param name="destroy">spawn destroy particle</param>
         public void SetBlock(int x, int y, int z, BlockType blockType, SetBlockSettings blockSettings)
         {
-            SetBlock(new BlockPosition(x,y,z), blockType, blockSettings);
+            SetBlock(new BlockPosition(x, y, z), blockType, blockSettings);
         }
         /// <summary>
         /// Set block at position and rebuild mesh - use when you want to place one block, else take a look at
@@ -904,7 +904,7 @@ namespace VoxelTG.Terrain
         {
             if (!parametersToAdd.ContainsKey(param))
                 parametersToAdd.Add(param, value);
-            else if(overrideIfExists)
+            else if (overrideIfExists)
                 parametersToAdd[param] = value;
         }
 
@@ -941,7 +941,7 @@ namespace VoxelTG.Terrain
                 //NativeArray<short> blockParameterValues = blockParameters.GetValueArray(Allocator.Temp);
                 ChunkSaveData data = new ChunkSaveData(blocks.ToArray());
 
-                SerializableVector2Int serializableChunkPos = SerializableVector2Int.FromVector2Int(chunkPos);
+                SerializableVector2Int serializableChunkPos = SerializableVector2Int.FromVector2Int(ChunkPosition);
                 // add new key or update existing data
                 if (World.Instance.worldSave.savedChunks.ContainsKey(serializableChunkPos))
                     World.Instance.worldSave.savedChunks[serializableChunkPos] = data;

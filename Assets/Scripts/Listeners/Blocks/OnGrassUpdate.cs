@@ -35,7 +35,7 @@ namespace VoxelTG.Blocks.Listeners
             if (data.chunk.GetBlock(above) == BlockType.GRASS)
             {
                 data.chunk.AddBlockToBuildList(new BlockData(BlockType.AIR, above));
-                ParticleManager.InstantiateBlockParticle(ParticleType.BLOCK_DESTROY, Utils.LocalToWorldPositionVector3Int(data.chunk.chunkPos, above), BlockType.GRASS, true);
+                ParticleManager.InstantiateBlockParticle(ParticleType.BLOCK_DESTROY, Utils.LocalToWorldPositionVector3Int(data.chunk.ChunkPosition, above), BlockType.GRASS, true);
             }
         }
     }

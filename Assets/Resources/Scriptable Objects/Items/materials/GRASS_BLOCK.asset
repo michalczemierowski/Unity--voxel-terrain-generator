@@ -12,7 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e0a20800cc863d04fb93ae13e58d4489, type: 3}
   m_Name: GRASS_BLOCK
   m_EditorClassIdentifier: VTGAssembly:VoxelTG.Player.Inventory:InventoryItemMaterial
+  itemName: 
   maxStack: 256
-  itemIcon: {fileID: 1427973245326978912, guid: 9c2a687c7f1a53740953a6a015b4fb37,
+  itemIcon: {fileID: 1199415348561036411, guid: 9c2a687c7f1a53740953a6a015b4fb37,
     type: 3}
   blockType: 2

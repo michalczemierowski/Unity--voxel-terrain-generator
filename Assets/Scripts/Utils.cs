@@ -123,6 +123,16 @@ namespace VoxelTG
         }
 
         /// <summary>
+        /// Convert world position to block position
+        /// </summary>
+        /// <param name="worldPosition">world position</param>
+        /// <returns>Vector3Int block position</returns>
+        public static Vector3Int WorldToBlockPosition(Vector3 worldPosition)
+        {
+            return new Vector3Int(Mathf.FloorToInt(worldPosition.x), Mathf.RoundToInt(worldPosition.y), Mathf.FloorToInt(worldPosition.z));
+        }
+
+        /// <summary>
         /// Get all block types
         /// </summary>
         /// <returns>Array containing all possible block types</returns>

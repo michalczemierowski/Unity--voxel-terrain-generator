@@ -53,7 +53,7 @@ namespace VoxelTG.UI
 
         private void Awake()
         {
-            toolbarSlotsCount = toolbarUI.GetToolbarCount();
+            toolbarSlotsCount = toolbarUI.GetToolbarSlotCount();
             toolbarInventoryData = new InventoryItemData[toolbarSlotsCount];
 
             // init positions for toolbar

@@ -1,6 +1,7 @@
 ﻿using System;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
+using UnityEngine.EventSystems;
 using UnityEngine.ResourceManagement.AsyncOperations;
 using VoxelTG.Player.Interactions;
 using VoxelTG.Player.Inventory;
@@ -18,6 +19,7 @@ namespace VoxelTG.Player
     {
         public static PlayerController Instance;
         public static Transform PlayerTransform { get; private set; }
+        public static bool AreControlsActive => EventSystem.current.currentSelectedGameObject == null;
 
         [Header("Settings")]
         [SerializeField] private float droppedItemVelocity = 3;
@@ -47,7 +49,6 @@ namespace VoxelTG.Player
 
         void Awake()
         {
-            gameObject.SetActive(false);
             if (Instance)
                 Destroy(this);
             else
@@ -55,6 +56,8 @@ namespace VoxelTG.Player
                 Instance = this;
                 PlayerTransform = transform;
             }
+
+            gameObject.SetActive(false);
         }
 
         private void Start()
@@ -76,7 +79,8 @@ namespace VoxelTG.Player
 
         private void Update()
         {
-            HandleInput();
+            if(AreControlsActive)
+                HandleInput();
         }
 
         private void SelectToolbarSlot(int slot)
@@ -131,7 +135,8 @@ namespace VoxelTG.Player
             {
                 inventoryUI.AddItemToInventory(new InventoryItemData(ItemType.PISTOL_M1911));
                 inventoryUI.AddItemToInventory(new InventoryItemData(ItemType.RIFLE_AK74));
-                inventoryUI.AddItemToInventory(new InventoryItemData(BlockType.OBSIDIAN, 32));
+                inventoryUI.AddItemToInventory(new InventoryItemData(BlockType.OBSIDIAN, 100));
+                inventoryUI.AddItemToInventory(new InventoryItemData(BlockType.STONE, 100));
             }
 
         }

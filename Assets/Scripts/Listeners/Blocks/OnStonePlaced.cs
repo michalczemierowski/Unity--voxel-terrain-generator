@@ -3,6 +3,8 @@ using UnityEngine;
 using VoxelTG.Listeners.Interfaces;
 using VoxelTG.Terrain;
 using VoxelTG.Terrain.Blocks;
+using VoxelTG;
+using VoxelTG.Entities;
 
 /*
  * Michał Czemierowski
@@ -10,15 +12,33 @@ using VoxelTG.Terrain.Blocks;
 */
 namespace VoxelTG.Blocks.Listeners
 {
-    public class OnStonePlaced : MonoBehaviour, IBlockPlaceListener
+    public class OnStonePlaced : MonoBehaviour, IBlockArrayPlaceListener
     {
-        public BlockType GetBlockType()
+        private Vector3Int posOne;
+        private Vector3Int posTwo;
+
+        public BlockType[] GetBlockTypes()
         {
-            return BlockType.STONE;
+            return new BlockType[] { BlockType.OBSIDIAN, BlockType.STONE };
+        }
+
+        void Update()
+        {
+            if (Input.GetKeyDown(KeyCode.M))
+                PathFinding.FindPath(posOne, posTwo);
+            if(Input.GetKeyDown(KeyCode.N))
+                World.EntityManager.SpawnEntity(EntityType.TEST_ENTITY, Player.PlayerController.Instance.transform.position + new Vector3(0, 5,0));
         }
 
         public void OnBlockPlaced(BlockEventData data, params int[] args)
         {
+            if (data.blockType == BlockType.STONE)
+                posOne = data.WorldPosition + Vector3Int.up;
+            else
+                posTwo = data.WorldPosition + Vector3Int.up;
+
+
+
             // BlockPosition blockPosition = World.GetTopSolidBlock(new Vector2Int(data.WorldPosition.x, data.WorldPosition.z), out Chunk chunk);
             // blockPosition.y += 2;
             // chunk.SetBlock(blockPosition, BlockType.OAK_LEAVES, SetBlockSettings.PLACE);

@@ -22,7 +22,7 @@ namespace VoxelTG.Player
     public class PlayerWeaponController : MonoBehaviour
     {
         [System.NonSerialized]
-        public bool handleInput = false;
+        public bool isWeaponInHand = false;
 
         [SerializeField] private LayerMask groundLayer;
         public float bulletDistance = 100;
@@ -57,12 +57,12 @@ namespace VoxelTG.Player
 
             if (newItem.IsWeapon(out InventoryItemWeapon weapon))
             {
-                handleInput = true;
+                isWeaponInHand = true;
                 currentWeapon = weapon;
                 // TODO: read settings etc.
             }
             else
-                handleInput = false;
+                isWeaponInHand = false;
         }
 
         private void OnHandObjectLoaded(GameObject handObject, ItemType itemType)
@@ -80,9 +80,12 @@ namespace VoxelTG.Player
 
         private void Update()
         {
-            if (!handleInput || currentWeapon == null) return;
+            if (PlayerController.AreControlsActive)
+            {
+                if (!isWeaponInHand || currentWeapon == null) return;
 
-            HandleInput();
+                HandleInput();
+            }
         }
 
         private void HandleInput()

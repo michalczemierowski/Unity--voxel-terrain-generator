@@ -10,8 +10,6 @@ namespace VoxelTG.Effects.SFX
 {
     public class SoundManager : MonoBehaviour
     {
-        public static SoundManager Instance;
-
         [SerializeField] private GameObject audioSourcePrefab;
 
         [Header("Path settings")]
@@ -20,14 +18,6 @@ namespace VoxelTG.Effects.SFX
         [SerializeField] private string itemsDirectoryName = "items";
 
         private Dictionary<SoundType, AudioClip> audioCache = new Dictionary<SoundType, AudioClip>();
-
-        private void Awake()
-        {
-            if (Instance)
-                Destroy(this);
-            else
-                Instance = this;
-        }
 
         private string GetPathToResource(SoundType soundType)
         {

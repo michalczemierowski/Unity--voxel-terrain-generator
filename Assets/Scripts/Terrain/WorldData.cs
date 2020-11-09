@@ -14,21 +14,38 @@ namespace VoxelTG.Terrain
         #region // === Blocks === \\
 
         // TODO: add sound types
-        public static readonly Block AIR = new Block(BlockType.AIR, BlockState.TRANSPARENT);
-        public static readonly Block GRASS_BLOCK = new Block(BlockType.GRASS_BLOCK, Tile.GRASS_BLOCK_TOP, Tile.GRASS_BLOCK_SIDE, Tile.DIRT, BlockShape.CUBE, BlockState.SOLID);
-        public static readonly Block DIRT = new Block(BlockType.DIRT, Tile.DIRT, BlockShape.CUBE, BlockState.SOLID);
-        public static readonly Block STONE = new Block(BlockType.STONE, Tile.STONE, BlockShape.CUBE, BlockState.SOLID);
-        public static readonly Block COBBLESTONE = new Block(BlockType.COBBLESTONE, Tile.COBBLESTONE, BlockShape.CUBE, BlockState.SOLID);
-        public static readonly Block OBSIDIAN = new Block(BlockType.OBSIDIAN, Tile.OBSIDIAN, BlockShape.CUBE, BlockState.SOLID);
-        public static readonly Block OAK_LOG = new Block(BlockType.OAK_LOG, Tile.OAK_LOG_TOP, Tile.OAK_LOG_SIDE, Tile.OAK_LOG_TOP, BlockShape.CUBE, BlockState.SOLID);
-        public static readonly Block OAK_LEAVES = new Block(BlockType.OAK_LEAVES, Tile.OAK_LEAVES, BlockShape.CUBE, BlockState.TRANSPARENT);
-        public static readonly Block HALF_SLAB_BLOCK = new Block(BlockType.HALF_SLAB, Tile.OAK_LOG_SIDE, BlockShape.HALF_BLOCK, BlockState.TRANSPARENT);
+        public static readonly Block AIR
+            = new Block(BlockType.AIR, BlockState.TRANSPARENT);
+        public static readonly Block GRASS_BLOCK
+            = new Block(BlockType.GRASS_BLOCK, TextureTile.GRASS_BLOCK_TOP, TextureTile.GRASS_BLOCK_SIDE, TextureTile.DIRT, BlockShape.CUBE, BlockState.SOLID);
+        public static readonly Block DIRT
+            = new Block(BlockType.DIRT, TextureTile.DIRT, BlockShape.CUBE, BlockState.SOLID);
+        public static readonly Block SAND
+            = new Block(BlockType.SAND, TextureTile.SAND, BlockShape.CUBE, BlockState.SOLID);
+        public static readonly Block STONE
+            = new Block(BlockType.STONE, TextureTile.STONE, BlockShape.CUBE, BlockState.SOLID);
+        public static readonly Block COBBLESTONE
+            = new Block(BlockType.COBBLESTONE, TextureTile.COBBLESTONE, BlockShape.CUBE, BlockState.SOLID);
+        public static readonly Block OBSIDIAN
+            = new Block(BlockType.OBSIDIAN, TextureTile.OBSIDIAN, BlockShape.CUBE, BlockState.SOLID);
+        public static readonly Block OAK_LOG
+            = new Block(BlockType.OAK_LOG, TextureTile.OAK_LOG_TOP, TextureTile.OAK_LOG_SIDE, TextureTile.OAK_LOG_TOP, BlockShape.CUBE, BlockState.SOLID);
+        public static readonly Block OAK_LEAVES
+            = new Block(BlockType.OAK_LEAVES, TextureTile.OAK_LEAVES, BlockShape.CUBE, BlockState.TRANSPARENT);
+        public static readonly Block SPRUCE_LOG
+            = new Block(BlockType.SPRUCE_LOG, TextureTile.SPRUCE_LOG_TOP, TextureTile.SPRUCE_LOG_SIDE, TextureTile.SPRUCE_LOG_TOP, BlockShape.CUBE, BlockState.SOLID);
+        public static readonly Block SPRUCE_LEAVES
+            = new Block(BlockType.SPRUCE_LEAVES, TextureTile.SPRUCE_LEAVES, BlockShape.CUBE, BlockState.TRANSPARENT);
+        public static readonly Block HALF_SLAB_BLOCK
+            = new Block(BlockType.HALF_SLAB, TextureTile.OAK_LOG_SIDE, BlockShape.HALF_BLOCK, BlockState.TRANSPARENT);
 
         // liquids
-        public static readonly Block WATER_BLOCK = new Block(BlockType.WATER, Tile.WATER, BlockShape.LIQUID, BlockState.LIQUID);
+        public static readonly Block WATER_BLOCK
+            = new Block(BlockType.WATER, TextureTile.WATER, BlockShape.LIQUID, BlockState.LIQUID);
 
         // plants
-        public static readonly Block GRASS = new Block(BlockType.GRASS, Tile.GRASS_0, Tile.GRASS_1, Tile.GRASS_2, BlockShape.GRASS, BlockState.PLANTS);
+        public static readonly Block GRASS
+            = new Block(BlockType.GRASS, TextureTile.GRASS_0, TextureTile.GRASS_1, TextureTile.GRASS_2, BlockShape.GRASS, BlockState.PLANTS);
 
         #endregion
 
@@ -51,16 +68,27 @@ namespace VoxelTG.Terrain
                     return DIRT;
                 case BlockType.GRASS_BLOCK:
                     return GRASS_BLOCK;
+                case BlockType.SAND:
+                    return SAND;
+
                 case BlockType.STONE:
                     return STONE;
                 case BlockType.COBBLESTONE:
                     return COBBLESTONE;
                 case BlockType.OBSIDIAN:
                     return OBSIDIAN;
+
+                // oak
                 case BlockType.OAK_LOG:
                     return OAK_LOG;
                 case BlockType.OAK_LEAVES:
                     return OAK_LEAVES;
+                // spruce
+                case BlockType.SPRUCE_LOG:
+                    return SPRUCE_LOG;
+                case BlockType.SPRUCE_LEAVES:
+                    return SPRUCE_LEAVES;
+
                 case BlockType.HALF_SLAB:
                     return HALF_SLAB_BLOCK;
                 // liquids
@@ -80,6 +108,7 @@ namespace VoxelTG.Terrain
             {
                 case BlockType.AIR:
                 case BlockType.OAK_LEAVES:
+                case BlockType.SPRUCE_LEAVES:
                     return BlockState.TRANSPARENT;
                 case BlockType.GRASS:
                     return BlockState.PLANTS;
@@ -92,18 +121,15 @@ namespace VoxelTG.Terrain
 
         public static void GetCustomBlockDrops(BlockType block, ref ItemType itemType, ref BlockType blockType, ref int count)
         {
-            switch(block)
+            switch (block)
             {
                 case BlockType.GRASS_BLOCK:
                     itemType = ItemType.MATERIAL;
                     blockType = BlockType.DIRT;
                     break;
-                case BlockType.OAK_LOG:
-                    itemType = ItemType.PISTOL_M1911;
-                    blockType = BlockType.AIR;
-                    break;
             }
         }
+
         public static BlockState GetBlockState(BlockType type, BlockFace face)
         {
             switch (type)
@@ -126,6 +152,9 @@ namespace VoxelTG.Terrain
 
         #region // === Booleans === \\
 
+        /// <summary>
+        /// Can tree be placed on provided BlockType
+        /// </summary>
         public static bool CanPlaceTree(BlockType type)
         {
             switch (type)
@@ -139,6 +168,9 @@ namespace VoxelTG.Terrain
             }
         }
 
+        /// <summary>
+        /// Can grass be placed on provided BlockType
+        /// </summary>
         public static bool CanPlaceGrass(BlockType type)
         {
             switch (type)
@@ -155,11 +187,4 @@ namespace VoxelTG.Terrain
 
         #endregion
     }
-
-    public enum BlockType : byte { AIR, DIRT, GRASS_BLOCK, STONE, COBBLESTONE, OBSIDIAN, OAK_LOG, OAK_LEAVES, WATER, HALF_SLAB, GRASS }
-    public enum BlockState : byte { LIQUID, SOLID, TRANSPARENT, PLANTS }
-    public enum BlockFace : byte { TOP, BOTTOM, FRONT, BACK, LEFT, RIGHT }
-    public enum BlockShape : byte { CUBE, LIQUID, GRASS, HALF_BLOCK }
-
-    public enum BiomeType { FOREST, PLAINS, MOUNTAIN_PLAINS, MOUNTAINS }
 }

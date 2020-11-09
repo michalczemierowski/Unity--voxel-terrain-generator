@@ -53,8 +53,68 @@ TextureImporter:
   - first:
       213: 9020474101627927071
     second: materials_x16_16
+  - first:
+      213: -3541762723377772710
+    second: materials_x16_0
+  - first:
+      213: 4372922904842028897
+    second: materials_x16_1
+  - first:
+      213: 1355843206318474744
+    second: materials_x16_2
+  - first:
+      213: 7428612869225196496
+    second: materials_x16_3
+  - first:
+      213: -9104624225204749272
+    second: materials_x16_4
+  - first:
+      213: 3459910907469261188
+    second: materials_x16_5
+  - first:
+      213: 4296344661497089810
+    second: materials_x16_6
+  - first:
+      213: 6145179989369080442
+    second: materials_x16_7
+  - first:
+      213: 1253721198050233943
+    second: materials_x16_8
+  - first:
+      213: -1548102220123060151
+    second: materials_x16_9
+  - first:
+      213: -3292372099884028858
+    second: materials_x16_10
+  - first:
+      213: -5302290400557113961
+    second: materials_x16_11
+  - first:
+      213: -851905352305370885
+    second: materials_x16_12
+  - first:
+      213: 6786049109799160230
+    second: materials_x16_13
+  - first:
+      213: -3031449993146655504
+    second: materials_x16_14
+  - first:
+      213: 907988230830450125
+    second: materials_x16_15
+  - first:
+      213: 2969288777048570271
+    second: materials_x16_16
+  - first:
+      213: -8786144256876904467
+    second: materials_x16_17
+  - first:
+      213: 8077343361863871739
+    second: materials_x16_18
+  - first:
+      213: 5544426874289446256
+    second: materials_x16_19
   externalObjects: {}
-  serializedVersion: 10
+  serializedVersion: 11
   mipmaps:
     mipMapMode: 0
     enableMipMap: 0
@@ -74,6 +134,7 @@ TextureImporter:
   isReadable: 0
   streamingMipmaps: 0
   streamingMipmapsPriority: 0
+  vTOnly: 0
   grayScaleToAlpha: 0
   generateCubemap: 6
   cubemapConvolution: 0
@@ -108,6 +169,8 @@ TextureImporter:
   maxTextureSizeSet: 0
   compressionQualitySet: 0
   textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 1
   platformSettings:
   - serializedVersion: 3
     buildTarget: DefaultTexturePlatform
@@ -161,7 +224,49 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: OAK_LEAVES
+      name: materials_x16_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 96
+        width: 16
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a570952719129dec0800000000000000
+      internalID: -3541762723377772710
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: materials_x16_1
+      rect:
+        serializedVersion: 2
+        x: 16
+        y: 96
+        width: 16
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 1674745963ebfac30800000000000000
+      internalID: 4372922904842028897
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: materials_x16_2
       rect:
         serializedVersion: 2
         x: 0
@@ -175,50 +280,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: f22b0f49cd7e69120800000000000000
-      internalID: 2420376784335843887
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: materials_x16_1
-      rect:
-        serializedVersion: 2
-        x: 0
-        y: 64
-        width: 16
-        height: 16
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: ac952520815d4be40800000000000000
-      internalID: 5671392129861179850
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: materials_x16_2
-      rect:
-        serializedVersion: 2
-        x: 16
-        y: 64
-        width: 16
-        height: 16
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: 0aa001b1c3775f0b0800000000000000
-      internalID: -5695515053704344928
+      spriteID: 8f54dbb663ce0d210800000000000000
+      internalID: 1355843206318474744
       vertices: []
       indices: 
       edges: []
@@ -227,7 +290,28 @@ TextureImporter:
       name: materials_x16_3
       rect:
         serializedVersion: 2
-        x: 48
+        x: 16
+        y: 80
+        width: 16
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 0db201ccb0cb71760800000000000000
+      internalID: 7428612869225196496
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: materials_x16_4
+      rect:
+        serializedVersion: 2
+        x: 0
         y: 64
         width: 16
         height: 16
@@ -238,29 +322,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 64c1a48edad283100800000000000000
-      internalID: 87870417683487814
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: OAK_LOG
-      rect:
-        serializedVersion: 2
-        x: 0
-        y: 48
-        width: 16
-        height: 16
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: 0696966bd041b9c60800000000000000
-      internalID: 7825870826613860704
+      spriteID: 82c314b6180e5a180800000000000000
+      internalID: -9104624225204749272
       vertices: []
       indices: 
       edges: []
@@ -270,6 +333,27 @@ TextureImporter:
       rect:
         serializedVersion: 2
         x: 16
+        y: 64
+        width: 16
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 489643293a2140030800000000000000
+      internalID: 3459910907469261188
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: materials_x16_6
+      rect:
+        serializedVersion: 2
+        x: 0
         y: 48
         width: 16
         height: 16
@@ -280,14 +364,35 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 9353f473248893270800000000000000
-      internalID: 8230759611973449017
+      spriteID: 21f0e25e4beaf9b30800000000000000
+      internalID: 4296344661497089810
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: materials_x16_6
+      name: materials_x16_7
+      rect:
+        serializedVersion: 2
+        x: 16
+        y: 48
+        width: 16
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a7ace2b44a0184550800000000000000
+      internalID: 6145179989369080442
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: materials_x16_8
       rect:
         serializedVersion: 2
         x: 48
@@ -301,14 +406,14 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: a906f6f976ef6cba0800000000000000
-      internalID: -6068883726825201510
+      spriteID: 75e492189cc166110800000000000000
+      internalID: 1253721198050233943
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: STONE
+      name: materials_x16_9
       rect:
         serializedVersion: 2
         x: 0
@@ -322,14 +427,14 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 76c8fa2ceed5ebb90800000000000000
-      internalID: -7224233472205812633
+      spriteID: 9484295ab39048ae0800000000000000
+      internalID: -1548102220123060151
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: COBBLESTONE
+      name: materials_x16_10
       rect:
         serializedVersion: 2
         x: 16
@@ -343,14 +448,14 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 4ee2281f09006a430800000000000000
-      internalID: 3793720358633352932
+      spriteID: 64c6106d4052f42d0800000000000000
+      internalID: -3292372099884028858
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: OBSIDIAN
+      name: materials_x16_11
       rect:
         serializedVersion: 2
         x: 32
@@ -364,14 +469,14 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: cbf8667e435f9b550800000000000000
-      internalID: 6177237971484708796
+      spriteID: 79d54d239fa7a66b0800000000000000
+      internalID: -5302290400557113961
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: materials_x16_10
+      name: materials_x16_12
       rect:
         serializedVersion: 2
         x: 48
@@ -385,50 +490,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: e0f5ffaed9166c020800000000000000
-      internalID: 2361682385482768142
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: GRASS_BLOCK
-      rect:
-        serializedVersion: 2
-        x: 0
-        y: 16
-        width: 16
-        height: 16
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: 06fe974d91e21d310800000000000000
-      internalID: 1427973245326978912
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: materials_x16_12
-      rect:
-        serializedVersion: 2
-        x: 16
-        y: 16
-        width: 16
-        height: 16
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: e1f17ec4559ad1f00800000000000000
-      internalID: 1089212868721057566
+      spriteID: bf8959d789c6d24f0800000000000000
+      internalID: -851905352305370885
       vertices: []
       indices: 
       edges: []
@@ -437,6 +500,48 @@ TextureImporter:
       name: materials_x16_13
       rect:
         serializedVersion: 2
+        x: 0
+        y: 16
+        width: 16
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 6a94fe916b3ec2e50800000000000000
+      internalID: 6786049109799160230
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: materials_x16_14
+      rect:
+        serializedVersion: 2
+        x: 16
+        y: 16
+        width: 16
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 0fc1224ea402ee5d0800000000000000
+      internalID: -3031449993146655504
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: materials_x16_15
+      rect:
+        serializedVersion: 2
         x: 48
         y: 16
         width: 16
@@ -448,14 +553,14 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: b74c12d97ed25a010800000000000000
-      internalID: 1199415348561036411
+      spriteID: dc562e63c72d99c00800000000000000
+      internalID: 907988230830450125
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: DIRT
+      name: materials_x16_16
       rect:
         serializedVersion: 2
         x: 0
@@ -469,14 +574,14 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: f136a8ee23184b1c0800000000000000
-      internalID: -4488820872831147233
+      spriteID: f99b8872968053920800000000000000
+      internalID: 2969288777048570271
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: materials_x16_15
+      name: materials_x16_17
       rect:
         serializedVersion: 2
         x: 16
@@ -490,14 +595,35 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 5feeb409b92debe10800000000000000
-      internalID: 2215439632295522037
+      spriteID: def738f6958511680800000000000000
+      internalID: -8786144256876904467
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: materials_x16_16
+      name: materials_x16_18
+      rect:
+        serializedVersion: 2
+        x: 32
+        y: 0
+        width: 16
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: bfc61c4fdfc781070800000000000000
+      internalID: 8077343361863871739
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: materials_x16_19
       rect:
         serializedVersion: 2
         x: 48
@@ -511,8 +637,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: f1ab42527692f2d70800000000000000
-      internalID: 9020474101627927071
+      spriteID: 07dd625ddd2c1fc40800000000000000
+      internalID: 5544426874289446256
       vertices: []
       indices: 
       edges: []

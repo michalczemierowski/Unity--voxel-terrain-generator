@@ -17,8 +17,9 @@ namespace VoxelTG.Terrain
         public BlockType type;
         public BlockShape shape;
         public BlockState state;
-        public Tile top, side, bottom;
-        public TilePos topPos, sidePos, bottomPos;
+
+        public TextureTile topTexture, sideTexture, botTexture;
+        public BlockUVs topUVs, sideUVs, botUvs;
 
         public SoundType soundType;
 
@@ -29,34 +30,37 @@ namespace VoxelTG.Terrain
             this.type = type;
             this.state = state;
             this.shape = BlockShape.CUBE;
-            topPos = sidePos = bottomPos = TilePos.AIR_UV;
-            top = side = bottom = Tile.AIR;
+
+            topUVs = sideUVs = botUvs = BlockUVs.AIR_UV;
+            topTexture = sideTexture = botTexture = TextureTile.AIR;
 
             this.soundType = soundType;
         }
-        public Block(BlockType type, Tile tile, BlockShape shape, BlockState state, SoundType soundType = SoundType.DESTROY_STONE)
+        public Block(BlockType type, TextureTile tile, BlockShape shape, BlockState state, SoundType soundType = SoundType.DESTROY_STONE)
         {
             this.type = type;
             this.shape = shape;
             this.state = state;
-            top = side = bottom = tile;
-            topPos = TilePos.GetTilePos(tile);
-            sidePos = TilePos.GetTilePos(tile);
-            bottomPos = TilePos.GetTilePos(tile);
+            
+            topTexture = sideTexture = botTexture = tile;
+            topUVs = BlockUVs.GetTileUVs(tile);
+            sideUVs = BlockUVs.GetTileUVs(tile);
+            botUvs = BlockUVs.GetTileUVs(tile);
 
             this.soundType = soundType;
         }
-        public Block(BlockType type, Tile top, Tile side, Tile bottom, BlockShape shape, BlockState state, SoundType soundType = SoundType.DESTROY_STONE)
+        public Block(BlockType type, TextureTile top, TextureTile side, TextureTile bottom, BlockShape shape, BlockState state, SoundType soundType = SoundType.DESTROY_STONE)
         {
             this.type = type;
             this.shape = shape;
             this.state = state;
-            this.top = top;
-            this.side = side;
-            this.bottom = bottom;
-            topPos = TilePos.GetTilePos(top);
-            sidePos = TilePos.GetTilePos(side);
-            bottomPos = TilePos.GetTilePos(bottom);
+
+            this.topTexture = top;
+            this.sideTexture = side;
+            this.botTexture = bottom;
+            topUVs = BlockUVs.GetTileUVs(top);
+            sideUVs = BlockUVs.GetTileUVs(side);
+            botUvs = BlockUVs.GetTileUVs(bottom);
 
             this.soundType = soundType;
         }
@@ -76,10 +80,10 @@ namespace VoxelTG.Terrain
                             verts[2] = new float3(blockPos.x + 1, blockPos.y + 1, blockPos.z + 1);
                             verts[3] = new float3(blockPos.x + 1, blockPos.y + 1, blockPos.z);
 
-                            uv[0] = topPos.uv0;
-                            uv[1] = topPos.uv1;
-                            uv[2] = topPos.uv2;
-                            uv[3] = topPos.uv3;
+                            uv[0] = topUVs.uv0;
+                            uv[1] = topUVs.uv1;
+                            uv[2] = topUVs.uv2;
+                            uv[3] = topUVs.uv3;
                             return false;
                         case BlockFace.BOTTOM:
                             verts[0] = new float3(blockPos.x, blockPos.y, blockPos.z);
@@ -87,10 +91,10 @@ namespace VoxelTG.Terrain
                             verts[2] = new float3(blockPos.x + 1, blockPos.y, blockPos.z + 1);
                             verts[3] = new float3(blockPos.x, blockPos.y, blockPos.z + 1);
 
-                            uv[0] = bottomPos.uv0;
-                            uv[1] = bottomPos.uv1;
-                            uv[2] = bottomPos.uv2;
-                            uv[3] = bottomPos.uv3;
+                            uv[0] = botUvs.uv0;
+                            uv[1] = botUvs.uv1;
+                            uv[2] = botUvs.uv2;
+                            uv[3] = botUvs.uv3;
                             return false;
                         case BlockFace.FRONT:
                             verts[0] = new float3(blockPos.x, blockPos.y, blockPos.z);
@@ -98,10 +102,10 @@ namespace VoxelTG.Terrain
                             verts[2] = new float3(blockPos.x + 1, blockPos.y + 1, blockPos.z);
                             verts[3] = new float3(blockPos.x + 1, blockPos.y, blockPos.z);
 
-                            uv[0] = sidePos.uv0;
-                            uv[1] = sidePos.uv1;
-                            uv[2] = sidePos.uv2;
-                            uv[3] = sidePos.uv3;
+                            uv[0] = sideUVs.uv0;
+                            uv[1] = sideUVs.uv1;
+                            uv[2] = sideUVs.uv2;
+                            uv[3] = sideUVs.uv3;
                             return false;
                         case BlockFace.BACK:
                             verts[0] = new float3(blockPos.x + 1, blockPos.y, blockPos.z + 1);
@@ -109,10 +113,10 @@ namespace VoxelTG.Terrain
                             verts[2] = new float3(blockPos.x, blockPos.y + 1, blockPos.z + 1);
                             verts[3] = new float3(blockPos.x, blockPos.y, blockPos.z + 1);
 
-                            uv[0] = sidePos.uv0;
-                            uv[1] = sidePos.uv1;
-                            uv[2] = sidePos.uv2;
-                            uv[3] = sidePos.uv3;
+                            uv[0] = sideUVs.uv0;
+                            uv[1] = sideUVs.uv1;
+                            uv[2] = sideUVs.uv2;
+                            uv[3] = sideUVs.uv3;
                             return false;
                         case BlockFace.RIGHT:
                             verts[0] = new float3(blockPos.x + 1, blockPos.y, blockPos.z);
@@ -120,10 +124,10 @@ namespace VoxelTG.Terrain
                             verts[2] = new float3(blockPos.x + 1, blockPos.y + 1, blockPos.z + 1);
                             verts[3] = new float3(blockPos.x + 1, blockPos.y, blockPos.z + 1);
 
-                            uv[0] = sidePos.uv0;
-                            uv[1] = sidePos.uv1;
-                            uv[2] = sidePos.uv2;
-                            uv[3] = sidePos.uv3;
+                            uv[0] = sideUVs.uv0;
+                            uv[1] = sideUVs.uv1;
+                            uv[2] = sideUVs.uv2;
+                            uv[3] = sideUVs.uv3;
                             return false;
                         case BlockFace.LEFT:
                             verts[0] = new float3(blockPos.x, blockPos.y, blockPos.z + 1);
@@ -131,10 +135,10 @@ namespace VoxelTG.Terrain
                             verts[2] = new float3(blockPos.x, blockPos.y + 1, blockPos.z);
                             verts[3] = new float3(blockPos.x, blockPos.y, blockPos.z);
 
-                            uv[0] = sidePos.uv0;
-                            uv[1] = sidePos.uv1;
-                            uv[2] = sidePos.uv2;
-                            uv[3] = sidePos.uv3;
+                            uv[0] = sideUVs.uv0;
+                            uv[1] = sideUVs.uv1;
+                            uv[2] = sideUVs.uv2;
+                            uv[3] = sideUVs.uv3;
                             return false;
                     }
                     break;
@@ -187,10 +191,10 @@ namespace VoxelTG.Terrain
                             if (param != 0)
                                 Rotate(verts, blockPos, param);
 
-                            uv[0] = topPos.uv0;
-                            uv[1] = topPos.uv1;
-                            uv[2] = topPos.uv2;
-                            uv[3] = topPos.uv3;
+                            uv[0] = topUVs.uv0;
+                            uv[1] = topUVs.uv1;
+                            uv[2] = topUVs.uv2;
+                            uv[3] = topUVs.uv3;
                             return false;
                         case BlockFace.BOTTOM:
                             verts[0] = new float3(blockPos.x, blockPos.y, blockPos.z);
@@ -201,10 +205,10 @@ namespace VoxelTG.Terrain
                             if (param != 0)
                                 Rotate(verts, blockPos, param);
 
-                            uv[0] = bottomPos.uv0;
-                            uv[1] = bottomPos.uv1;
-                            uv[2] = bottomPos.uv2;
-                            uv[3] = bottomPos.uv3;
+                            uv[0] = botUvs.uv0;
+                            uv[1] = botUvs.uv1;
+                            uv[2] = botUvs.uv2;
+                            uv[3] = botUvs.uv3;
                             return false;
                         case BlockFace.FRONT:
                             verts[0] = new float3(blockPos.x, blockPos.y, blockPos.z);
@@ -215,10 +219,10 @@ namespace VoxelTG.Terrain
                             if (param != 0)
                                 Rotate(verts, blockPos, param);
 
-                            uv[0] = topPos.uv0;
-                            uv[1] = topPos.uv1;
-                            uv[2] = topPos.uv2;
-                            uv[3] = topPos.uv3;
+                            uv[0] = topUVs.uv0;
+                            uv[1] = topUVs.uv1;
+                            uv[2] = topUVs.uv2;
+                            uv[3] = topUVs.uv3;
                             return false;
                         case BlockFace.BACK:
                             verts[0] = new float3(blockPos.x + 1, blockPos.y, blockPos.z + 1);
@@ -229,10 +233,10 @@ namespace VoxelTG.Terrain
                             if (param != 0)
                                 Rotate(verts, blockPos, param);
 
-                            uv[0] = sidePos.uv0;
-                            uv[1] = sidePos.uv1;
-                            uv[2] = sidePos.uv2;
-                            uv[3] = sidePos.uv3;
+                            uv[0] = sideUVs.uv0;
+                            uv[1] = sideUVs.uv1;
+                            uv[2] = sideUVs.uv2;
+                            uv[3] = sideUVs.uv3;
                             return false;
                         case BlockFace.RIGHT:
                             verts[0] = new float3(blockPos.x + 1, blockPos.y, blockPos.z);
@@ -243,10 +247,10 @@ namespace VoxelTG.Terrain
                             if (param != 0)
                                 Rotate(verts, blockPos, param);
 
-                            uv[0] = sidePos.uv0;
-                            uv[1] = sidePos.uv1;
-                            uv[2] = sidePos.uv2;
-                            uv[3] = sidePos.uv3;
+                            uv[0] = sideUVs.uv0;
+                            uv[1] = sideUVs.uv1;
+                            uv[2] = sideUVs.uv2;
+                            uv[3] = sideUVs.uv3;
                             return false;
                         case BlockFace.LEFT:
                             verts[0] = new float3(blockPos.x, blockPos.y, blockPos.z);
@@ -257,10 +261,10 @@ namespace VoxelTG.Terrain
                             if (param != 0)
                                 Rotate(verts, blockPos, param);
 
-                            uv[0] = sidePos.uv0;
-                            uv[1] = sidePos.uv1;
-                            uv[2] = sidePos.uv2;
-                            uv[3] = sidePos.uv3;
+                            uv[0] = sideUVs.uv0;
+                            uv[1] = sideUVs.uv1;
+                            uv[2] = sideUVs.uv2;
+                            uv[3] = sideUVs.uv3;
                             return true;
                     }
                     break;
@@ -285,10 +289,10 @@ namespace VoxelTG.Terrain
                     verts[2] = new float3(blockPos.x + 1, blockPos.y + height, blockPos.z + 1);
                     verts[3] = new float3(blockPos.x + 1, blockPos.y + height, blockPos.z);
 
-                    uv[0] = topPos.uv0;
-                    uv[1] = topPos.uv1;
-                    uv[2] = topPos.uv2;
-                    uv[3] = topPos.uv3;
+                    uv[0] = topUVs.uv0;
+                    uv[1] = topUVs.uv1;
+                    uv[2] = topUVs.uv2;
+                    uv[3] = topUVs.uv3;
                     return false;
                 case BlockFace.BOTTOM:
                     verts[0] = new float3(blockPos.x, blockPos.y, blockPos.z);
@@ -296,10 +300,10 @@ namespace VoxelTG.Terrain
                     verts[2] = new float3(blockPos.x + 1, blockPos.y, blockPos.z + 1);
                     verts[3] = new float3(blockPos.x, blockPos.y, blockPos.z + 1);
 
-                    uv[0] = bottomPos.uv0;
-                    uv[1] = bottomPos.uv1;
-                    uv[2] = bottomPos.uv2;
-                    uv[3] = bottomPos.uv3;
+                    uv[0] = botUvs.uv0;
+                    uv[1] = botUvs.uv1;
+                    uv[2] = botUvs.uv2;
+                    uv[3] = botUvs.uv3;
                     return false;
                 case BlockFace.FRONT:
                     verts[0] = new float3(blockPos.x, blockPos.y + heightFront, blockPos.z);
@@ -307,10 +311,10 @@ namespace VoxelTG.Terrain
                     verts[2] = new float3(blockPos.x + 1, blockPos.y + height, blockPos.z);
                     verts[3] = new float3(blockPos.x + 1, blockPos.y + heightFront, blockPos.z);
 
-                    uv[0] = new Vector2(sidePos.uv0.x, sidePos.uv0.y + heightFront / TilePos.textureSize);
-                    uv[1] = sidePos.uv1;
-                    uv[2] = sidePos.uv2;
-                    uv[3] = new Vector2(sidePos.uv3.x, sidePos.uv0.y + heightFront / TilePos.textureSize);
+                    uv[0] = new Vector2(sideUVs.uv0.x, sideUVs.uv0.y + heightFront / BlockUVs.textureSize);
+                    uv[1] = sideUVs.uv1;
+                    uv[2] = sideUVs.uv2;
+                    uv[3] = new Vector2(sideUVs.uv3.x, sideUVs.uv0.y + heightFront / BlockUVs.textureSize);
                     return height < heightFront;
                 case BlockFace.BACK:
                     verts[0] = new float3(blockPos.x + 1, blockPos.y + heightBack, blockPos.z + 1);
@@ -318,10 +322,10 @@ namespace VoxelTG.Terrain
                     verts[2] = new float3(blockPos.x, blockPos.y + height, blockPos.z + 1);
                     verts[3] = new float3(blockPos.x, blockPos.y + heightBack, blockPos.z + 1);
 
-                    uv[0] = new Vector2(sidePos.uv0.x, sidePos.uv0.y + heightBack / TilePos.textureSize);
-                    uv[1] = sidePos.uv1;
-                    uv[2] = sidePos.uv2;
-                    uv[3] = new Vector2(sidePos.uv3.x, sidePos.uv0.y + heightBack / TilePos.textureSize);
+                    uv[0] = new Vector2(sideUVs.uv0.x, sideUVs.uv0.y + heightBack / BlockUVs.textureSize);
+                    uv[1] = sideUVs.uv1;
+                    uv[2] = sideUVs.uv2;
+                    uv[3] = new Vector2(sideUVs.uv3.x, sideUVs.uv0.y + heightBack / BlockUVs.textureSize);
                     return height < heightBack;
                 case BlockFace.RIGHT:
                     verts[0] = new float3(blockPos.x + 1, blockPos.y + heightRight, blockPos.z);
@@ -329,10 +333,10 @@ namespace VoxelTG.Terrain
                     verts[2] = new float3(blockPos.x + 1, blockPos.y + height, blockPos.z + 1);
                     verts[3] = new float3(blockPos.x + 1, blockPos.y + heightRight, blockPos.z + 1);
 
-                    uv[0] = new Vector2(sidePos.uv0.x, sidePos.uv0.y + heightRight / TilePos.textureSize);
-                    uv[1] = sidePos.uv1;
-                    uv[2] = sidePos.uv2;
-                    uv[3] = new Vector2(sidePos.uv3.x, sidePos.uv0.y + heightRight / TilePos.textureSize);
+                    uv[0] = new Vector2(sideUVs.uv0.x, sideUVs.uv0.y + heightRight / BlockUVs.textureSize);
+                    uv[1] = sideUVs.uv1;
+                    uv[2] = sideUVs.uv2;
+                    uv[3] = new Vector2(sideUVs.uv3.x, sideUVs.uv0.y + heightRight / BlockUVs.textureSize);
                     return height < heightRight;
                 case BlockFace.LEFT:
                     verts[0] = new float3(blockPos.x, blockPos.y + heightLeft, blockPos.z + 1);
@@ -340,10 +344,10 @@ namespace VoxelTG.Terrain
                     verts[2] = new float3(blockPos.x, blockPos.y + height, blockPos.z);
                     verts[3] = new float3(blockPos.x, blockPos.y + heightLeft, blockPos.z);
 
-                    uv[0] = new Vector2(sidePos.uv0.x, sidePos.uv0.y + heightLeft / TilePos.textureSize);
-                    uv[1] = sidePos.uv1;
-                    uv[2] = sidePos.uv2;
-                    uv[3] = new Vector2(sidePos.uv3.x, sidePos.uv0.y + heightLeft / TilePos.textureSize);
+                    uv[0] = new Vector2(sideUVs.uv0.x, sideUVs.uv0.y + heightLeft / BlockUVs.textureSize);
+                    uv[1] = sideUVs.uv1;
+                    uv[2] = sideUVs.uv2;
+                    uv[3] = new Vector2(sideUVs.uv3.x, sideUVs.uv0.y + heightLeft / BlockUVs.textureSize);
                     return height < heightLeft;
             }
 
@@ -351,28 +355,27 @@ namespace VoxelTG.Terrain
         }
 
         #endregion
-
         private void GetGrassUVS(NativeArray<float2> uv, short param)
         {
             switch (param)
             {
                 case 0:
-                    uv[0] = topPos.uv0;
-                    uv[1] = topPos.uv1;
-                    uv[2] = topPos.uv2;
-                    uv[3] = topPos.uv3;
+                    uv[0] = topUVs.uv0;
+                    uv[1] = topUVs.uv1;
+                    uv[2] = topUVs.uv2;
+                    uv[3] = topUVs.uv3;
                     break;
                 case 1:
-                    uv[0] = sidePos.uv0;
-                    uv[1] = sidePos.uv1;
-                    uv[2] = sidePos.uv2;
-                    uv[3] = sidePos.uv3;
+                    uv[0] = sideUVs.uv0;
+                    uv[1] = sideUVs.uv1;
+                    uv[2] = sideUVs.uv2;
+                    uv[3] = sideUVs.uv3;
                     break;
                 case 2:
-                    uv[0] = bottomPos.uv0;
-                    uv[1] = bottomPos.uv1;
-                    uv[2] = bottomPos.uv2;
-                    uv[3] = bottomPos.uv3;
+                    uv[0] = botUvs.uv0;
+                    uv[1] = botUvs.uv1;
+                    uv[2] = botUvs.uv2;
+                    uv[3] = botUvs.uv3;
                     break;
             }
         }

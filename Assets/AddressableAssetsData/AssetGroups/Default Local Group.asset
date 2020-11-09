@@ -17,12 +17,6 @@ MonoBehaviour:
     m_SerializedData: []
   m_GUID: 72a1a8db00337134ca1a70764cfbe106
   m_SerializeEntries:
-  - m_GUID: 48e4c8eb818f9814cb070ef9b4c42017
-    m_Address: item_icons_atlas
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    m_MainAsset: {fileID: 0}
-    m_TargetAsset: {fileID: 0}
   - m_GUID: 9c2a687c7f1a53740953a6a015b4fb37
     m_Address: material_icons_atlas
     m_ReadOnly: 0

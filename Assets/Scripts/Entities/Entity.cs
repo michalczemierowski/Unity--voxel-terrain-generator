@@ -6,8 +6,12 @@
 */
 namespace VoxelTG.Entities
 {
+    /// <summary>
+    /// Base class for stationary entities
+    /// </summary>
     public class Entity : MonoBehaviour
     {
+        [SerializeField] private float maxHealth;
         private float health;
         public float Health
         {
@@ -26,11 +30,6 @@ namespace VoxelTG.Entities
                     OnHeal(healthBefore, health);
             }
         }
-
-        [Header("Settings")]
-        [SerializeField] private float maxHealth;
-        public float Speed;
-        public Transform Target;
 
         protected virtual void OnSpawn()
         {
@@ -53,21 +52,6 @@ namespace VoxelTG.Entities
             Destroy(gameObject);
         }
 
-        protected virtual void HandleMovement()
-        {
-
-        }
-
-        protected virtual void HandleMovementTarget()
-        {
-            transform.position = Vector3.MoveTowards(transform.position, Target.position, Speed * Time.fixedDeltaTime);
-        }
-
-        protected virtual void FindTarget()
-        {
-
-        }
-
         #region  public methods
 
         public void Damage(float damage)
@@ -82,14 +66,6 @@ namespace VoxelTG.Entities
         private void Start()
         {
             OnSpawn();
-        }
-
-        private void FixedUpdate()
-        {
-            if (Target)
-                HandleMovementTarget();
-            else
-                HandleMovement();
         }
 
         #endregion

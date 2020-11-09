@@ -11,6 +11,9 @@ using VoxelTG.Terrain;
 */
 namespace VoxelTG.UI
 {
+    /// <summary>
+    /// Class capable of handling UI in main menu
+    /// </summary>
     public class MainUI : MonoBehaviour
     {
         [SerializeField] private string gameSceneName = "Game";
