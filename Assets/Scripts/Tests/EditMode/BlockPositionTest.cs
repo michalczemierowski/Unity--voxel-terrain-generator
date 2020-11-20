@@ -17,28 +17,28 @@ namespace VoxelTG.Tests
         public void BlockPositionRangeTest()
         {
             BlockPosition bp;
-            for (int x = 0; x < WorldSettings.fixedChunkWidth * 2; x++)
+            for (int x = 0; x < WorldSettings.FixedChunkSizeX * 2; x++)
             {
                 bp = new BlockPosition(x, 0, 0);
-                Assert.IsTrue(bp.x >= 1 && bp.x <= WorldSettings.chunkWidth);
+                Assert.IsTrue(bp.x >= 1 && bp.x <= WorldSettings.ChunkSizeXZ);
             }
-            for (int y = 0; y < WorldSettings.chunkHeight * 2; y++)
+            for (int y = 0; y < WorldSettings.ChunkSizeY * 2; y++)
             {
                 bp = new BlockPosition(0, y, 0);
-                Assert.IsTrue(bp.y >= 0 && bp.y <= WorldSettings.chunkHeight);
+                Assert.IsTrue(bp.y >= 0 && bp.y <= WorldSettings.ChunkSizeY);
             }
-            for (int z = 0; z < WorldSettings.fixedChunkWidth * 2; z++)
+            for (int z = 0; z < WorldSettings.FixedChunkSizeX * 2; z++)
             {
                 bp = new BlockPosition(0, 0, z);
-                Assert.IsTrue(bp.z >= 1 && bp.z <= WorldSettings.chunkWidth);
+                Assert.IsTrue(bp.z >= 1 && bp.z <= WorldSettings.ChunkSizeXZ);
             }
         }
 
         [Test]
         public void BlockPositionSpecificTest()
         {
-            int x = WorldSettings.chunkWidth / 2;
-            BlockPosition tested = new BlockPosition(WorldSettings.chunkWidth + x, 1, 1);
+            int x = WorldSettings.ChunkSizeXZ / 2;
+            BlockPosition tested = new BlockPosition(WorldSettings.ChunkSizeXZ + x, 1, 1);
 
             Assert.AreEqual(tested.x, x + 1);
         }

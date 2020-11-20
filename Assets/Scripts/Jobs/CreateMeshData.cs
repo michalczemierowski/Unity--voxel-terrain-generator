@@ -47,11 +47,11 @@ namespace VoxelTG.Jobs
 
             NativeArray<short> nearbyLiquidSourceDistance = new NativeArray<short>(4, Allocator.Temp);
 
-            for (int x = 1; x < WorldSettings.chunkWidth + 1; x++)
+            for (int x = 1; x < WorldSettings.ChunkSizeXZ + 1; x++)
             {
-                for (int z = 1; z < WorldSettings.chunkWidth + 1; z++)
+                for (int z = 1; z < WorldSettings.ChunkSizeXZ + 1; z++)
                 {
-                    for (int y = 0; y < WorldSettings.chunkHeight; y++)
+                    for (int y = 0; y < WorldSettings.ChunkSizeY; y++)
                     {
                         BlockType blockType = blockData[Utils.BlockPosition3DtoIndex(x, y, z)];
 
@@ -180,7 +180,7 @@ namespace VoxelTG.Jobs
 
         private void BlockstateSolid(NativeArray<bool> sides, int x, int y, int z)
         {
-            sides[0] = y == WorldSettings.chunkHeight - 1 ||
+            sides[0] = y == WorldSettings.ChunkSizeY - 1 ||
                 WorldData.GetBlockState(blockData[Utils.BlockPosition3DtoIndex(x, y + 1, z)],
                 BlockFace.BOTTOM
             ) != BlockState.SOLID;
@@ -221,7 +221,7 @@ namespace VoxelTG.Jobs
             nearbyWaterSources[2] = blockParameters.TryGetValue(new BlockParameter(new int3(x - 1, y, z), ParameterType.WATER_SOURCE_DISTANCE), out value) ? value : waterSourceDistance;
             nearbyWaterSources[3] = blockParameters.TryGetValue(new BlockParameter(new int3(x + 1, y, z), ParameterType.WATER_SOURCE_DISTANCE), out value) ? value : waterSourceDistance;
 
-            sides[0] = y < WorldSettings.chunkHeight - 1 &&
+            sides[0] = y < WorldSettings.ChunkSizeY - 1 &&
                 WorldData.GetBlockState(blockData[Utils.BlockPosition3DtoIndex(x, y + 1, z)]) == BlockState.TRANSPARENT;
             sides[1] = y > 0 &&
                 WorldData.GetBlockState(blockData[Utils.BlockPosition3DtoIndex(x, y - 1, z)]) == BlockState.TRANSPARENT;
@@ -244,7 +244,7 @@ namespace VoxelTG.Jobs
             int backIndex = 3 + eulerY > 5 ? 4 + eulerY - 4 : 3 + eulerY;
             int leftIndex = 4 + eulerY > 5 ? 5 + eulerY - 4 : 4 + eulerY;
 
-            sides[0] = y < WorldSettings.chunkHeight - 1 &&
+            sides[0] = y < WorldSettings.ChunkSizeY - 1 &&
                 WorldData.GetBlockState(blockData[Utils.BlockPosition3DtoIndex(x, y + 1, z)]) != BlockState.SOLID;
             sides[1] = y > 0 &&
                 WorldData.GetBlockState(blockData[Utils.BlockPosition3DtoIndex(x, y - 1, z)]) != BlockState.SOLID;

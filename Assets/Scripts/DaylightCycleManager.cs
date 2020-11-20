@@ -14,19 +14,26 @@ namespace VoxelTG
         [SerializeField] private Gradient fogColors;
         [SerializeField] private AnimationCurve fogDensityCurve;
 
+        /// <summary>
+        /// offset to start game at day
+        /// </summary>
+        private float timeOffset;
+
         private void OnEnable()
         {
-            World.onTick += OnTick;
+            World.OnTick += OnTick;
+            timeOffset = ticksInDay / 2;
         }
 
         private void OnDisable()
         {
-            World.onTick -= OnTick;
+            World.OnTick -= OnTick;
         }
 
         public void OnTick(int currentTick)
         {
-            float time = (float)(currentTick % ticksInDay) / ticksInDay;
+            // range <0; 1>
+            float time = (float)(currentTick % ticksInDay + timeOffset) / ticksInDay;
 
             directionalLight.intensity = sunIntensityCurve.Evaluate(time);
             directionalLight.color = timeColors.Evaluate(time);

@@ -9,7 +9,7 @@ using VoxelTG.DebugUtils;
 */
 namespace VoxelTG.Player.Interactions
 {
-    public class FlashLightController : MonoBehaviour
+    public class FlashlightController : MonoBehaviour
     {
         [SerializeField] private Light[] flashLightModes;
         private int currentMode;
@@ -24,7 +24,8 @@ namespace VoxelTG.Player.Interactions
             {
                 flashLightModes[nextMode-1].enabled = true;
             }
-            DebugConsole.AddDebugMessageStatic("asdasdsad" + nextMode);
+
+            DebugConsole.AddDebugMessageStatic("FLASHLIGHT MODE SET TO: " + nextMode);
             currentMode = nextMode;
         }
     }

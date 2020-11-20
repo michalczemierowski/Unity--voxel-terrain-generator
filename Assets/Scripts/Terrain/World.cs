@@ -89,7 +89,7 @@ namespace VoxelTG
         private static List<TickQueueData> tickQueue = new List<TickQueueData>();
         private static HashSet<BlockPosition> updatePositions = new HashSet<BlockPosition>();
 
-        private Vector2Int curChunk = new Vector2Int(-1, -1);
+        private Vector2Int chunkAtPlayerPosition = new Vector2Int(-1, -1);
         private List<Chunk> pooledChunks = new List<Chunk>();
 
         private int maxChunksToBuildAtOnce;
@@ -100,8 +100,8 @@ namespace VoxelTG
 
         #region events
 
-        public static event Action timeToBuild;
-        public static event Action<int> onTick;
+        public static event Action TimeToBuild;
+        public static event Action<int> OnTick;
 
         #endregion
 
@@ -185,7 +185,7 @@ namespace VoxelTG
             pendingJobs = new NativeQueue<JobHandle>(Allocator.Persistent);
             meshBakingJobs = new NativeQueue<JobHandle>(Allocator.Persistent);
             generatorSettings = new NativeArray<GeneratorSettings>(generatorSettingsArray, Allocator.Persistent);
-            World.biomeNoises = new NativeArray<FastNoise>(generatorSettingsArray.Length, Allocator.Persistent);
+            biomeNoises = new NativeArray<FastNoise>(generatorSettingsArray.Length, Allocator.Persistent);
 
             // load noises from settings
             for (int i = 0; i < generatorSettingsArray.Length; i++)
@@ -197,19 +197,12 @@ namespace VoxelTG
             }
         }
 
-#if UNITY_EDITOR
-
         private void OnDestroy()
         {
-            foreach (Chunk chunk in chunks.Values)
-            {
-                chunk.DisposeAndSaveData();
-            }
-
+            SaveChunkData();
+            
             PathFinding.Dispose();
 
-            SaveChunkData();
-
             // dispose native containers
             pendingJobs.Dispose();
             meshBakingJobs.Dispose();
@@ -217,28 +210,9 @@ namespace VoxelTG
             generatorSettings.Dispose();
         }
 
-#else
-
-        private void OnApplicationQuit()
-        {
-            SaveChunkData();
-
-            // dispose native containers
-            pendingJobs.Dispose();
-            meshBakingJobs.Dispose();
-            biomeNoises.Dispose();
-            generatorSettings.Dispose();
-        }
-
-#endif
 
         private void Start()
         {
-            //PlayerController.PlayerTransform.gameObject.SetActive(false);
-
-            // init time to start game with day
-            // CurrentTick = ticksInDay / 2;
-
             // load chunks
             LoadChunks();
 
@@ -402,12 +376,6 @@ namespace VoxelTG
                 ChunkSaveData data = WorldSave.savedChunks[serializableChunkPos];
                 // convert byte[] to BlockType[]
                 chunk.blocks.CopyFrom(Array.ConvertAll(data.blocks, value => (BlockType)value)); //data.blocks);
-                //chunk.blockParameters = new NativeHashMap<BlockParameter, short>(data.blockParameters.Length, Allocator.Persistent);
-                //for (int i = 0; i < data.blockParameters.Length; i++)
-                //{
-                //    chunk.blockParameters.Add(data.blockParameters[i], data.blockParameterValues[i]);
-                //}
-
                 chunk.BuildMesh(jobHandles);
             }
             else
@@ -427,18 +395,23 @@ namespace VoxelTG
         private void LoadChunks(bool instant = false)
         {
             //the current chunk the player is in
-            int curChunkPosX = Mathf.FloorToInt(PlayerController.PlayerTransform.position.x / chunkWidth) * chunkWidth;
-            int curChunkPosZ = Mathf.FloorToInt(PlayerController.PlayerTransform.position.z / chunkWidth) * chunkWidth;
+            int curChunkPosX = Mathf.FloorToInt(PlayerController.PlayerTransform.position.x / ChunkSizeXZ) * ChunkSizeXZ;
+            int curChunkPosZ = Mathf.FloorToInt(PlayerController.PlayerTransform.position.z / ChunkSizeXZ) * ChunkSizeXZ;
 
             //entered a new chunk
-            if (curChunk.x != curChunkPosX || curChunk.y != curChunkPosZ)
+            if (chunkAtPlayerPosition.x != curChunkPosX || chunkAtPlayerPosition.y != curChunkPosZ)
             {
-                curChunk.x = curChunkPosX;
-                curChunk.y = curChunkPosZ;
+                chunkAtPlayerPosition.x = curChunkPosX;
+                chunkAtPlayerPosition.y = curChunkPosZ;
 
-                for (int x = curChunkPosX - chunkWidth * RenderDistance; x <= curChunkPosX + chunkWidth * RenderDistance; x += chunkWidth)
+                int startX = curChunkPosX - ChunkSizeXZ * RenderDistance;
+                int startZ = curChunkPosZ - ChunkSizeXZ * RenderDistance;
+                int maxX = curChunkPosX + ChunkSizeXZ * RenderDistance;
+                int maxZ = curChunkPosZ + ChunkSizeXZ * RenderDistance;
+
+                for (int x = startX ; x <= maxX; x += ChunkSizeXZ)
                 {
-                    for (int z = curChunkPosZ - chunkWidth * RenderDistance; z <= curChunkPosZ + chunkWidth * RenderDistance; z += chunkWidth)
+                    for (int z = startZ; z <= maxZ; z += ChunkSizeXZ)
                     {
                         Vector2Int cp = new Vector2Int(x, z);
 
@@ -450,42 +423,14 @@ namespace VoxelTG
                         }
                     }
                 }
-                // if instant == true, wait for all jobs to complete
-                // if (instant)
-                // {
-                //     NativeArray<JobHandle> jobHandlesTemp = pendingJobs.ToArray(Allocator.TempJob);
-                //     JobHandle.CompleteAll(jobHandlesTemp);
-
-                //     foreach (Chunk chunk in terrainChunks)
-                //     {
-                //         chunk.ApplyMesh();
-                //         chunk.SetMeshRenderersActive(true);
-                //     }
-
-                //     NativeArray<JobHandle> meshBakingJobsTemp = meshBakingJobs.ToArray(Allocator.TempJob);
-                //     JobHandle.CompleteAll(meshBakingJobsTemp);
-
-                //     while (terrainCollisionMeshes.Count > 0)
-                //     {
-                //         MeshBakeData data = terrainCollisionMeshes.Dequeue();
-                //         data.meshCollider.sharedMesh = data.mesh;
-                //     }
-
-                //     meshBakingJobsTemp.Dispose();
-                //     jobHandlesTemp.Dispose();
-
-                //     meshBakingJobs.Clear();
-                //     pendingJobs.Clear();
-                //     terrainChunks.Clear();
-                // }
 
                 // unload far chunks
                 List<Vector2Int> toDestroy = new List<Vector2Int>();
                 foreach (KeyValuePair<Vector2Int, Chunk> c in chunks)
                 {
                     Vector2Int cp = c.Key;
-                    if (Mathf.Abs(curChunkPosX - cp.x) > chunkWidth * (RenderDistance + 3) ||
-                        Mathf.Abs(curChunkPosZ - cp.y) > chunkWidth * (RenderDistance + 3))
+                    if (Mathf.Abs(curChunkPosX - cp.x) > ChunkSizeXZ * (RenderDistance + 3) ||
+                        Mathf.Abs(curChunkPosZ - cp.y) > ChunkSizeXZ * (RenderDistance + 3))
                     {
                         toDestroy.Add(c.Key);
                     }
@@ -548,7 +493,7 @@ namespace VoxelTG
         {
             chunk = GetChunk(worldPositon.x, worldPositon.y);
             BlockPosition blockPosition = new BlockPosition(new int3(worldPositon.x, 0, worldPositon.y));
-            for (int y = chunkHeight - 1; y >= 0; y--)
+            for (int y = ChunkSizeY - 1; y >= 0; y--)
             {
                 blockPosition.y = y;
                 int index = Utils.BlockPosition3DtoIndex(blockPosition);
@@ -565,7 +510,7 @@ namespace VoxelTG
         {
             chunk = GetChunk(worldPositon.x, worldPositon.y);
             BlockPosition blockPosition = new BlockPosition(new int3(worldPositon.x, 0, worldPositon.y));
-            for (int y = chunkHeight - 1; y >= 0; y--)
+            for (int y = ChunkSizeY - 1; y >= 0; y--)
             {
                 blockPosition.y = y;
                 int index = Utils.BlockPosition3DtoIndex(blockPosition);
@@ -582,7 +527,7 @@ namespace VoxelTG
         {
             Chunk chunk = GetChunk(worldPositon.x, worldPositon.y);
             BlockPosition blockPosition = new BlockPosition(new int3(worldPositon.x, 0, worldPositon.y));
-            for (int y = chunkHeight - 1; y >= 0; y--)
+            for (int y = ChunkSizeY - 1; y >= 0; y--)
             {
                 blockPosition.y = y;
                 int index = Utils.BlockPosition3DtoIndex(blockPosition);
@@ -603,8 +548,8 @@ namespace VoxelTG
         /// <returns>chunk</returns>
         public static Chunk GetChunk(float x, float z)
         {
-            int chunkPosX = Mathf.FloorToInt(x / chunkWidth) * chunkWidth;
-            int chunkPosZ = Mathf.FloorToInt(z / chunkWidth) * chunkWidth;
+            int chunkPosX = Mathf.FloorToInt(x / ChunkSizeXZ) * ChunkSizeXZ;
+            int chunkPosZ = Mathf.FloorToInt(z / ChunkSizeXZ) * ChunkSizeXZ;
 
             Vector2Int cp = new Vector2Int(chunkPosX, chunkPosZ);
 
@@ -616,8 +561,8 @@ namespace VoxelTG
 
         public static bool TryGetChunk(float x, float z, out Chunk chunk)
         {
-            int chunkPosX = Mathf.FloorToInt(x / chunkWidth) * chunkWidth;
-            int chunkPosZ = Mathf.FloorToInt(z / chunkWidth) * chunkWidth;
+            int chunkPosX = Mathf.FloorToInt(x / ChunkSizeXZ) * ChunkSizeXZ;
+            int chunkPosZ = Mathf.FloorToInt(z / ChunkSizeXZ) * ChunkSizeXZ;
 
             Vector2Int cp = new Vector2Int(chunkPosX, chunkPosZ);
 
@@ -671,7 +616,7 @@ namespace VoxelTG
                 }
             }
 
-            timeToBuild.Invoke();
+            TimeToBuild.Invoke();
         }
 
         /// <summary>
@@ -730,7 +675,7 @@ namespace VoxelTG
                 }
             }
             CurrentTick++;
-            onTick?.Invoke(CurrentTick);
+            OnTick?.Invoke(CurrentTick);
         }
 
         #endregion
@@ -756,22 +701,6 @@ namespace VoxelTG
         #endregion
     }
 
-    // /// <summary>
-    // /// Struct containing data needed to bake colliders
-    // /// </summary>
-    // public struct MeshBakeData
-    // {
-    //     public Chunk chunk;
-    //     public MeshCollider meshCollider;
-    //     public Mesh mesh;
-
-    //     public MeshBakeData(MeshCollider meshCollider, Mesh mesh)
-    //     {
-    //         this.meshCollider = meshCollider;
-    //         this.mesh = mesh;
-    //     }
-    // }
-
     [Serializable]
     public struct ChunkSaveData
     {
@@ -795,6 +724,9 @@ namespace VoxelTG
     }
 
     [Serializable]
+    /// <summary>
+    /// Serializable version of Vector2Int used when saving world to file
+    /// </summary>
     public struct SerializableVector2Int
     {
         public int x;
@@ -812,6 +744,9 @@ namespace VoxelTG
     }
 
     [Serializable]
+    /// <summary>
+    /// Serializable version of Vector3 used when saving world to file
+    /// </summary>
     public struct SerializableVector3
     {
         public float x;

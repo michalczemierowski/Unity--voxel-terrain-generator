@@ -24,279 +24,36 @@ namespace VoxelTG.Terrain.Blocks
 
         #region blocks uvs
 
-        public static readonly BlockUVs DIRT_UV = new BlockUVs
-        {
-            uv0 = new float2(
-                0 / textureSize + .001f,
-                0 / textureSize + .001f),
-            uv1 = new float2(
-                0 / textureSize + .001f,
-                (0 + 1) / textureSize - .001f),
-            uv2 = new float2(
-                (0 + 1) / textureSize - .001f,
-                (0 + 1) / textureSize - .001f),
-            uv3 = new float2(
-                (0 + 1) / textureSize - .001f,
-                0 / textureSize + .001f),
-        };
-        public static readonly BlockUVs SAND_UV = new BlockUVs
-        {
-            uv0 = new float2(
-                2 / textureSize + .001f,
-                0 / textureSize + .001f),
-            uv1 = new float2(
-                2 / textureSize + .001f,
-                (0 + 1) / textureSize - .001f),
-            uv2 = new float2(
-                (2 + 1) / textureSize - .001f,
-                (0 + 1) / textureSize - .001f),
-            uv3 = new float2(
-                (2 + 1) / textureSize - .001f,
-                0 / textureSize + .001f),
-        };
-        public static readonly BlockUVs GRASS_BLOCK_TOP_UV = new BlockUVs
-        {
-            uv0 = new float2(
-                1 / textureSize + .001f,
-                0 / textureSize + .001f),
-            uv1 = new float2(
-                1 / textureSize + .001f,
-                (0 + 1) / textureSize - .001f),
-            uv2 = new float2(
-                (1 + 1) / textureSize - .001f,
-                (0 + 1) / textureSize - .001f),
-            uv3 = new float2(
-                (1 + 1) / textureSize - .001f,
-                0 / textureSize + .001f),
-        };
-        public static readonly BlockUVs GRASS_BLOCK_SIDE_UV = new BlockUVs
-        {
-            uv0 = new float2(
-                0 / textureSize + .001f,
-                1 / textureSize + .001f),
-            uv1 = new float2(
-                0 / textureSize + .001f,
-                (1 + 1) / textureSize - .001f),
-            uv2 = new float2(
-                (0 + 1) / textureSize - .001f,
-                (1 + 1) / textureSize - .001f),
-            uv3 = new float2(
-                (0 + 1) / textureSize - .001f,
-                1 / textureSize + .001f),
-        };
-        public static readonly BlockUVs STONE_UV = new BlockUVs
-        {
-            uv0 = new float2(
-                0 / textureSize + .001f,
-                2 / textureSize + .001f),
-            uv1 = new float2(
-                0 / textureSize + .001f,
-                (2 + 1) / textureSize - .001f),
-            uv2 = new float2(
-                (0 + 1) / textureSize - .001f,
-                (2 + 1) / textureSize - .001f),
-            uv3 = new float2(
-                (0 + 1) / textureSize - .001f,
-                2 / textureSize + .001f),
-        };
-        public static readonly BlockUVs COBBLESTONE_UV = new BlockUVs
-        {
-            uv0 = new float2(
-                1 / textureSize + .001f,
-                2 / textureSize + .001f),
-            uv1 = new float2(
-                1 / textureSize + .001f,
-                (2 + 1) / textureSize - .001f),
-            uv2 = new float2(
-                (1 + 1) / textureSize - .001f,
-                (2 + 1) / textureSize - .001f),
-            uv3 = new float2(
-                (1 + 1) / textureSize - .001f,
-                2 / textureSize + .001f),
-        };
-        public static readonly BlockUVs OBSIDIAN_UV = new BlockUVs
-        {
-            uv0 = new float2(
-                2 / textureSize + .001f,
-                2 / textureSize + .001f),
-            uv1 = new float2(
-                2 / textureSize + .001f,
-                (2 + 1) / textureSize - .001f),
-            uv2 = new float2(
-                (2 + 1) / textureSize - .001f,
-                (2 + 1) / textureSize - .001f),
-            uv3 = new float2(
-                (2 + 1) / textureSize - .001f,
-                2 / textureSize + .001f),
-        };
-        public static readonly BlockUVs OAK_LOG_TOP_UV = new BlockUVs
-        {
-            uv0 = new float2(
-                0 / textureSize + .001f,
-                4 / textureSize + .001f),
-            uv1 = new float2(
-                0 / textureSize + .001f,
-                (4 + 1) / textureSize - .001f),
-            uv2 = new float2(
-                (0 + 1) / textureSize - .001f,
-                (4 + 1) / textureSize - .001f),
-            uv3 = new float2(
-                (0 + 1) / textureSize - .001f,
-                4 / textureSize + .001f),
-        };
-        public static readonly BlockUVs SPRUCE_LOG_TOP_UV = new BlockUVs
-        {
-            uv0 = new float2(
-                1 / textureSize + .001f,
-                4 / textureSize + .001f),
-            uv1 = new float2(
-                1 / textureSize + .001f,
-                (4 + 1) / textureSize - .001f),
-            uv2 = new float2(
-                (1 + 1) / textureSize - .001f,
-                (4 + 1) / textureSize - .001f),
-            uv3 = new float2(
-                (1 + 1) / textureSize - .001f,
-                4 / textureSize + .001f),
-        };
-        public static readonly BlockUVs OAK_LOG_SIDE_UV = new BlockUVs
-        {
-            uv0 = new float2(
-                0 / textureSize + .001f,
-                3 / textureSize + .001f),
-            uv1 = new float2(
-                0 / textureSize + .001f,
-                (3 + 1) / textureSize - .001f),
-            uv2 = new float2(
-                (0 + 1) / textureSize - .001f,
-                (3 + 1) / textureSize - .001f),
-            uv3 = new float2(
-                (0 + 1) / textureSize - .001f,
-                3 / textureSize + .001f),
-        };
-        public static readonly BlockUVs SPRUCE_LOG_SIDE_UV = new BlockUVs
-        {
-            uv0 = new float2(
-                1 / textureSize + .001f,
-                3 / textureSize + .001f),
-            uv1 = new float2(
-                1 / textureSize + .001f,
-                (3 + 1) / textureSize - .001f),
-            uv2 = new float2(
-                (1 + 1) / textureSize - .001f,
-                (3 + 1) / textureSize - .001f),
-            uv3 = new float2(
-                (1 + 1) / textureSize - .001f,
-                3 / textureSize + .001f),
-        };
-        public static readonly BlockUVs OAK_LEAVES_UV = new BlockUVs
-        {
-            uv0 = new float2(
-                0 / textureSize + .001f,
-                5 / textureSize + .001f),
-            uv1 = new float2(
-                0 / textureSize + .001f,
-                (5 + 1) / textureSize - .001f),
-            uv2 = new float2(
-                (0 + 1) / textureSize - .001f,
-                (5 + 1) / textureSize - .001f),
-            uv3 = new float2(
-                (0 + 1) / textureSize - .001f,
-                5 / textureSize + .001f),
-        };
-        public static readonly BlockUVs SPRUCE_LEAVES_UV = new BlockUVs
-        {
-            uv0 = new float2(
-                1 / textureSize + .001f,
-                5 / textureSize + .001f),
-            uv1 = new float2(
-                1 / textureSize + .001f,
-                (5 + 1) / textureSize - .001f),
-            uv2 = new float2(
-                (1 + 1) / textureSize - .001f,
-                (5 + 1) / textureSize - .001f),
-            uv3 = new float2(
-                (1 + 1) / textureSize - .001f,
-                5 / textureSize + .001f),
-        };
+        public static readonly BlockUVs DIRT_UV = CreateUVs(0, 0);
+        public static readonly BlockUVs SAND_UV = CreateUVs(2, 0);
+        public static readonly BlockUVs GRASS_BLOCK_TOP_UV = CreateUVs(1, 0);
+        public static readonly BlockUVs GRASS_BLOCK_SIDE_UV = CreateUVs(0, 1);
+        public static readonly BlockUVs STONE_UV = CreateUVs(0, 2);
+        public static readonly BlockUVs COBBLESTONE_UV = CreateUVs(1, 2);
+        public static readonly BlockUVs OBSIDIAN_UV = CreateUVs(2, 2);
+        public static readonly BlockUVs OAK_LOG_TOP_UV = CreateUVs(0, 4);
+        public static readonly BlockUVs SPRUCE_LOG_TOP_UV = CreateUVs(1, 4);
+        public static readonly BlockUVs OAK_LOG_SIDE_UV = CreateUVs(0, 3);
+        public static readonly BlockUVs SPRUCE_LOG_SIDE_UV = CreateUVs(1, 3);
+        public static readonly BlockUVs OAK_LEAVES_UV = CreateUVs(0, 5);
+        public static readonly BlockUVs SPRUCE_LEAVES_UV = CreateUVs(1, 5);
 
         #endregion
 
         #region liquids uvs
 
-        public static readonly BlockUVs WATER_UV = CreateUVs(0,0, textureSizeX: 1);
+        // (liquids have different texture so textureSizeX = 1)
+        public static readonly BlockUVs WATER_UV = CreateUVs(0, 0, textureSizeX: 1);
 
         #endregion
 
-        private static BlockUVs CreateUVs(int x, int y, float textureSizeX = textureSize, float textureSizeY = textureSize)
-        {
-            return new BlockUVs
-            {
-                uv0 = new float2(
-                 x / textureSizeX + .001f,
-                 y / textureSizeY + .001f),
-                uv1 = new float2(
-                 x / textureSizeX + .001f,
-                 (y + 1) / textureSizeY - .001f),
-                uv2 = new float2(
-                 (x + 1) / textureSizeX - .001f,
-                 (y + 1) / textureSizeY - .001f),
-                uv3 = new float2(
-                 (x + 1) / textureSizeX - .001f,
-                 y / textureSizeY + .001f),
-            };
-        }
-        
-
         #region plants uvs
 
-        public static readonly BlockUVs GRASS_UV_0 = new BlockUVs
-        {
-            uv0 = new float2(
-                3 / textureSize + .001f,
-                0 / textureSize + .001f),
-            uv1 = new float2(
-                3 / textureSize + .001f,
-                (0 + 1) / textureSize - .001f),
-            uv2 = new float2(
-                (3 + 1) / textureSize - .001f,
-                (0 + 1) / textureSize - .001f),
-            uv3 = new float2(
-                (3 + 1) / textureSize - .001f,
-                0 / textureSize + .001f),
-        };
+        public static readonly BlockUVs GRASS_UV_0 = CreateUVs(3, 0);
 
-        public static readonly BlockUVs GRASS_UV_1 = new BlockUVs
-        {
-            uv0 = new float2(
-                3 / textureSize + .001f,
-                2 / textureSize + .001f),
-            uv1 = new float2(
-                3 / textureSize + .001f,
-                (2 + 1) / textureSize - .001f),
-            uv2 = new float2(
-                (3 + 1) / textureSize - .001f,
-                (2 + 1) / textureSize - .001f),
-            uv3 = new float2(
-                (3 + 1) / textureSize - .001f,
-                2 / textureSize + .001f),
-        };
+        public static readonly BlockUVs GRASS_UV_1 = CreateUVs(3, 2);
 
-        public static readonly BlockUVs GRASS_UV_2 = new BlockUVs
-        {
-            uv0 = new float2(
-                3 / textureSize + .001f,
-                3 / textureSize + .001f),
-            uv1 = new float2(
-                3 / textureSize + .001f,
-                (3 + 1) / textureSize - .001f),
-            uv2 = new float2(
-                (3 + 1) / textureSize - .001f,
-                (3 + 1) / textureSize - .001f),
-            uv3 = new float2(
-                (3 + 1) / textureSize - .001f,
-                3 / textureSize + .001f),
-        };
+        public static readonly BlockUVs GRASS_UV_2 = CreateUVs(3, 3);
 
         #endregion
 
@@ -346,6 +103,25 @@ namespace VoxelTG.Terrain.Blocks
                 default:
                     return DIRT_UV;
             }
+        }
+
+        private static BlockUVs CreateUVs(int x, int y, float textureSizeX = textureSize, float textureSizeY = textureSize)
+        {
+            return new BlockUVs
+            {
+                uv0 = new float2(
+                 x / textureSizeX + .001f,
+                 y / textureSizeY + .001f),
+                uv1 = new float2(
+                 x / textureSizeX + .001f,
+                 (y + 1) / textureSizeY - .001f),
+                uv2 = new float2(
+                 (x + 1) / textureSizeX - .001f,
+                 (y + 1) / textureSizeY - .001f),
+                uv3 = new float2(
+                 (x + 1) / textureSizeX - .001f,
+                 y / textureSizeY + .001f),
+            };
         }
     }
 }

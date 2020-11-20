@@ -13,40 +13,40 @@ namespace VoxelTG.Terrain.Blocks
 
         public BlockPosition(int3 position, bool clamp = true)
         {
-            this.x = clamp ? Utils.ClampInRange(position.x + 1, 1, WorldSettings.chunkWidth) : position.x;
-            this.y = clamp ? Utils.ClampInRange(position.y, 1, WorldSettings.chunkHeight) : position.y;
-            this.z = clamp ? Utils.ClampInRange(position.z + 1, 1, WorldSettings.chunkWidth) : position.z;
+            this.x = clamp ? Utils.ClampInRange(position.x + 1, 1, WorldSettings.ChunkSizeXZ) : position.x;
+            this.y = clamp ? Utils.ClampInRange(position.y, 1, WorldSettings.ChunkSizeY) : position.y;
+            this.z = clamp ? Utils.ClampInRange(position.z + 1, 1, WorldSettings.ChunkSizeXZ) : position.z;
         }
 
         public BlockPosition(Vector3Int position, bool clamp = true)
         {
-            this.x = clamp ? Utils.ClampInRange(position.x + 1, 1, WorldSettings.chunkWidth) : position.x;
-            this.y = clamp ? Utils.ClampInRange(position.y, 1, WorldSettings.chunkHeight) : position.y;
-            this.z = clamp ? Utils.ClampInRange(position.z + 1, 1, WorldSettings.chunkWidth) : position.z;
+            this.x = clamp ? Utils.ClampInRange(position.x + 1, 1, WorldSettings.ChunkSizeXZ) : position.x;
+            this.y = clamp ? Utils.ClampInRange(position.y, 1, WorldSettings.ChunkSizeY) : position.y;
+            this.z = clamp ? Utils.ClampInRange(position.z + 1, 1, WorldSettings.ChunkSizeXZ) : position.z;
         }
 
         public BlockPosition(int x, int y, int z, bool clamp = true)
         {
-            this.x = clamp ? Utils.ClampInRange(x + 1, 1, WorldSettings.chunkWidth) : x;
-            this.y = clamp ? Utils.ClampInRange(y, 1, WorldSettings.chunkHeight) : y;
-            this.z = clamp ? Utils.ClampInRange(z + 1, 1, WorldSettings.chunkWidth) : z;
+            this.x = clamp ? Utils.ClampInRange(x + 1, 1, WorldSettings.ChunkSizeXZ) : x;
+            this.y = clamp ? Utils.ClampInRange(y, 1, WorldSettings.ChunkSizeY) : y;
+            this.z = clamp ? Utils.ClampInRange(z + 1, 1, WorldSettings.ChunkSizeXZ) : z;
         }
 
         public BlockPosition(int x, int y, int z, out int neighbour)
         {
             neighbour = -1;
-            if (x > WorldSettings.chunkWidth)
+            if (x > WorldSettings.ChunkSizeXZ)
                 neighbour = 0;
             else if (x < 1)
                 neighbour = 1;
-            if (z > WorldSettings.chunkWidth)
+            if (z > WorldSettings.ChunkSizeXZ)
                 neighbour = 2;
             else if (z < 1)
                 neighbour = 3;
 
-            this.x = Utils.ClampInRange(x, 1, WorldSettings.chunkWidth);
-            this.y = Utils.ClampInRange(y, 1, WorldSettings.chunkHeight);
-            this.z = Utils.ClampInRange(z, 1, WorldSettings.chunkWidth);
+            this.x = Utils.ClampInRange(x, 1, WorldSettings.ChunkSizeXZ);
+            this.y = Utils.ClampInRange(y, 1, WorldSettings.ChunkSizeY);
+            this.z = Utils.ClampInRange(z, 1, WorldSettings.ChunkSizeXZ);
         }
 
         public Vector3Int ToVector3Int()
@@ -62,9 +62,9 @@ namespace VoxelTG.Terrain.Blocks
         {
             return new BlockPosition()
             {
-                x = Utils.ClampInRange(x - 1, 1, WorldSettings.chunkWidth),
+                x = Utils.ClampInRange(x - 1, 1, WorldSettings.ChunkSizeXZ),
                 y = this.y,
-                z = Utils.ClampInRange(z - 1, 1, WorldSettings.chunkWidth)
+                z = Utils.ClampInRange(z - 1, 1, WorldSettings.ChunkSizeXZ)
             };
         }
 
@@ -89,7 +89,7 @@ namespace VoxelTG.Terrain.Blocks
         /// </summary>
         public BlockPosition Above()
         {
-            if (y == WorldSettings.chunkHeight)
+            if (y == WorldSettings.ChunkSizeY)
                 return this;
 
             return new BlockPosition()
@@ -108,11 +108,11 @@ namespace VoxelTG.Terrain.Blocks
             if (clamp)
             {
                 if (x != 0)
-                    Utils.ClampInRange(x + 1, 1, WorldSettings.chunkWidth);
+                    Utils.ClampInRange(x + 1, 1, WorldSettings.ChunkSizeXZ);
                 if (y != 0)
-                    Utils.ClampInRange(y, 1, WorldSettings.chunkHeight);
+                    Utils.ClampInRange(y, 1, WorldSettings.ChunkSizeY);
                 if (z != 0)
-                    Utils.ClampInRange(z + 1, 1, WorldSettings.chunkWidth);
+                    Utils.ClampInRange(z + 1, 1, WorldSettings.ChunkSizeXZ);
             }
         }
 

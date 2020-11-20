@@ -65,11 +65,11 @@ namespace VoxelTG.Terrain
 
         #region // === Monobehaviour === \\
 
-        private void Awake()
+        private void OnEnable()
         {
             // init native containers
-            blocks = new NativeArray<BlockType>(fixedChunkWidth * chunkHeight * fixedChunkWidth, Allocator.Persistent);
-            biomeTypes = new NativeArray<BiomeType>(fixedChunkWidth * fixedChunkWidth, Allocator.Persistent);
+            blocks = new NativeArray<BlockType>(FixedChunkSizeX * ChunkSizeY * FixedChunkSizeX, Allocator.Persistent);
+            biomeTypes = new NativeArray<BiomeType>(FixedChunkSizeX * FixedChunkSizeX, Allocator.Persistent);
             blockParameters = new NativeHashMap<BlockParameter, short>(2048, Allocator.Persistent);
 
             blockVerticles = new NativeList<float3>(16384, Allocator.Persistent);
@@ -86,21 +86,26 @@ namespace VoxelTG.Terrain
 
             chunkDissapearingAnimation = GetComponent<ChunkDissapearingAnimation>();
             chunkAnimation = GetComponent<ChunkAnimation>();
-        }
 
-        private void OnEnable()
-        {
-            World.timeToBuild += BuildBlocks;
+            World.TimeToBuild += BuildBlocks;
             StartCoroutine(CheckNeighbours());
         }
 
         private void OnDisable()
         {
-            World.timeToBuild -= BuildBlocks;
+            World.TimeToBuild -= BuildBlocks;
+
+            if (!blocks.IsCreated)
+                return;
+
+            DisposeAndSaveData();
         }
 
         private void OnDestroy()
         {
+            if (!blocks.IsCreated)
+                return;
+
             SaveDataInWorldDictionary();
         }
 
@@ -141,10 +146,10 @@ namespace VoxelTG.Terrain
             yield return new WaitForEndOfFrame();
             Vector2Int[] positions = new Vector2Int[]
             {
-                new Vector2Int(ChunkPosition.x + chunkWidth, ChunkPosition.y),
-                new Vector2Int(ChunkPosition.x - chunkWidth, ChunkPosition.y),
-                new Vector2Int(ChunkPosition.x, ChunkPosition.y + chunkWidth),
-                new Vector2Int(ChunkPosition.x, ChunkPosition.y - chunkWidth)
+                new Vector2Int(ChunkPosition.x + ChunkSizeXZ, ChunkPosition.y),
+                new Vector2Int(ChunkPosition.x - ChunkSizeXZ, ChunkPosition.y),
+                new Vector2Int(ChunkPosition.x, ChunkPosition.y + ChunkSizeXZ),
+                new Vector2Int(ChunkPosition.x, ChunkPosition.y - ChunkSizeXZ)
             };
 
             neigbourChunks = new Chunk[]
@@ -287,7 +292,7 @@ namespace VoxelTG.Terrain
 
             // bake mesh immediately if player is near
             Vector2 playerPosition = new Vector2(PlayerController.PlayerTransform.position.x, PlayerController.PlayerTransform.position.z);
-            if (Vector2.Distance(new Vector2(ChunkPosition.x, ChunkPosition.y), playerPosition) < fixedChunkWidth * 2)
+            if (Vector2.Distance(new Vector2(ChunkPosition.x, ChunkPosition.y), playerPosition) < FixedChunkSizeX * 2)
                 blockMeshCollider.sharedMesh = blockMesh;
             else
                 World.SchedulePhysicsBake(this);

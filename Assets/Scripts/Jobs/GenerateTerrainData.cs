@@ -44,12 +44,12 @@ namespace VoxelTG.Jobs
 
         private BiomeType GetBiomeFromNoiseValue(float noise)
         {
-            BiomeType biomeType = (BiomeType)(math.clamp((math.round(noise * possibleBiomes)), 0, possibleBiomes-1));
+            BiomeType biomeType = (BiomeType)(math.clamp((math.round(noise * PossibleBiomes)), 0, PossibleBiomes-1));
             switch(noise)
             {
-                case float val when (val <= 0.4f - biomeTransition):
+                case float val when (val <= 0.4f - BiomeTransition):
                     return BiomeType.PLAINS;
-                case float val when (val > 0.4f - biomeTransition && val < 0.4f + biomeTransition):
+                case float val when (val > 0.4f - BiomeTransition && val < 0.4f + BiomeTransition):
                     return random.NextBool() ? BiomeType.PLAINS : BiomeType.FOREST;
 
                 case float val when (val <= 0.6f):
@@ -66,16 +66,16 @@ namespace VoxelTG.Jobs
         {
             BlockType lastBlock = BlockType.AIR;
 
-            for (int x = 0; x < fixedChunkWidth; x++)
+            for (int x = 0; x < FixedChunkSizeX; x++)
             {
-                for (int z = 0; z < fixedChunkWidth; z++)
+                for (int z = 0; z < FixedChunkSizeX; z++)
                 {
                     int bix = chunkPosX + x - 1;
                     int biz = chunkPosZ + z - 1;
 
-                    float biomeHeight = (baseNoise.GetSimplex(bix / biomeSize, biz / biomeSize) + 1) / 2f;
+                    float biomeHeight = (baseNoise.GetSimplex(bix / BiomeSize, biz / BiomeSize) + 1) / 2f;
                     BiomeType biomeType = GetBiomeFromNoiseValue(biomeHeight);
-                    biomeHeight = biomeHeight * biomeHeightMultipler;
+                    biomeHeight = biomeHeight * BiomeHeightMultipler;
                     biomeTypes[Utils.BlockPosition2DtoIndex(x, z)] = biomeType;
 
                     FastNoise noise = noises[(int)biomeType];
@@ -90,13 +90,13 @@ namespace VoxelTG.Jobs
 
                     float heightMap = (simplex1 + simplex2);
                     //int baseLandHeight = (int)math.round((chunkHeight * baseLandHeightMultipler + heightMap) * (biomeHeight + 0.9f));
-                    int baseLandHeight = (int)math.round((chunkHeight * baseLandHeightMultipler) + (chunkHeight * baseLandHeightMultipler * biomeHeight) + heightMap);
+                    int baseLandHeight = (int)math.round((ChunkSizeY * baseLandHeightMultipler) + (ChunkSizeY * baseLandHeightMultipler * biomeHeight) + heightMap);
 
                     float caveMask = noise.GetSimplex(bix * 0.3f, biz * 0.3f) + 0.3f;
 
                     #endregion
 
-                    for (int y = 0; y < chunkHeight; y++)
+                    for (int y = 0; y < ChunkSizeY; y++)
                     {
                         float cavebaseNoise1 = noise.GetPerlinFractal(bix * 7.5f, y * 15f, biz * 7.5f);
 
@@ -108,9 +108,9 @@ namespace VoxelTG.Jobs
                             blockType = BlockType.COBBLESTONE;
                         else if (y <= baseLandHeight)
                         {
-                            if (y == baseLandHeight && y > waterHeight - 1)
+                            if (y == baseLandHeight && y > WaterLevelY - 1)
                                 blockType = WorldData.CanPlaceGrass(lastBlock) && random.NextFloat() < settings.chanceForGrass ? settings.plantsBlock : BlockType.AIR;
-                            else if (y == baseLandHeight - 1 && y > waterHeight - 1)
+                            else if (y == baseLandHeight - 1 && y > WaterLevelY - 1)
                                 blockType = settings.topBlock;
                             else if (y > baseLandHeight - 3)
                                 blockType = settings.belowBlock;
@@ -120,7 +120,7 @@ namespace VoxelTG.Jobs
                             }
                         }
 
-                        if (y >= baseLandHeight && y <= waterHeight)
+                        if (y >= baseLandHeight && y <= WaterLevelY)
                             blockType = settings.waterBlock;
 
                         if (y <= noise.GetWhiteNoise(bix, z) * 3)
@@ -145,10 +145,10 @@ namespace VoxelTG.Jobs
             if (simplex > 0)
             {
                 int minpos = 4;
-                int maxpos = chunkWidth - 5;
+                int maxpos = ChunkSizeXZ - 5;
 
-                NativeList<int2> treePositions = new NativeList<int2>(maxTreeCount, Allocator.Temp);
-                for (int i = 0; i < maxTreeCount; i++)
+                NativeList<int2> treePositions = new NativeList<int2>(MaxTreesPerChunk, Allocator.Temp);
+                for (int i = 0; i < MaxTreesPerChunk; i++)
                 {
                     int x = RandomInt(minpos, maxpos);
                     int z = RandomInt(minpos, maxpos);
@@ -157,7 +157,7 @@ namespace VoxelTG.Jobs
                     int bix = chunkPosX + x - 1;
                     int biz = chunkPosZ + z - 1;
 
-                    float biomeHeight = (baseNoise.GetSimplex(bix / biomeSize, biz / biomeSize) + 1) / 2f;
+                    float biomeHeight = (baseNoise.GetSimplex(bix / BiomeSize, biz / BiomeSize) + 1) / 2f;
                     BiomeType biomeType = GetBiomeFromNoiseValue(biomeHeight);
                     if (biomeType != BiomeType.FOREST)
                         continue;
@@ -166,7 +166,7 @@ namespace VoxelTG.Jobs
                     for (int j = 0; j < treePositions.Length; j++)
                     {
                         int2 pos = treePositions[j];
-                        if (math.sqrt((pos.x - x) * (pos.x - x) + (pos.y - x) * (pos.y - x)) < minimumTreeDistance)
+                        if (math.sqrt((pos.x - x) * (pos.x - x) + (pos.y - x) * (pos.y - x)) < MinDistanceBetweenTrees)
                         {
                             doContinue = true;
                             break;
@@ -175,7 +175,7 @@ namespace VoxelTG.Jobs
                     if (doContinue)
                         continue;
 
-                    int y = chunkHeight - treeHeigthRange.x;
+                    int y = ChunkSizeY - TreeHeightRange.x;
                     if (blockData[Utils.BlockPosition3DtoIndex(x, y, z)] != BlockType.AIR)
                         continue;       // continue if maxTerrainHeigth - minTreeHeigth hits ground
 
@@ -194,7 +194,7 @@ namespace VoxelTG.Jobs
                     int treeHeight = RandomInt(4, 8);
                     for (int j = 0; j < treeHeight; j++)
                     {
-                        if (y + j < chunkHeight)
+                        if (y + j < ChunkSizeY)
                             blockData[Utils.BlockPosition3DtoIndex(x, y + j, z)] = BlockType.OAK_LOG;
                     }
 

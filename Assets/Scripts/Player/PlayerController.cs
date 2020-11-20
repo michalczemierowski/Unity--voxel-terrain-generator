@@ -25,27 +25,35 @@ namespace VoxelTG.Player
         [SerializeField] private float droppedItemVelocity = 3;
 
         [Header("References")]
-        public PlayerMovement m_PlayerMovement;
-        public MouseLook m_MouseLook;
-        public PlayerTerrainInteractions m_TerrainInteractions;
-        public PlayerWeaponController m_WeaponController;
-        public Animator cameraAnimator;
+        [SerializeField] private MouseLook m_MouseLook;
+        public MouseLook MouseLook => m_MouseLook;
 
-        [NonSerialized]
-        public UIManager uiManager;
+        [SerializeField] private Animator cameraAnimator;
+        public Animator CameraAnimator => cameraAnimator;
 
-        [NonSerialized]
-        public InventoryUI inventoryUI;
+        [SerializeField] private InventoryManager inventoryManager;
+        public static InventoryManager InventoryManager => Instance.inventoryManager;
 
-        [NonSerialized]
-        private FlashLightController flashLightController;
+        [SerializeField] private PlayerMovement m_PlayerMovement;
+        public static PlayerMovement Movement => Instance.m_PlayerMovement;
+
+        [SerializeField] private PlayerTerrainInteractions m_TerrainInteractions;
+        public static PlayerTerrainInteractions TerrainInteractions => Instance.m_TerrainInteractions;
+
+        [SerializeField] private PlayerWeaponController m_WeaponController;
+        public static PlayerWeaponController WeaponController => Instance.m_WeaponController;
+
+        [SerializeField] private FlashlightController flashlightController;
+        public static FlashlightController FlashlightController => Instance.flashlightController;
 
         [SerializeField] private Transform handTransform;
 
         public delegate void HandObjectLoaded(GameObject handObject, ItemType itemType);
         public HandObjectLoaded OnHandObjectLoaded;
 
+        // TODO: move selection logic to InventoryUI
         private int currentlySelectedToolbarSlot;
+        private InventoryUI inventoryUI;
 
         void Awake()
         {
@@ -63,7 +71,6 @@ namespace VoxelTG.Player
         private void Start()
         {
             inventoryUI = UIManager.InventoryUI;
-            flashLightController = GetComponentInChildren<FlashLightController>();
 
             inventoryUI.OnActiveToolbarSlotUpdate += OnActiveToolbarSlotUpdate;
 
@@ -127,7 +134,7 @@ namespace VoxelTG.Player
 
             // flashlight
             if (Input.GetKeyDown(KeyCode.F))
-                flashLightController.NextFlashLightMode();
+                flashlightController.NextFlashLightMode();
 
             // TESTING
             if (Input.GetKeyDown(KeyCode.H))

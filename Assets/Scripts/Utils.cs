@@ -36,8 +36,7 @@ namespace VoxelTG
         /// <returns>index that can be used in Chunk.blocks</returns>
         public static int BlockPosition3DtoIndex(BlockPosition pos)
         {
-            // TODO: change x with y
-            return (pos.z * fixedChunkWidth * chunkHeight) + (pos.y * fixedChunkWidth) + pos.x;
+            return (pos.z * FixedChunkSizeX * ChunkSizeY) + (pos.y * FixedChunkSizeX) + pos.x;
         }
 
         /// <summary>
@@ -46,7 +45,7 @@ namespace VoxelTG
         /// <returns>index that can be used in Chunk.blocks</returns>
         public static int BlockPosition3DtoIndex(int3 pos)
         {
-            return (pos.z * fixedChunkWidth * chunkHeight) + (pos.y * fixedChunkWidth) + pos.x;
+            return (pos.z * FixedChunkSizeX * ChunkSizeY) + (pos.y * FixedChunkSizeX) + pos.x;
         }
 
         /// <summary>
@@ -55,7 +54,7 @@ namespace VoxelTG
         /// <returns>index that can be used in Chunk.blocks</returns>
         public static int BlockPosition3DtoIndex(int x, int y, int z)
         {
-            return (z * fixedChunkWidth * chunkHeight) + (y * fixedChunkWidth) + x;
+            return (z * FixedChunkSizeX * ChunkSizeY) + (y * FixedChunkSizeX) + x;
         }
 
         /// <summary>
@@ -64,7 +63,7 @@ namespace VoxelTG
         /// <returns>index that can be used in Chunk.biomeTypes</returns>
         public static int BlockPosition2DtoIndex(int x, int z)
         {
-            return x * fixedChunkWidth + z;
+            return x * FixedChunkSizeX + z;
         }
 
         /// <summary>
@@ -73,7 +72,7 @@ namespace VoxelTG
         /// <returns>true if position is inside chunk bounds, else - false</returns>
         public static bool IsPositionInChunkBounds(int x, int y, int z)
         {
-            return x > 0 && y >= 0 && z > 0 && x <= chunkWidth && z <= chunkWidth && y <= chunkHeight;
+            return x > 0 && y >= 0 && z > 0 && x <= ChunkSizeXZ && z <= ChunkSizeXZ && y <= ChunkSizeY;
         }
 
         /// <summary>

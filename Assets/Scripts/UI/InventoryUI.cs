@@ -20,7 +20,7 @@ using VoxelTG.Terrain;
 */
 namespace VoxelTG.UI
 {
-    // TODO: add comments
+    // TODO: xml docs
     public class InventoryUI : MonoBehaviour
     {
         [SerializeField] private ToolbarUI toolbarUI;
@@ -144,7 +144,7 @@ namespace VoxelTG.UI
             else if (data.IsWeapon())
             // TODO: add weapon
             {
-                DroppedItemsManager.Instance.DropItemTool(data.ItemType, position, count, velocity, PlayerController.Instance.m_WeaponController.currentWeaponGameObject);
+                DroppedItemsManager.Instance.DropItemTool(data.ItemType, position, count, velocity, PlayerController.WeaponController.currentWeaponGameObject);
             }
         }
 

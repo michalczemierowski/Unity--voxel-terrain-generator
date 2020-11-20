@@ -180,9 +180,9 @@ namespace VoxelTG
             return pos.x > 0
                 && pos.y >= 0
                 && pos.z > 0
-                && pos.x <= chunkWidth
-                && pos.z <= chunkWidth
-                && pos.y <= chunkHeight;
+                && pos.x <= ChunkSizeXZ
+                && pos.z <= ChunkSizeXZ
+                && pos.y <= ChunkSizeY;
         }
 
         private static bool CanWalkOn(ref NativeArray<BlockType> blocks, ref int3 pos)

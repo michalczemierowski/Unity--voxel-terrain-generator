@@ -22,14 +22,6 @@ namespace VoxelTG.Blocks.Listeners
             return new BlockType[] { BlockType.OBSIDIAN, BlockType.STONE };
         }
 
-        void Update()
-        {
-            if (Input.GetKeyDown(KeyCode.M))
-                PathFinding.FindPath(posOne, posTwo);
-            if(Input.GetKeyDown(KeyCode.N))
-                World.EntityManager.SpawnEntity(EntityType.TEST_ENTITY, Player.PlayerController.Instance.transform.position + new Vector3(0, 5,0));
-        }
-
         public void OnBlockPlaced(BlockEventData data, params int[] args)
         {
             if (data.blockType == BlockType.STONE)

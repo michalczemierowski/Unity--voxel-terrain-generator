@@ -16,7 +16,7 @@ namespace VoxelTG
     {
         public static int ChunkIndexUp(this int index, int up)
         {
-            return index + up * fixedChunkWidth;
+            return index + up * FixedChunkSizeX;
         }
     }
 }

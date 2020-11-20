@@ -53,7 +53,7 @@ namespace VoxelTG.Effects.SFX
             if (!audioCache.ContainsKey(soundType))
             {
                 clip = Resources.Load<AudioClip>(GetPathToResource(soundType));
-                Debug.Log(clip == null);
+
                 if (clip != null)
                 {
                     audioCache.Add(soundType, clip);

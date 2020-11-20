@@ -28,7 +28,7 @@ namespace VoxelTG.Player
             get => _speed;
             set{
                 _speed = value;
-                playerController.cameraAnimator.SetFloat("movementSpeed", value);
+                playerController.CameraAnimator.SetFloat("movementSpeed", value);
             }
         }
 
@@ -51,7 +51,7 @@ namespace VoxelTG.Player
             {
                 if (value != _isWalking)
                 {
-                    playerController.cameraAnimator.SetBool("isWalking", value);
+                    playerController.CameraAnimator.SetBool("isWalking", value);
                     _isWalking = value;
                 }
             }
@@ -65,7 +65,7 @@ namespace VoxelTG.Player
             {
                 if(value != _isGrounded)
                 {
-                    playerController.cameraAnimator.SetBool("isGrounded", value);
+                    playerController.CameraAnimator.SetBool("isGrounded", value);
                     _isGrounded = value;
                 }
             }
@@ -104,9 +104,9 @@ namespace VoxelTG.Player
             int z = _currentPosition.z;
 
             if (!currentChunk ||
-                x - currentChunk.ChunkPosition.x > WorldSettings.chunkWidth ||
+                x - currentChunk.ChunkPosition.x > WorldSettings.ChunkSizeXZ ||
                 x - currentChunk.ChunkPosition.x < 1 ||
-                z - currentChunk.ChunkPosition.y > WorldSettings.chunkWidth ||
+                z - currentChunk.ChunkPosition.y > WorldSettings.ChunkSizeXZ ||
                 z - currentChunk.ChunkPosition.y < 1)
             {
                 currentChunk = World.GetChunk(x, z);

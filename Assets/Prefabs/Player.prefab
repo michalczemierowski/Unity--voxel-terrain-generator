@@ -603,6 +603,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8438437527126469097}
   - component: {fileID: 8438437527126469100}
+  - component: {fileID: 2907637887361602829}
   - component: {fileID: 8438437527126469093}
   - component: {fileID: 8438437527126469098}
   - component: {fileID: 8438437527126469101}
@@ -647,12 +648,26 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   droppedItemVelocity: 3
-  m_PlayerMovement: {fileID: 8438437527126469093}
   m_MouseLook: {fileID: 8438437527126469098}
+  cameraAnimator: {fileID: 8438437526179574326}
+  inventoryManager: {fileID: 2907637887361602829}
+  m_PlayerMovement: {fileID: 8438437527126469093}
   m_TerrainInteractions: {fileID: 8438437527126469101}
   m_WeaponController: {fileID: 8438437527126469103}
-  cameraAnimator: {fileID: 8438437526179574326}
+  flashlightController: {fileID: 8438437527238123742}
   handTransform: {fileID: 8438437526176379434}
+--- !u!114 &2907637887361602829
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8438437527126469090}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 39499e5998edd2447809f6f59ebbbc88, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &8438437527126469093
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1016,7 +1031,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8438437527651779784}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 2, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 8438437527238123743}
