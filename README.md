@@ -13,9 +13,9 @@ Features:
 * Living entities (early stage of development)
 
 ## Screenshots:
-![Screenshot 0](https://michalczemierowski.github.io/img/screenshots/voxel_terrain_generator-0.jpg)
-![Screenshot 0](https://michalczemierowski.github.io/img/screenshots/voxel_terrain_generator-1.jpg)
-![Screenshot 0](https://michalczemierowski.github.io/img/screenshots/voxel_terrain_generator-2.jpg)
+![Screenshot 0](https://michalczemierowski.github.io/img/screenshots/voxel_terrain_generator_0.jpg)
+![Screenshot 0](https://michalczemierowski.github.io/img/screenshots/voxel_terrain_generator_1.jpg)
+![Screenshot 0](https://michalczemierowski.github.io/img/screenshots/voxel_terrain_generator_2.jpg)
 
 # Code examples
 *Easy to configure event listeners*
