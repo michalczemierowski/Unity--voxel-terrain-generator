@@ -95,12 +95,12 @@ namespace VoxelTG.Entities.Items
             }
 
              Mesh mesh = item.GetComponent<MeshFilter>().mesh;
-             CreateCube(mesh, blockType, 0.75f);
+             CreateDoppedMaterialMesh(mesh, blockType, 0.75f);
         }
 
 
-        // TODO: move to different script and add pooling
-        public void CreateCube(Mesh mesh, BlockType blockType, float cubeSize = 1, float pivotX = 0.5f, float pivotY = 0.5f, float pivotZ = 0.5f)
+        // TODO: add pooling
+        public void CreateDoppedMaterialMesh(Mesh mesh, BlockType blockType, float cubeSize = 1, float pivotX = 0.5f, float pivotY = 0.5f, float pivotZ = 0.5f)
         {
             Block block = WorldData.GetBlockData(blockType);
             Vector3[] verts = new Vector3[24];

@@ -1,11 +1,8 @@
-﻿using System.Collections.Generic;
-using Unity.Mathematics;
+﻿using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.UI;
-using VoxelTG.Effects;
 using VoxelTG.Entities.Items;
 using VoxelTG.Player.Inventory;
-using VoxelTG.Player.Inventory.Tools;
 using VoxelTG.Terrain;
 using VoxelTG.Terrain.Blocks;
 using VoxelTG.UI;

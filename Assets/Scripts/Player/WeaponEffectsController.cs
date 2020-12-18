@@ -11,6 +11,9 @@ using VoxelTG.Terrain.Blocks;
 */
 namespace VoxelTG.Player.Interactions
 {
+    /// <summary>
+    /// Class used to handle animations, sound and particles when using weapons
+    /// </summary>
     public class WeaponEffectsController : MonoBehaviour
     {
         private Animator animator;

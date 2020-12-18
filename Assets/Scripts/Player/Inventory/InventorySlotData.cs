@@ -1,7 +1,6 @@
 ﻿using System;
 using Unity.Mathematics;
 using UnityEngine;
-using VoxelTG.Player.Inventory.Tools;
 using VoxelTG.Terrain;
 using VoxelTG.UI;
 

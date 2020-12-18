@@ -10,9 +10,9 @@ using static VoxelTG.Terrain.WorldSettings;
  * Michał Czemierowski
  * https://github.com/michalczemierowski
 */
-namespace VoxelTG
+namespace VoxelTG.Extensions
 {
-    public static class Extensions
+    public static class Extension
     {
         public static int ChunkIndexUp(this int index, int up)
         {

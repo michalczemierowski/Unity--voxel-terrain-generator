@@ -1,5 +1,4 @@
 ﻿using UnityEngine;
-using VoxelTG.Player;
 using VoxelTG.Player.Inventory;
 using VoxelTG.UI;
 

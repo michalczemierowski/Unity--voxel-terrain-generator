@@ -1,5 +1,4 @@
 ﻿using UnityEngine;
-using VoxelTG.Player.Inventory.Tools;
 
 /*
  * Michał Czemierowski

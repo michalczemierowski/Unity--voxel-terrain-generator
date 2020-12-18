@@ -12,15 +12,30 @@ namespace VoxelTG.Effects.VFX
 {
     public class ParticleManager : MonoBehaviour
     {
+        [Tooltip("Particle that will be instantiated when block is destroyed")]
         [SerializeField] private GameObject onBlockDestroyParticle;
+        [Tooltip("Particle that will be instantiated when block is placed")]
         [SerializeField] private GameObject onBlockPlaceParticle;
+        [Tooltip("Particle that will be instantiated when bullet hits block")]
         [SerializeField] private GameObject onBulletHitParticle;
 
+        /// <summary>
+        /// Particles mesh cache
+        /// </summary>
         private static Dictionary<BlockType, Mesh> particleMeshes = new Dictionary<BlockType, Mesh>();
 
-        private static int targetPoolSize = 32;
+        /// <summary>
+        /// Max size of particle pool
+        /// </summary>
+        private const int targetPoolSize = 32;
+        /// <summary>
+        /// Particles GameObjects pool
+        /// </summary>
         private static Dictionary<ParticleType, Queue<ParticleSystem>> particlesPool = new Dictionary<ParticleType, Queue<ParticleSystem>>();
 
+        /// <summary>
+        /// Size of particle texture UV (range 0 - 1)
+        /// </summary>
         private static float blockDestroyParticleUvSize = 0.25f;
 
 

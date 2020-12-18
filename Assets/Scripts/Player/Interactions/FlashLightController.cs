@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 using VoxelTG.DebugUtils;
 
 /*
@@ -9,6 +7,9 @@ using VoxelTG.DebugUtils;
 */
 namespace VoxelTG.Player.Interactions
 {
+    /// <summary>
+    /// Class used to hadnle flashlight modes
+    /// </summary>
     public class FlashlightController : MonoBehaviour
     {
         [SerializeField] private Light[] flashLightModes;

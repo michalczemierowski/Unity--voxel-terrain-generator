@@ -19,7 +19,6 @@ namespace VoxelTG
         /// Dictionary containing value type for each setting
         /// ! remember to add every SettingsType here !
         /// </summary>
-        /// <value></value>
         private static Dictionary<SettingsType, SettingsValueType> settingTypes = new Dictionary<SettingsType, SettingsValueType>
         {
             { SettingsType.RENDER_DISTANCE, SettingsValueType.INT },

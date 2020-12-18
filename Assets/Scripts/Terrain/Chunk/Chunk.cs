@@ -22,27 +22,45 @@ namespace VoxelTG.Terrain
     {
         #region // === Variables === \\
 
+        #region serializable
+
+        [SerializeField] private MeshFilter blockMeshFilter;
+        [SerializeField] private MeshFilter liquidMeshFilter;
+        [SerializeField] private MeshFilter plantsMeshFilter;
+        [SerializeField] private MeshCollider blockMeshCollider;
+
+        #endregion
+
         #region public
 
-        public MeshFilter blockMeshFilter, liquidMeshFilter, plantsMeshFilter;
-        public MeshCollider blockMeshCollider;
+        public MeshFilter BlockMeshFilter => blockMeshFilter;
+        public MeshCollider BlockMeshCollider => blockMeshCollider;
 
         public Chunk[] neigbourChunks = new Chunk[0]; // +x, -x, +z, -z
 
+        /// <summary>
+        /// Array containing chunk block structure [x,y,z]
+        /// </summary>
         public NativeArray<BlockType> blocks;
-        public NativeArray<BiomeType> biomeTypes;
 
-        public Vector2Int ChunkPosition;
-        public bool needToSaveBlockData { get; private set; }
+        /// <summary>
+        /// Chunk position in World space
+        /// </summary>
+        [System.NonSerialized] public Vector2Int ChunkPosition;
 
         #endregion
 
         #region private
 
+        /// <summary>
+        /// Array containing information about biomes [x,z]
+        /// </summary>
+        private NativeArray<BiomeType> biomeTypes;
+
         private ChunkDissapearingAnimation chunkDissapearingAnimation;
         private ChunkAnimation chunkAnimation;
 
-        public NativeHashMap<BlockParameter, short> blockParameters;
+        private NativeHashMap<BlockParameter, short> blockParameters;
 
         private NativeList<float3> blockVerticles;
         private NativeList<int> blockTriangles;
@@ -58,6 +76,11 @@ namespace VoxelTG.Terrain
 
         private List<BlockData> blocksToBuild = new List<BlockData>();
         private Dictionary<BlockParameter, short> parametersToAdd = new Dictionary<BlockParameter, short>();
+
+        /// <summary>
+        /// Has terrain changed since load
+        /// </summary>
+        private bool isTerrainModified;
 
         #endregion
 
@@ -143,21 +166,14 @@ namespace VoxelTG.Terrain
 
         private IEnumerator CheckNeighbours()
         {
-            yield return new WaitForEndOfFrame();
-            Vector2Int[] positions = new Vector2Int[]
-            {
-                new Vector2Int(ChunkPosition.x + ChunkSizeXZ, ChunkPosition.y),
-                new Vector2Int(ChunkPosition.x - ChunkSizeXZ, ChunkPosition.y),
-                new Vector2Int(ChunkPosition.x, ChunkPosition.y + ChunkSizeXZ),
-                new Vector2Int(ChunkPosition.x, ChunkPosition.y - ChunkSizeXZ)
-            };
+            yield return new WaitForEndOfFrame();      
 
             neigbourChunks = new Chunk[]
             {
-                World.chunks.ContainsKey(positions[0]) ? World.chunks[positions[0]] : null,
-                World.chunks.ContainsKey(positions[1]) ? World.chunks[positions[1]] : null,
-                World.chunks.ContainsKey(positions[2]) ? World.chunks[positions[2]] : null,
-                World.chunks.ContainsKey(positions[3]) ? World.chunks[positions[3]] : null,
+                World.GetChunk(ChunkPosition.x + ChunkSizeXZ, ChunkPosition.y),
+                World.GetChunk(ChunkPosition.x - ChunkSizeXZ, ChunkPosition.y),
+                World.GetChunk(ChunkPosition.x, ChunkPosition.y + ChunkSizeXZ),
+                World.GetChunk(ChunkPosition.x, ChunkPosition.y - ChunkSizeXZ)
             };
 
 
@@ -173,6 +189,9 @@ namespace VoxelTG.Terrain
 
         #region // === Mesh methods === \\
 
+        /// <summary>
+        /// Generate terrain data and build mesh
+        /// </summary>
         public void GenerateTerrainDataAndBuildMesh(NativeQueue<JobHandle> jobHandles, int xPos, int zPos)
         {
             GenerateTerrainData generateTerrainData = new GenerateTerrainData()
@@ -211,6 +230,9 @@ namespace VoxelTG.Terrain
             jobHandles.Enqueue(handle);
         }
 
+        /// <summary>
+        /// Build mesh without generating terrain data
+        /// </summary>
         public void BuildMesh(NativeQueue<JobHandle> jobHandles)
         {
             CreateMeshData createMeshData = new CreateMeshData
@@ -236,6 +258,9 @@ namespace VoxelTG.Terrain
             jobHandles.Enqueue(handle);
         }
 
+        /// <summary>
+        /// Build mesh without generating terrain data
+        /// </summary>
         public void BuildMesh(List<JobHandle> jobHandles)
         {
             CreateMeshData createMeshData = new CreateMeshData
@@ -261,6 +286,9 @@ namespace VoxelTG.Terrain
             jobHandles.Add(handle);
         }
 
+        /// <summary>
+        /// Apply values from native containers (jobs) to meshes
+        /// </summary>
         public void ApplyMesh()
         {
             Mesh blockMesh = blockMeshFilter.mesh;
@@ -319,6 +347,9 @@ namespace VoxelTG.Terrain
             plantsUVs.Clear();
         }
 
+        /// <summary>
+        /// Enable/disable chunk mesh renderers
+        /// </summary>
         public void SetMeshRenderersActive(bool active)
         {
             foreach (var mr in GetComponentsInChildren<MeshRenderer>())
@@ -331,6 +362,9 @@ namespace VoxelTG.Terrain
 
         #region // === Animations === \\
 
+        /// <summary>
+        /// Start chunk appear animation
+        /// </summary>
         public void Animation()
         {
             ClearAnimations();
@@ -338,6 +372,9 @@ namespace VoxelTG.Terrain
             chunkAnimation.enabled = true;
         }
 
+        /// <summary>
+        /// Reset all animations
+        /// </summary>
         private void ClearAnimations()
         {
             transform.position = new Vector3(transform.position.x, 0, transform.position.z);
@@ -345,6 +382,9 @@ namespace VoxelTG.Terrain
             chunkDissapearingAnimation.enabled = false;
         }
 
+        /// <summary>
+        /// Start chunk dissapearing animation
+        /// </summary>
         public void DissapearingAnimation()
         {
             ClearAnimations();
@@ -610,7 +650,7 @@ namespace VoxelTG.Terrain
             }
 
             blocks[Utils.BlockPosition3DtoIndex(blockPosition)] = blockType;
-            needToSaveBlockData = true;
+            isTerrainModified = true;
         }
 
         /// <summary>
@@ -662,7 +702,7 @@ namespace VoxelTG.Terrain
                 if (neighbourChunk)
                 {
                     neighbourChunk.blocks[Utils.BlockPosition3DtoIndex(0, blockPosition.y, blockPosition.z)] = blockType;
-                    neighbourChunk.needToSaveBlockData = true;
+                    neighbourChunk.isTerrainModified = true;
                     neighbourChunk.BuildMesh(jobHandles);
                     chunksToBuild.Add(neighbourChunk);
                 }
@@ -673,7 +713,7 @@ namespace VoxelTG.Terrain
                 if (neighbourChunk)
                 {
                     neighbourChunk.blocks[Utils.BlockPosition3DtoIndex(17, blockPosition.y, blockPosition.z)] = blockType;
-                    neighbourChunk.needToSaveBlockData = true;
+                    neighbourChunk.isTerrainModified = true;
                     neighbourChunk.BuildMesh(jobHandles);
                     chunksToBuild.Add(neighbourChunk);
                 }
@@ -685,7 +725,7 @@ namespace VoxelTG.Terrain
                 if (neighbourChunk)
                 {
                     neighbourChunk.blocks[Utils.BlockPosition3DtoIndex(blockPosition.x, blockPosition.y, 0)] = blockType;
-                    neighbourChunk.needToSaveBlockData = true;
+                    neighbourChunk.isTerrainModified = true;
                     neighbourChunk.BuildMesh(jobHandles);
                     chunksToBuild.Add(neighbourChunk);
                 }
@@ -696,7 +736,7 @@ namespace VoxelTG.Terrain
                 if (neighbourChunk)
                 {
                     neighbourChunk.blocks[Utils.BlockPosition3DtoIndex(blockPosition.x, blockPosition.y, 17)] = blockType;
-                    neighbourChunk.needToSaveBlockData = true;
+                    neighbourChunk.isTerrainModified = true;
                     neighbourChunk.BuildMesh(jobHandles);
                     chunksToBuild.Add(neighbourChunk);
                 }
@@ -745,7 +785,7 @@ namespace VoxelTG.Terrain
                     if (neighbourChunk)
                     {
                         neighbourChunk.blocks[Utils.BlockPosition3DtoIndex(0, blockPosition.y, blockPosition.z)] = blockType;
-                        neighbourChunk.needToSaveBlockData = true;
+                        neighbourChunk.isTerrainModified = true;
                         neighboursToBuild[0] = true;
                     }
                 }
@@ -755,7 +795,7 @@ namespace VoxelTG.Terrain
                     if (neighbourChunk)
                     {
                         neighbourChunk.blocks[Utils.BlockPosition3DtoIndex(17, blockPosition.y, blockPosition.z)] = blockType;
-                        neighbourChunk.needToSaveBlockData = true;
+                        neighbourChunk.isTerrainModified = true;
                         neighboursToBuild[1] = true;
                     }
                 }
@@ -766,7 +806,7 @@ namespace VoxelTG.Terrain
                     if (neighbourChunk)
                     {
                         neighbourChunk.blocks[Utils.BlockPosition3DtoIndex(blockPosition.x, blockPosition.y, 0)] = blockType;
-                        neighbourChunk.needToSaveBlockData = true;
+                        neighbourChunk.isTerrainModified = true;
                         neighboursToBuild[2] = true;
                     }
                 }
@@ -776,7 +816,7 @@ namespace VoxelTG.Terrain
                     if (neighbourChunk)
                     {
                         neighbourChunk.blocks[Utils.BlockPosition3DtoIndex(blockPosition.x, blockPosition.y, 17)] = blockType;
-                        neighbourChunk.needToSaveBlockData = true;
+                        neighbourChunk.isTerrainModified = true;
                         neighboursToBuild[3] = true;
                     }
                 }
@@ -818,6 +858,11 @@ namespace VoxelTG.Terrain
 
         #region // === Block updates === \\
 
+        /// <summary>
+        /// Schedule update event on current block and nearby blocks
+        /// </summary>
+        /// <param name="blockPos">current block position</param>
+        /// <param name="ticks">ticks wait before calling update</param>
         private void UpdateNeighbourBlocks(BlockPosition blockPos, int ticks = 1)
         {
             World.ScheduleUpdate(this, blockPos, ticks);
@@ -843,6 +888,9 @@ namespace VoxelTG.Terrain
             }
         }
 
+        /// <summary>
+        /// Called when block receives update
+        /// </summary>
         public void OnBlockUpdate(BlockPosition position, params int[] args)
         {
             BlockType blockType = blocks[Utils.BlockPosition3DtoIndex(position.x, position.y, position.z)];
@@ -937,9 +985,12 @@ namespace VoxelTG.Terrain
 
         #endregion
 
+        /// <summary>
+        /// Save block data
+        /// </summary>
         private void SaveDataInWorldDictionary()
         {
-            if (needToSaveBlockData && blocks.IsCreated)
+            if (isTerrainModified && blocks.IsCreated)
             {
                 // TODO: save parameters
                 //NativeArray<BlockParameter> blockParameterKeys = blockParameters.GetKeyArray(Allocator.Temp);
