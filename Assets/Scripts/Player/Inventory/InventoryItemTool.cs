@@ -28,5 +28,20 @@ namespace VoxelTG.Player.Inventory
         /// Path to in-hand model
         /// </summary>
         public string addressablePathToModel;
+
+        public override bool IsTool()
+        {
+            return true;
+        }
+
+        public override bool IsSameType<T>(T other)
+        {
+            if (other is InventoryItemTool otherTool)
+            {
+                return otherTool.itemType == itemType;
+            }
+
+            return false;
+        }
     }
 }

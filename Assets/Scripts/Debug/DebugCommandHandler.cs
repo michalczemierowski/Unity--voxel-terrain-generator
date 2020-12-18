@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using VoxelTG.Player;
 using VoxelTG.Player.Inventory;
 using VoxelTG.Terrain;
 using VoxelTG.UI;
@@ -49,6 +50,9 @@ namespace VoxelTG.DebugUtils
             inputField.SetTextWithoutNotify(string.Empty);
             EventSystem.current.SetSelectedGameObject(null);
 
+            if (PlayerController.Instance == null)
+                return;
+
             if (msg.Length == 0 || msg[0] != COMMAND_PREFIX)
                 return;
 
@@ -75,9 +79,11 @@ namespace VoxelTG.DebugUtils
                     int.TryParse(content[2], out count);
 
                 if (itemType == ItemType.MATERIAL)
-                    UIManager.InventoryUI.AddItemToInventory(new InventoryItemData(blockType, count));
+                    // TODO: add item to inventory
+                    Debug.Log("// TODO: add item to inventory", this);
                 else if (itemType != ItemType.NONE)
-                    UIManager.InventoryUI.AddItemToInventory(new InventoryItemData(itemType, count));
+                    // TODO: add item to inventory
+                    Debug.Log("// TODO: add item to inventory", this);
             }
         }
     }

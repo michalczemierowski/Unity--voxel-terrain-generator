@@ -20,7 +20,7 @@ namespace VoxelTG.Player.Inventory
         /// Damage that will be dealed to living entity on hit
         /// </summary>
         public float damage;
-        
+
         [Tooltip("Bullets per second")]
         public float fireRate = 5f;
 
@@ -39,5 +39,20 @@ namespace VoxelTG.Player.Inventory
         /// Path to in-hand model
         /// </summary>
         public string addressablePathToModel;
+
+        public override bool IsWeapon()
+        {
+            return true;
+        }
+
+        public override bool IsSameType<T>(T other)
+        {
+            if (other is InventoryItemWeapon otherWeapon)
+            {
+                return otherWeapon.itemType == itemType;
+            }
+
+            return false;
+        }
     }
 }

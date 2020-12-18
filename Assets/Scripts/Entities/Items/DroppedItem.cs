@@ -14,7 +14,7 @@ namespace VoxelTG.Entities.Items
         /// <summary>
         /// reference to item data
         /// </summary>
-        public InventoryItemData inventoryItemData;
+        public InventorySlot inventoryItemData;
 
         /// <summary>
         /// Called when player interacts with dropped item

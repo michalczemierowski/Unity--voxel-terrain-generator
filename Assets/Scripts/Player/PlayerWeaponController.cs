@@ -50,9 +50,9 @@ namespace VoxelTG.Player.Interactions
             playerController.OnHandObjectLoaded += OnHandObjectLoaded;
         }
 
-        private void OnActiveToolbarSlotUpdate(InventoryItemData oldItem, InventoryItemData newItem)
+        private void OnActiveToolbarSlotUpdate(InventorySlot oldItem, InventorySlot newItem)
         {
-            if (oldItem.IsSameItem(newItem))
+            if (oldItem.IsSameType(newItem))
                 return;
 
             if (newItem.IsWeapon(out InventoryItemWeapon weapon))

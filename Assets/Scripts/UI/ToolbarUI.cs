@@ -38,14 +38,14 @@ namespace VoxelTG.UI
         /// </summary>
         /// <param name="slot">toolbar slot index</param>
         /// <param name="icon">inventory slot data</param>
-        public void SetToolbarData(int slot, InventoryItemData inventorySlotData)
+        public void SetToolbarData(int slot, InventorySlot inventorySlotData)
         {
             toolbarSlotIcon[slot].sprite = inventorySlotData.ItemIcon;
 
             // set color to alpha if sprite is null
             toolbarSlotIcon[slot].color = inventorySlotData.ItemIcon == null ? new Color(0, 0, 0, 0) : Color.white;
 
-            toolbarSlotCount[slot].text = inventorySlotData.itemCount.ToString();
+            toolbarSlotCount[slot].text = inventorySlotData.ItemCount.ToString();
         }
 
         /// <summary>

@@ -12,15 +12,19 @@ namespace VoxelTG.Player.Inventory
         /// </summary>
         public BlockType blockType = BlockType.AIR;
 
-        /// <summary>
-        /// Get item display name
-        /// </summary>
-        public override string ItemName
+        public override bool IsMaterial()
         {
-            get
+            return true;
+        }
+
+        public override bool IsSameType<T>(T other)
+        {
+            if(other is InventoryItemMaterial otherMaterial)
             {
-                return blockType.ToString();
+                return otherMaterial.blockType == blockType;
             }
+            
+            return false;
         }
     }
 }

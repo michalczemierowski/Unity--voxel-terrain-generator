@@ -15,7 +15,10 @@ namespace VoxelTG.Player.Inventory
     public class InventoryItemBase : ScriptableObject
     {
         [Header("Inventory item settings")]
-        [SerializeField] private string itemName;
+        /// <summary>
+        /// Item display name
+        /// </summary>
+        public string ItemName;
 
         /// <summary>
         /// How many items can fit in one inventory slot
@@ -26,18 +29,24 @@ namespace VoxelTG.Player.Inventory
         /// </summary>
         public Sprite itemIcon;
 
-        public static InventoryItemBase EMPTY => new InventoryItemBase() { maxStack = 0, itemIcon = null};
-
-        /// <summary>
-        /// Item display name
-        /// </summary>
-        public virtual string ItemName
+        public virtual bool IsMaterial()
         {
-            get
-            {
-                return itemName;
-            }
+            return false;
         }
 
+        public virtual bool IsTool()
+        {
+            return false;
+        }
+
+        public virtual bool IsWeapon()
+        {
+            return false;
+        }
+
+        public virtual bool IsSameType<T>(T other) where T : InventoryItemBase
+        {
+            return false;
+        }
     }
 }

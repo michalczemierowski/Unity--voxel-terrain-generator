@@ -51,9 +51,9 @@ namespace VoxelTG.Player.Interactions
             selectedBlockOutline = Instantiate(selectedBlockOutlinePrefab, Vector3.zero, Quaternion.identity);
         }
 
-        private void OnActiveToolbarSlotUpdate(InventoryItemData oldItem, InventoryItemData newItem)
+        private void OnActiveToolbarSlotUpdate(InventorySlot oldItem, InventorySlot newItem)
         {
-            if (oldItem.IsSameItem(newItem))
+            if (oldItem.IsSameType(newItem))
                 return;
 
             if (newItem.IsMaterial())
@@ -98,7 +98,7 @@ namespace VoxelTG.Player.Interactions
             bool inputDestroy = Input.GetMouseButton(0);
             bool inputPlace = Input.GetMouseButtonDown(1);
 
-            if (handlePlacingBlocks && inputPlace && inventoryUI.ActiveToolbarSlot.IsMaterial())
+            if (handlePlacingBlocks && inputPlace && inventoryUI.SelectedToolbarSlot.IsMaterial())
             {
                 HandlePlacing();
             }
@@ -183,17 +183,17 @@ namespace VoxelTG.Player.Interactions
                     return;
 
                 // get selected block type from inventory
-                Block block = WorldData.GetBlockData(inventoryUI.ActiveToolbarSlot.BlockType);
+                Block block = WorldData.GetBlockData(inventoryUI.SelectedToolbarSlot.BlockType);
 
                 if (block.shape == BlockShape.HALF_BLOCK)
                     chunk.SetParameters(new BlockParameter(blockPosition, ParameterType.ROTATION), (short)(Mathf.RoundToInt(cameraTransform.eulerAngles.y / 90) * 90));
                 if (block.type == BlockType.WATER)
                     chunk.SetParameters(new BlockParameter(blockPosition, ParameterType.WATER_SOURCE_DISTANCE), 8);
 
-                BlockType activeBlockType = inventoryUI.ActiveToolbarSlot.BlockType;
+                BlockType activeBlockType = inventoryUI.SelectedToolbarSlot.BlockType;
 
                 chunk.SetBlock(blockPosition, activeBlockType, SetBlockSettings.PLACE);
-                inventoryUI.UpdateToolbarItemCount(inventoryUI.ActiveToolbarSlot.positionX, -1);
+                inventoryUI.UpdateToolbarItemCount(inventoryUI.SelectedToolbarSlot.PositionX, -1);
             }
         }
 
@@ -229,7 +229,7 @@ namespace VoxelTG.Player.Interactions
                     {
                         Block block = WorldData.GetBlockData(chunk.GetBlock(blockPosition));
                         miningBlockPosition = globalBlockPosition;
-                        miningBlockMaxDurability = WorldData.GetBlockDurability(block.type) / inventoryUI.ActiveToolbarSlot.MiningSpeed;
+                        miningBlockMaxDurability = WorldData.GetBlockDurability(block.type) / inventoryUI.SelectedToolbarSlot.MiningSpeed;
                         miningBlockDurability = miningBlockMaxDurability;
                     }
                 }
