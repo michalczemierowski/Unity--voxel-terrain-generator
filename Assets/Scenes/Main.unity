@@ -678,8 +678,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   limitFPS: 1
   targetFPS: 60
-  renderDistance: 8
-  maxChunksToBuildAtOnce: 32
+  renderDistance: 16
+  maxChunksToBuildAtOnce: 64
 --- !u!4 &1282161508
 Transform:
   m_ObjectHideFlags: 0
