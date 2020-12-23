@@ -1,6 +1,4 @@
 ﻿using UnityEngine;
-using VoxelTG.Player.Inventory.Tools;
-using VoxelTG.Terrain;
 
 /*
  * Michał Czemierowski

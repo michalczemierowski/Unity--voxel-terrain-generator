@@ -13,12 +13,21 @@ namespace VoxelTG.Effects.SFX
         [SerializeField] private GameObject audioSourcePrefab;
 
         [Header("Path settings")]
+        [Tooltip("Path to resource folder containing SFX assets (parent folder for all directories below)")]
         [SerializeField] private string pathToSFX = "SFX";
+        [Tooltip("Path to resource folder containing enviroment sounds (releative to 'PathToSFX' path)")]
         [SerializeField] private string enviromentDirectoryName = "enviroment";
+        [Tooltip("Path to resource folder containing item sounds (releative to 'PathToSFX' path)")]
         [SerializeField] private string itemsDirectoryName = "items";
 
+        /// <summary>
+        /// Audio clip cache (sound after first load will be stored here)
+        /// </summary>
         private Dictionary<SoundType, AudioClip> audioCache = new Dictionary<SoundType, AudioClip>();
 
+        /// <summary>
+        /// Get path to specified sound resource (used when loading resources)
+        /// </summary>
         private string GetPathToResource(SoundType soundType)
         {
             string result = pathToSFX + "/";

@@ -1,7 +1,5 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
-using VoxelTG.Terrain;
 
 /*
  * Michał Czemierowski
@@ -40,15 +38,24 @@ namespace VoxelTG.Entities
             targetMoveSpot = transform.position;
         }
 
+        /// <summary>
+        /// Handle finding target logics
+        /// </summary>
         protected virtual void FindTarget() { }
 
+        /// <summary>
+        /// Handle movement when there's no target
+        /// </summary>
         protected virtual void HandleMovement() { }
 
+        /// <summary>
+        /// Handle movement when following target
+        /// </summary>
         protected virtual void HandleMovementTarget()
         {
             // get target pos
             Vector3Int targetPosition = Utils.WorldToBlockPosition(Target.position - Vector3.up);
-            targetPosition.y = World.GetTopBlock(new Vector2Int(targetPosition.x, targetPosition.z)).y + 1;
+            targetPosition.y = World.GetTopBlockPosition(new Vector2Int(targetPosition.x, targetPosition.z)).y + 1;
 
             if (targetPosition != lastTargetPosition)
             {

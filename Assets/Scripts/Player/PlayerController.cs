@@ -1,11 +1,9 @@
-﻿using System;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.EventSystems;
 using UnityEngine.ResourceManagement.AsyncOperations;
 using VoxelTG.Player.Interactions;
 using VoxelTG.Player.Inventory;
-using VoxelTG.Player.Inventory.Tools;
 using VoxelTG.Terrain;
 using VoxelTG.UI;
 

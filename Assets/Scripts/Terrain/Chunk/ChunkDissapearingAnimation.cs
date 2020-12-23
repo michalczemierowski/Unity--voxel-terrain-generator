@@ -13,15 +13,18 @@ namespace VoxelTG.Terrain.Chunks
 
         private void Update()
         {
+            // start moving chunk down
             transform.Translate(Vector3.down * speed * Time.deltaTime);
-
+            
             if (transform.position.y <= -distance)
             {
+                // disable mesh renderers
                 foreach (var mr in GetComponentsInChildren<MeshRenderer>())
                 {
                     mr.enabled = false;
                 }
 
+                // disable object
                 gameObject.SetActive(false);
                 this.enabled = false;
             }

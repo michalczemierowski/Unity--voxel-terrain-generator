@@ -1,4 +1,8 @@
-﻿using UnityEngine;
+﻿/*
+ * Michał Czemierowski
+ * https://github.com/michalczemierowski
+*/
+using UnityEngine;
 using VoxelTG.Terrain;
 
 /*

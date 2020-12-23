@@ -35,7 +35,10 @@ namespace VoxelTG.UI
         {
             DontDestroyOnLoad(gameObject);
         }
-
+        
+        /// <summary>
+        /// UI Listener for 'START GAME' button
+        /// </summary>
         public void StartGame()
         {
             StartCoroutine(LoadGameAsync());

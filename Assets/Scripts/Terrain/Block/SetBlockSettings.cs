@@ -9,10 +9,25 @@ namespace VoxelTG.Terrain.Blocks
     /// </summary>
     public struct SetBlockSettings
     {
+        /// <summary>
+        /// Should destroy event be called
+        /// </summary>
         public bool callDestroyEvent;
+        /// <summary>
+        /// Should place event be called
+        /// </summary>
         public bool callPlaceEvent;
+        /// <summary>
+        /// Should block drop be dropped
+        /// </summary>
         public bool dropItemPickup;
+        /// <summary>
+        /// Velocity of dropped item (ignored if dropItemPickup == false)
+        /// </summary>
         public float droppedItemVelocity;
+        /// <summary>
+        /// Should dropped item be rotated same as player camera (ignored if dropItemPickup == false)
+        /// </summary>
         public bool rotateDroppedItem;
 
         public SetBlockSettings(bool callDestroyEvent, bool callPlaceEvent, bool dropItemPickup, float droppedItemVelocity = 0, bool rotateDroppedItem = false)

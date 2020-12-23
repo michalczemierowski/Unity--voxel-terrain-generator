@@ -15,11 +15,13 @@ namespace VoxelTG
 #if UNITY_EDITOR
         public static bool gameCorrectlyLoaded;
 #endif
-        public bool limitFPS;
-        public int targetFPS;
+        [SerializeField] private bool limitFPS;
+        [SerializeField] private int targetFPS;
 
-        public int renderDistance = 8;
-        public int maxChunksToBuildAtOnce = 1000;
+        [SerializeField] private int renderDistance = 8;
+        public static int RenderDistance => Instance.renderDistance;
+        
+        [SerializeField] private int maxChunksToBuildAtOnce = 1000;
 
         void Awake()
         {

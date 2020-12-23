@@ -86,7 +86,7 @@ namespace VoxelTG
         private static Queue<Chunk> terrainCollisionMeshes = new Queue<Chunk>();
 
         // TODO: try to reduce GC alloc
-        private static List<TickQueueData> tickQueue = new List<TickQueueData>();
+        private static List<WorldEventQueueData> tickQueue = new List<WorldEventQueueData>();
         private static HashSet<BlockPosition> updatePositions = new HashSet<BlockPosition>();
 
         private Vector2Int chunkAtPlayerPosition = new Vector2Int(-1, -1);
@@ -105,6 +105,10 @@ namespace VoxelTG
 
         #endregion
 
+        // TODO: there must be a better way to handle this
+        /// <summary>
+        /// Save world data to disk
+        /// </summary>
         private void SaveChunkData()
         {
             // TODO: enable saving later
@@ -122,7 +126,11 @@ namespace VoxelTG
 
             Debug.Log($"SAVED {WorldSave.savedChunks.Count} CHUNKS");
         }
-
+        
+        // TODO: there must be a better way to handle this
+        /// <summary>
+        /// Load world data from disk if exists
+        /// </summary>
         private void LoadChunkData()
         {
             string path = Application.persistentDataPath + "/world0";
@@ -216,7 +224,9 @@ namespace VoxelTG
             // load chunks
             LoadChunks();
 
+            // start invoking chunk loading task
             InvokeRepeating(nameof(ChunkLoading), 1f / buildChecksPerSecond, 1f / buildChecksPerSecond);
+            // start invoking tick task
             InvokeRepeating(nameof(Tick), 1f / ticksPerSecond, 1f / ticksPerSecond);
 
             InitializeEvents();
@@ -249,6 +259,9 @@ namespace VoxelTG
         private static Dictionary<BlockType, OnBlockDestroy> OnBlockDestroyEvents = new Dictionary<BlockType, OnBlockDestroy>();
         private static Dictionary<BlockType, OnBlockPlace> OnBlockPlaceEvents = new Dictionary<BlockType, OnBlockPlace>();
 
+        /// <summary>
+        /// Initialize containters with all block types
+        /// </summary>
         private void InitializeEvents()
         {
             int len = System.Enum.GetNames(typeof(BlockType)).Length;
@@ -456,7 +469,7 @@ namespace VoxelTG
         /// <param name="chunk">target chunk</param>
         public static void SchedulePhysicsBake(Chunk chunk)
         {
-            int meshID = chunk.blockMeshFilter.mesh.GetInstanceID();
+            int meshID = chunk.BlockMeshFilter.mesh.GetInstanceID();
 
             BakePhysicsXMesh bakePhysics = new BakePhysicsXMesh()
             {
@@ -506,7 +519,12 @@ namespace VoxelTG
             return new BlockPosition();
         }
 
-        public static BlockPosition GetTopBlock(Vector2Int worldPositon, out Chunk chunk)
+        /// <summary>
+        /// Get position of top block at specified x and z position
+        /// </summary>
+        /// <param name="worldPositon">x and z position of block</param>
+        /// <param name="chunk">chunk containing this block</param>
+        public static BlockPosition GetTopBlockPosition(Vector2Int worldPositon, out Chunk chunk)
         {
             chunk = GetChunk(worldPositon.x, worldPositon.y);
             BlockPosition blockPosition = new BlockPosition(new int3(worldPositon.x, 0, worldPositon.y));
@@ -523,7 +541,11 @@ namespace VoxelTG
             return new BlockPosition();
         }
 
-        public static BlockPosition GetTopBlock(Vector2Int worldPositon)
+        /// <summary>
+        /// Get position of top block at specified x and z position
+        /// </summary>
+        /// <param name="worldPositon">x and z position of block</param>
+        public static BlockPosition GetTopBlockPosition(Vector2Int worldPositon)
         {
             Chunk chunk = GetChunk(worldPositon.x, worldPositon.y);
             BlockPosition blockPosition = new BlockPosition(new int3(worldPositon.x, 0, worldPositon.y));
@@ -559,6 +581,13 @@ namespace VoxelTG
             return null;
         }
 
+        /// <summary>
+        /// Try to get chunk at specified position
+        /// </summary>
+        /// <param name="x">chunk position x</param>
+        /// <param name="z">chunk position z</param>
+        /// <param name="chunk">reference to chunk if found</param>
+        /// <returns>true if found</returns>
         public static bool TryGetChunk(float x, float z, out Chunk chunk)
         {
             int chunkPosX = Mathf.FloorToInt(x / ChunkSizeXZ) * ChunkSizeXZ;
@@ -612,7 +641,7 @@ namespace VoxelTG
                     meshBakingJobs.Dequeue().Complete();
 
                     Chunk chunk = terrainCollisionMeshes.Dequeue();
-                    chunk.blockMeshCollider.sharedMesh = chunk.blockMeshFilter.mesh;
+                    chunk.BlockMeshCollider.sharedMesh = chunk.BlockMeshFilter.mesh;
                 }
             }
 
@@ -630,7 +659,7 @@ namespace VoxelTG
         {
             if (!updatePositions.Contains(blockPos))
             {
-                tickQueue.Add(new TickQueueData(chunk, blockPos, ticks, args));
+                tickQueue.Add(new WorldEventQueueData(chunk, blockPos, ticks, args));
                 updatePositions.Add(blockPos);
                 return true;
             }
@@ -649,7 +678,7 @@ namespace VoxelTG
             if (!updatePositions.Contains(blockPos))
             {
                 int tick = UnityEngine.Random.Range(ticks.x, ticks.y);
-                tickQueue.Add(new TickQueueData(chunk, blockPos, tick, args));
+                tickQueue.Add(new WorldEventQueueData(chunk, blockPos, tick, args));
                 updatePositions.Add(blockPos);
                 return true;
             }
@@ -669,9 +698,9 @@ namespace VoxelTG
                 if (tick.ticks <= 0)
                 {
                     tickQueue.Remove(tick);
-                    updatePositions.Remove(tick.blockPos);
+                    updatePositions.Remove(tick.blockPosition);
 
-                    tick.chunk?.OnBlockUpdate(tick.blockPos, tick.args);
+                    tick.chunk?.OnBlockUpdate(tick.blockPosition, tick.args);
                 }
             }
             CurrentTick++;
@@ -689,7 +718,7 @@ namespace VoxelTG
         {
             Vector2Int playerWorldPos = new Vector2Int((int)PlayerController.PlayerTransform.position.x, (int)PlayerController.PlayerTransform.position.z);
 
-            BlockPosition blockPosition = GetTopBlock(playerWorldPos, out Chunk chunk);
+            BlockPosition blockPosition = GetTopBlockPosition(playerWorldPos, out Chunk chunk);
             chunk.SetBlock(blockPosition, BlockType.OBSIDIAN, SetBlockSettings.PLACE);
 
             Vector3 playerPos = blockPosition.ToVector3Int() + new Vector3(0.5f, 3.5f, 0.5f);
