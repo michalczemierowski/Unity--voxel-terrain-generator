@@ -60,7 +60,8 @@ namespace VoxelTG.Entities.Items
                 primitive.transform.localRotation = Quaternion.identity;
             }
 
-            item.inventoryItemData = new InventorySlot(itemType, count);
+            // TODO
+            // item.inventoryItemData = new InventorySlot(itemType, count);
 
             if(velocity != 0 && item.TryGetComponent(out Rigidbody rigidbody))
             {
@@ -84,8 +85,9 @@ namespace VoxelTG.Entities.Items
 
             Chunk chunk = World.GetChunk(position.x, position.z);
             DroppedItem item = Instantiate(materialItemPrefab, position, Quaternion.identity, chunk.transform).GetComponent<DroppedItem>();
-
-            item.inventoryItemData = new InventorySlot(blockType, count);
+             
+            // TODO
+            // item.inventoryItemData = new InventorySlot(blockType, count);
 
             if (velocity != 0 && item.TryGetComponent(out Rigidbody rigidbody))
             {

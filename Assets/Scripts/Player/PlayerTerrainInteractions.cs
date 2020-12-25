@@ -25,8 +25,6 @@ namespace VoxelTG.Player.Interactions
         [SerializeField] private GameObject selectedBlockOutlinePrefab;
         private GameObject selectedBlockOutline;
 
-        private InventoryUI inventoryUI;
-
         public float maxInteractDistance { get; set; } = 8;
         private Transform cameraTransform;
 
@@ -36,34 +34,34 @@ namespace VoxelTG.Player.Interactions
         private float miningBlockMaxDurability;
         private float miningBlockDurability;
 
+        // TODO: handle this in UI manager
         private Image miningProgressImage;
 
         private void Start()
         {
             cameraTransform = Camera.main.transform;
             miningProgressImage = UIManager.MiningProgressImage;
-            inventoryUI = UIManager.InventoryUI;
 
-            inventoryUI.OnActiveToolbarSlotUpdate += OnActiveToolbarSlotUpdate;
+            PlayerController.InventorySystem.OnMainHandUpdate += OnActiveToolbarSlotUpdate;
             selectedBlockOutline = Instantiate(selectedBlockOutlinePrefab, Vector3.zero, Quaternion.identity);
         }
 
-        private void OnActiveToolbarSlotUpdate(InventorySlot oldItem, InventorySlot newItem)
+        private void OnActiveToolbarSlotUpdate(InventorySlot oldContent, InventorySlot newContent)
         {
-            if (oldItem.IsSameType(newItem))
+            if (oldContent.Item.IsSameType(newContent.Item))
                 return;
 
-            if (newItem.IsMaterial())
+            if (newContent.Item.IsMaterial())
             {
                 handleDestroyingBlocks = false;
                 handlePlacingBlocks = true;
 
-                if (newItem.BlockType != lastSelectedBlock)
+                if (newContent.BlockType != lastSelectedBlock)
                 {
-                    lastSelectedBlock = newItem.BlockType;
+                    lastSelectedBlock = newContent.BlockType;
                 }
             }
-            else if (newItem.IsTool())
+            else if (newContent.Item.IsTool())
             {
                 handleDestroyingBlocks = true;
                 handlePlacingBlocks = false;
@@ -95,7 +93,7 @@ namespace VoxelTG.Player.Interactions
             bool inputDestroy = Input.GetMouseButton(0);
             bool inputPlace = Input.GetMouseButtonDown(1);
 
-            if (handlePlacingBlocks && inputPlace && inventoryUI.SelectedToolbarSlot.IsMaterial())
+            if (handlePlacingBlocks && inputPlace && PlayerController.InventorySystem.HandSlot.Item.IsMaterial())
             {
                 HandlePlacing();
             }
@@ -158,6 +156,10 @@ namespace VoxelTG.Player.Interactions
 
         private void HandlePlacing()
         {
+            // return if item in hand is not material
+            if (!PlayerController.InventorySystem.HandSlot.Item.IsMaterial())
+                return;
+
             if (Physics.Raycast(cameraTransform.position, cameraTransform.forward, out RaycastHit hitInfo, maxInteractDistance, groundLayer) && hitInfo.transform.CompareTag("Terrain"))
             {
                 Vector3 pointInTargetBlock;
@@ -180,22 +182,27 @@ namespace VoxelTG.Player.Interactions
                     return;
 
                 // get selected block type from inventory
-                Block block = WorldData.GetBlockData(inventoryUI.SelectedToolbarSlot.BlockType);
+                InventoryItemMaterial inventoryItemMaterial = (InventoryItemMaterial)PlayerController.InventorySystem.HandSlot.Item;
+                Block block = WorldData.GetBlockData(inventoryItemMaterial.blockType);
 
                 if (block.shape == BlockShape.HALF_BLOCK)
                     chunk.SetParameters(new BlockParameter(blockPosition, ParameterType.ROTATION), (short)(Mathf.RoundToInt(cameraTransform.eulerAngles.y / 90) * 90));
                 if (block.type == BlockType.WATER)
                     chunk.SetParameters(new BlockParameter(blockPosition, ParameterType.WATER_SOURCE_DISTANCE), 8);
 
-                BlockType activeBlockType = inventoryUI.SelectedToolbarSlot.BlockType;
+                BlockType activeBlockType = inventoryItemMaterial.blockType;
 
                 chunk.SetBlock(blockPosition, activeBlockType, SetBlockSettings.PLACE);
-                inventoryUI.UpdateToolbarItemCount(inventoryUI.SelectedToolbarSlot.PositionX, -1);
+                PlayerController.InventorySystem.RemoveItem(PlayerController.InventorySystem.HandSlot, 1);
             }
         }
 
         private void HandleDestroying(bool inputDestroy, bool inputPlace)
         {
+            // return if item in hand is not tool
+            if (!PlayerController.InventorySystem.HandSlot.Item.IsTool())
+                return;
+
             if (Physics.Raycast(cameraTransform.position, cameraTransform.forward, out RaycastHit hitInfo, maxInteractDistance, groundLayer) && hitInfo.transform.CompareTag("Terrain"))
             {
                 Vector3 pointInTargetBlock;
@@ -224,9 +231,10 @@ namespace VoxelTG.Player.Interactions
                     }
                     else
                     {
+                        InventoryItemTool inventoryItemTool = (InventoryItemTool)PlayerController.InventorySystem.HandSlot.Item;
                         Block block = WorldData.GetBlockData(chunk.GetBlock(blockPosition));
                         miningBlockPosition = globalBlockPosition;
-                        miningBlockMaxDurability = WorldData.GetBlockDurability(block.type) / inventoryUI.SelectedToolbarSlot.MiningSpeed;
+                        miningBlockMaxDurability = WorldData.GetBlockDurability(block.type) / inventoryItemTool.miningSpeed;
                         miningBlockDurability = miningBlockMaxDurability;
                     }
                 }

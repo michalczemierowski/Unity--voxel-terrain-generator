@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e0a20800cc863d04fb93ae13e58d4489, type: 3}
-  m_Name: SPRUCE_LOG
+  m_Name: OAK_LEAVES
   m_EditorClassIdentifier: VTGAssembly:VoxelTG.Player.Inventory:InventoryItemMaterial
-  itemName: 
-  maxStack: 256
-  itemIcon: {fileID: 6145179989369080442, guid: 9c2a687c7f1a53740953a6a015b4fb37,
+  ItemName: 
+  weight: 1
+  itemIcon: {fileID: -5695515053704344928, guid: 9c2a687c7f1a53740953a6a015b4fb37,
     type: 3}
-  blockType: 9
+  blockType: 8

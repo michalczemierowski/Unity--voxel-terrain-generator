@@ -45,7 +45,7 @@ namespace VoxelTG.UI
             // set color to alpha if sprite is null
             toolbarSlotIcon[slot].color = inventorySlotData.ItemIcon == null ? new Color(0, 0, 0, 0) : Color.white;
 
-            toolbarSlotCount[slot].text = inventorySlotData.ItemCount.ToString();
+            toolbarSlotCount[slot].text = inventorySlotData.ItemAmount.ToString();
         }
 
         /// <summary>

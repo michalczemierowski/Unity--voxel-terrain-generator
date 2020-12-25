@@ -29,8 +29,8 @@ namespace VoxelTG.Player
         [SerializeField] private Animator cameraAnimator;
         public Animator CameraAnimator => cameraAnimator;
 
-        [SerializeField] private InventoryManager inventoryManager;
-        public static InventoryManager InventoryManager => Instance.inventoryManager;
+        [SerializeField] private InventorySystem inventorySystem;
+        public static InventorySystem InventorySystem => Instance.inventorySystem;
 
         [SerializeField] private PlayerMovement m_PlayerMovement;
         public static PlayerMovement Movement => Instance.m_PlayerMovement;
@@ -49,10 +49,6 @@ namespace VoxelTG.Player
         public delegate void HandObjectLoaded(GameObject handObject, ItemType itemType);
         public HandObjectLoaded OnHandObjectLoaded;
 
-        // TODO: move selection logic to InventoryUI
-        private int currentlySelectedToolbarSlot;
-        private InventoryUI inventoryUI;
-
         void Awake()
         {
             if (Instance)
@@ -66,64 +62,32 @@ namespace VoxelTG.Player
             gameObject.SetActive(false);
         }
 
-        private void Start()
+        private void OnEnable()
         {
-            inventoryUI = UIManager.InventoryUI;
-            inventoryUI.OnActiveToolbarSlotUpdate += OnActiveToolbarSlotUpdate;
+            inventorySystem.OnMainHandUpdate += OnActiveToolbarSlotUpdate;
         }
 
         private void OnDestroy()
         {
-            if(inventoryUI != null)
-                inventoryUI.OnActiveToolbarSlotUpdate -= OnActiveToolbarSlotUpdate;
+            inventorySystem.OnMainHandUpdate -= OnActiveToolbarSlotUpdate;
         }
 
         private void Update()
         {
-            if(AreControlsActive)
+            if (AreControlsActive)
                 HandleInput();
-        }
-
-        private void SelectToolbarSlot(int slot)
-        {
-            if (inventoryUI.OutOfToolbarRange(slot))
-                return;
-
-            inventoryUI.SelectToolbarSlot(slot);
-            m_TerrainInteractions.ResetMining();
-
-            currentlySelectedToolbarSlot = slot;
         }
 
         // TODO: input system
         private void HandleInput()
         {
-            // toolbar slots 1 - 9
-            for (int i = 0; i < 9; i++)
-            {
-                if (Input.GetKeyDown((KeyCode)(49 + i)))
-                {
-                    SelectToolbarSlot(i);
-                }
-            }
-
-            // toolbar scrollwheel
-            if (Input.GetAxis("Mouse ScrollWheel") > 0)
-            {
-                SelectToolbarSlot(currentlySelectedToolbarSlot - 1);
-            }
-            else if (Input.GetAxis("Mouse ScrollWheel") < 0)
-            {
-                SelectToolbarSlot(currentlySelectedToolbarSlot + 1);
-            }
-
             // drop item
             if (Input.GetKeyDown(KeyCode.Q))
             {
-                if (!inventoryUI.SelectedToolbarSlot.IsEmpty())
+                if (!inventorySystem.HandSlot.IsEmpty())
                 {
                     Transform cameraTransform = MouseLook.cameraTransform;
-                    inventoryUI.DropToolbarItem(cameraTransform.position + cameraTransform.forward, 1, droppedItemVelocity);
+                    inventorySystem.DropItem(inventorySystem.HandSlot, cameraTransform.position + cameraTransform.forward, 1, droppedItemVelocity);
                 }
             }
 
@@ -135,13 +99,15 @@ namespace VoxelTG.Player
             if (Input.GetKeyDown(KeyCode.H))
             {
                 // TODO: add items to inventory
+                inventorySystem.AddItem(ItemType.AXE, 1);
+                inventorySystem.AddItem(BlockType.OAK_LOG, 32);
             }
 
         }
 
-        private void OnActiveToolbarSlotUpdate(InventorySlot oldItem, InventorySlot newItem)
+        private void OnActiveToolbarSlotUpdate(InventorySlot oldContent, InventorySlot newContent)
         {
-            if (!oldItem.IsSameType(newItem))
+            if (!oldContent.Item.IsSameType(newContent.Item))
             {
                 LoadInHandModel();
             }
@@ -149,7 +115,7 @@ namespace VoxelTG.Player
 
         private void OnHandObjectPrefabLoaded(AsyncOperationHandle<GameObject> obj, ItemType itemType)
         {
-            if (inventoryUI.SelectedToolbarSlot.ItemType != itemType)
+            if (inventorySystem.HandSlot.ItemType != itemType)
                 return;
 
             GameObject prefab = obj.Result;
@@ -167,14 +133,28 @@ namespace VoxelTG.Player
                 Destroy(handTransform.GetChild(j).gameObject);
             }
 
-            ItemType itemType = inventoryUI.SelectedToolbarSlot.ItemType;
-            if (inventoryUI.SelectedToolbarSlot.IsTool(out InventoryItemTool inventoryItemTool) && inventoryItemTool.addressablePathToModel != string.Empty)
+            ItemType itemType = inventorySystem.HandSlot.ItemType;
+            if (inventorySystem.HandSlot.Item.IsTool())
             {
-                Addressables.LoadAssetAsync<GameObject>(inventoryItemTool.addressablePathToModel).Completed += ((AsyncOperationHandle<GameObject> obj) => OnHandObjectPrefabLoaded(obj, itemType));
+                InventoryItemTool inventoryItemTool = (InventoryItemTool)inventorySystem.HandSlot.Item;
+                if (inventoryItemTool.addressablePathToModel != string.Empty)
+                {
+                    Addressables.LoadAssetAsync<GameObject>(inventoryItemTool.addressablePathToModel).Completed += (handle) =>
+                    {
+                        OnHandObjectPrefabLoaded(handle, itemType);
+                    };
+                }
             }
-            else if (inventoryUI.SelectedToolbarSlot.IsWeapon(out InventoryItemWeapon inventoryItemWeapon) && inventoryItemWeapon.addressablePathToModel != string.Empty)
+            else if (inventorySystem.HandSlot.Item.IsWeapon())
             {
-                Addressables.LoadAssetAsync<GameObject>(inventoryItemWeapon.addressablePathToModel).Completed += ((AsyncOperationHandle<GameObject> obj) => OnHandObjectPrefabLoaded(obj, itemType));
+                InventoryItemWeapon inventoryItemWeapon = (InventoryItemWeapon)inventorySystem.HandSlot.Item;
+                if (inventoryItemWeapon.addressablePathToModel != string.Empty)
+                {
+                    Addressables.LoadAssetAsync<GameObject>(inventoryItemWeapon.addressablePathToModel).Completed += (handle) =>
+                    {
+                        OnHandObjectPrefabLoaded(handle, itemType);
+                    };
+                }
             }
         }
     }

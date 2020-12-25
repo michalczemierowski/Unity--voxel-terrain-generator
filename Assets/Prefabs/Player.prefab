@@ -650,7 +650,7 @@ MonoBehaviour:
   droppedItemVelocity: 3
   m_MouseLook: {fileID: 8438437527126469098}
   cameraAnimator: {fileID: 8438437526179574326}
-  inventoryManager: {fileID: 2907637887361602829}
+  inventorySystem: {fileID: 2907637887361602829}
   m_PlayerMovement: {fileID: 8438437527126469093}
   m_TerrainInteractions: {fileID: 8438437527126469101}
   m_WeaponController: {fileID: 8438437527126469103}
@@ -665,9 +665,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 8438437527126469090}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 39499e5998edd2447809f6f59ebbbc88, type: 3}
+  m_Script: {fileID: 11500000, guid: 45fa9d2136c6b5d4b85e0ceb4b85554c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  carryingCapacity: 200
+  toolbarSlotsCount: 9
 --- !u!114 &8438437527126469093
 MonoBehaviour:
   m_ObjectHideFlags: 0

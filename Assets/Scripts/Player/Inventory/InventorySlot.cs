@@ -15,34 +15,24 @@ namespace VoxelTG.Player.Inventory
     public class InventorySlot
     {
         public InventoryItemBase Item { get; private set; }
-        /// <summary>
-        /// slot position X in inventory
-        /// </summary>
-        public readonly int PositionX;
-        /// <summary>
-        /// slot position Y in inventory, toolbar = 0
-        /// </summary>
-        public readonly int PositionY;
 
-        private int _itemCount;
-        public int ItemCount
+        private int _itemAmount;
+        public int ItemAmount
         {
-            get => _itemCount;
-            set => _itemCount = math.clamp(value, 0, MaxStackSize);
+            get => _itemAmount;
+            set
+            {
+                if (value < 1)
+                    ClearSlot();
+                else
+                    _itemAmount = value;
+            }
         }
 
-        public InventorySlot(InventoryItemBase inventoryItem, int itemCount, int positionX, int positionY)
+        public InventorySlot(InventoryItemBase inventoryItem, int amount)
         {
             this.Item = inventoryItem;
-            this._itemCount = itemCount;
-            this.PositionX = positionX;
-            this.PositionY = positionY;
-        }
-
-        public InventorySlot(int positionX, int positionY)
-        {
-            this.PositionX = positionX;
-            this.PositionY = positionY;
+            this._itemAmount = amount;
         }
         
         /// <summary>
@@ -66,7 +56,7 @@ namespace VoxelTG.Player.Inventory
                         return itemTool.itemType;
                     else if (Item is InventoryItemWeapon itemWeapon)
                         return itemWeapon.itemType;
-                    else if(Item is InventoryItemMaterial itemMaterial)
+                    else if(Item is InventoryItemMaterial)
                         return ItemType.MATERIAL;
                 }
  
@@ -108,7 +98,7 @@ namespace VoxelTG.Player.Inventory
         /// <summary>
         /// How many items can fit in one inventory slot
         /// </summary>
-        public int MaxStackSize => Item ? Item.maxStack : 1;
+        public int ItemWeight => Item ? Item.weight : 0;
 
         /// <summary>
         /// Get item inventory icon
@@ -126,7 +116,7 @@ namespace VoxelTG.Player.Inventory
         public void ClearSlot()
         {
             Item = null;
-            ItemCount = 0;
+            ItemAmount = 0;
         }
     }
 }

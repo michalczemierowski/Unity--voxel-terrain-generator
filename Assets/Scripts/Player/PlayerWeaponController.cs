@@ -23,10 +23,7 @@ namespace VoxelTG.Player.Interactions
         [SerializeField] private LayerMask groundLayer;
         public float bulletDistance = 100;
 
-        private PlayerController playerController;
-        private InventoryUI inventoryUI;
         private Transform cameraTransform;
-
         private InventoryItemWeapon currentWeapon;
 
         public GameObject currentWeaponGameObject { get; private set; }
@@ -39,22 +36,20 @@ namespace VoxelTG.Player.Interactions
         private void Start()
         {
             cameraTransform = Camera.main.transform;
-            inventoryUI = UIManager.InventoryUI;
-            playerController = GetComponent<PlayerController>();
 
-            inventoryUI.OnActiveToolbarSlotUpdate += OnActiveToolbarSlotUpdate;
-            playerController.OnHandObjectLoaded += OnHandObjectLoaded;
+            PlayerController.InventorySystem.OnMainHandUpdate += OnActiveToolbarSlotUpdate;
+            PlayerController.Instance.OnHandObjectLoaded += OnHandObjectLoaded;
         }
 
-        private void OnActiveToolbarSlotUpdate(InventorySlot oldItem, InventorySlot newItem)
+        private void OnActiveToolbarSlotUpdate(InventorySlot oldContent, InventorySlot newContent)
         {
-            if (oldItem.IsSameType(newItem))
+            if (oldContent.Item.IsSameType(newContent.Item))
                 return;
 
-            if (newItem.IsWeapon(out InventoryItemWeapon weapon))
+            if (newContent.Item.IsWeapon())
             {
                 isWeaponInHand = true;
-                currentWeapon = weapon;
+                currentWeapon = (InventoryItemWeapon)newContent.Item;
                 // TODO: read settings etc.
             }
             else

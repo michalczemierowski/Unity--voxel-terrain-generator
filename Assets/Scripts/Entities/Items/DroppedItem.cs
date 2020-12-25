@@ -20,10 +20,11 @@ namespace VoxelTG.Entities.Items
         /// </summary>
         public void Pickup()
         {
-            if (UIManager.InventoryUI.AddItemToInventory(inventoryItemData))
-            {
-                Destroy(gameObject);
-            }
+            // TODO: add item to inventory
+            //if (UIManager.InventoryUI.AddItemToInventory(inventoryItemData))
+            //{
+            //    Destroy(gameObject);
+            //}
         }
 
         private void OnCollisionEnter(Collision collision)

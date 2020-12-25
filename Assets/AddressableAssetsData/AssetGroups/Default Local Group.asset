@@ -21,14 +21,22 @@ MonoBehaviour:
     m_Address: material_icons_atlas
     m_ReadOnly: 0
     m_SerializedLabels: []
-    m_MainAsset: {fileID: 0}
-    m_TargetAsset: {fileID: 0}
+    m_MainAsset: {fileID: 2800000, guid: 9c2a687c7f1a53740953a6a015b4fb37, type: 3}
+    m_TargetAsset: {fileID: 2800000, guid: 9c2a687c7f1a53740953a6a015b4fb37, type: 3}
   - m_GUID: 81d6f61e9544534488178eceee5641bc
     m_Address: DEFAULT_WEAPON
     m_ReadOnly: 0
     m_SerializedLabels: []
-    m_MainAsset: {fileID: 0}
-    m_TargetAsset: {fileID: 0}
+    m_MainAsset: {fileID: 1956725536542708140, guid: 81d6f61e9544534488178eceee5641bc,
+      type: 3}
+    m_TargetAsset: {fileID: 1956725536542708140, guid: 81d6f61e9544534488178eceee5641bc,
+      type: 3}
+  - m_GUID: d396c6516026cce43b7eafb8889793a6
+    m_Address: inventory
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    m_MainAsset: {fileID: 102900000, guid: d396c6516026cce43b7eafb8889793a6, type: 3}
+    m_TargetAsset: {fileID: 102900000, guid: d396c6516026cce43b7eafb8889793a6, type: 3}
   m_ReadOnly: 0
   m_Settings: {fileID: 11400000, guid: 09dbac02a7f7bde4b83c561d530393ef, type: 2}
   m_SchemaSet:
