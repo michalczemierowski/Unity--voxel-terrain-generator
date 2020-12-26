@@ -14,7 +14,7 @@ namespace VoxelTG.Player.Inventory
     [System.Serializable]
     public class InventorySlot
     {
-        public InventoryItemBase Item { get; private set; }
+        public InventoryItemBase Item { get; }
 
         private int _itemAmount;
         public int ItemAmount
@@ -22,10 +22,9 @@ namespace VoxelTG.Player.Inventory
             get => _itemAmount;
             set
             {
-                if (value < 1)
-                    ClearSlot();
-                else
-                    _itemAmount = value;
+                _itemAmount = value > 0 ? value : 1;
+
+                OnAmountUpdate?.Invoke(_itemAmount, ItemWeight);
             }
         }
 
@@ -34,9 +33,9 @@ namespace VoxelTG.Player.Inventory
             this.Item = inventoryItem;
             this._itemAmount = amount;
         }
-        
+
         /// <summary>
-        /// Check if slot is empty (no inventory item)
+        /// Check if slot is empty (inventory item is null)
         /// </summary>
         public bool IsEmpty()
         {
@@ -44,7 +43,7 @@ namespace VoxelTG.Player.Inventory
         }
 
         /// <summary>
-        /// Get type of tool in slot, returns NONE if item is not Tool or Weapon
+        /// Type of tool in slot, NONE if item is not Tool or Weapon
         /// </summary>
         public ItemType ItemType
         {
@@ -56,16 +55,16 @@ namespace VoxelTG.Player.Inventory
                         return itemTool.itemType;
                     else if (Item is InventoryItemWeapon itemWeapon)
                         return itemWeapon.itemType;
-                    else if(Item is InventoryItemMaterial)
+                    else if (Item is InventoryItemMaterial)
                         return ItemType.MATERIAL;
                 }
- 
+
                 return ItemType.NONE;
             }
         }
 
         /// <summary>
-        /// Get type of block in slot, returns AIR if item is not Material
+        /// Type of block in slot, AIR if item is not Material
         /// </summary>
         public BlockType BlockType
         {
@@ -80,43 +79,55 @@ namespace VoxelTG.Player.Inventory
         }
 
         /// <summary>
-        /// Get mining speed, return 0 if item is not tool
+        /// Mining speed, 0 if item is not tool
         /// </summary>
         public float MiningSpeed
         {
             get
             {
-                if(Item && Item is InventoryItemTool itemTool)
+                if (Item && Item is InventoryItemTool itemTool)
                 {
                     return itemTool.miningSpeed;
                 }
-                
+
                 return 0;
             }
         }
 
         /// <summary>
-        /// How many items can fit in one inventory slot
+        /// Weight of all units in inventory
         /// </summary>
-        public int ItemWeight => Item ? Item.weight : 0;
+        public int ItemWeight => Item ? Item.weight * ItemAmount : 0;
 
         /// <summary>
-        /// Get item inventory icon
+        /// Item icon
         /// </summary>
         public Sprite ItemIcon => Item ? Item.itemIcon : null;
 
         /// <summary>
-        /// Get item display name
+        /// Item display name
         /// </summary>
         public string ItemName => Item ? Item.ItemName : string.Empty;
 
-        /// <summary>
-        /// Remove item from slot
-        /// </summary>
-        public void ClearSlot()
+        public void InvokeDestroyEvent()
         {
-            Item = null;
-            ItemAmount = 0;
+            OnSlotRemoved?.Invoke();
         }
+
+        #region // === Events === \\
+
+        public delegate void AmountUpdate(int newAmount, int newWeight);
+        /// <summary>
+        /// Called when item amount changes
+        /// </summary>
+        public AmountUpdate OnAmountUpdate;
+
+        public delegate void SlotRemoved();
+        /// <summary>
+        /// Called when slot is to be destroyed (e.g. item dropped on ground)
+        /// </summary>
+        public SlotRemoved OnSlotRemoved;
+
+        #endregion
     }
 }

@@ -40,9 +40,15 @@ namespace VoxelTG.Player.Inventory
         #region // === Events === \\
 
         public delegate void MainHandUpdate(InventorySlot oldItem, InventorySlot newItem);
+        /// <summary>
+        /// Called when InventorySlot in main hand changes
+        /// </summary>
         public MainHandUpdate OnMainHandUpdate;
 
         public delegate void InventoryContentsChange(HashSet<InventorySlot> inventorySlots, bool onlyAmountChanged);
+        /// <summary>
+        /// Called when new item is added/removed or amount of any item changes
+        /// </summary>
         public InventoryContentsChange OnInventoryContentsChange;
 
         #endregion
