@@ -11,10 +11,6 @@ namespace VoxelTG.Player.Inventory
     {
         [Header("Inventory item tool settings")]
         /// <summary>
-        /// Type of item
-        /// </summary>
-        public ItemType itemType = ItemType.NONE;
-        /// <summary>
         /// How many block can tool mine before being destroyed
         /// </summary>
         public int durability;
@@ -31,16 +27,6 @@ namespace VoxelTG.Player.Inventory
         public override bool IsTool()
         {
             return true;
-        }
-
-        public override bool IsSameType<T>(T other)
-        {
-            if (other is InventoryItemTool otherTool)
-            {
-                return otherTool.itemType == itemType;
-            }
-
-            return false;
         }
     }
 }

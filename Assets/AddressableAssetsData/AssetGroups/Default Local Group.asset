@@ -27,10 +27,8 @@ MonoBehaviour:
     m_Address: DEFAULT_WEAPON
     m_ReadOnly: 0
     m_SerializedLabels: []
-    m_MainAsset: {fileID: 1956725536542708140, guid: 81d6f61e9544534488178eceee5641bc,
-      type: 3}
-    m_TargetAsset: {fileID: 1956725536542708140, guid: 81d6f61e9544534488178eceee5641bc,
-      type: 3}
+    m_MainAsset: {fileID: 0}
+    m_TargetAsset: {fileID: 0}
   - m_GUID: d396c6516026cce43b7eafb8889793a6
     m_Address: inventory
     m_ReadOnly: 0

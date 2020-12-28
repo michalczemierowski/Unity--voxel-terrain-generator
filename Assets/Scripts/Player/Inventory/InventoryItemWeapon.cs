@@ -10,10 +10,6 @@ namespace VoxelTG.Player.Inventory
     public class InventoryItemWeapon : InventoryItemBase
     {
         [Header("Inventory item weapon settings")]
-        /// <summary>
-        /// Type of item
-        /// </summary>
-        public ItemType itemType = ItemType.NONE;
 
         /// <summary>
         /// Damage that will be dealed to living entity on hit
@@ -42,16 +38,6 @@ namespace VoxelTG.Player.Inventory
         public override bool IsWeapon()
         {
             return true;
-        }
-
-        public override bool IsSameType<T>(T other)
-        {
-            if (other is InventoryItemWeapon otherWeapon)
-            {
-                return otherWeapon.itemType == itemType;
-            }
-
-            return false;
         }
     }
 }

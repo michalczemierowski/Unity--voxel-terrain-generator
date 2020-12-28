@@ -6,6 +6,7 @@ using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using VoxelTG.Player;
 using VoxelTG.Player.Inventory;
 
 namespace VoxelTG.UI
@@ -20,27 +21,39 @@ namespace VoxelTG.UI
         [SerializeField] private TMP_Text itemWeightText;
         [Tooltip("Text in which item's icon will be displayed")]
         [SerializeField] private Image itemIconImage;
+        [Tooltip("TODO")]
+        [SerializeField] private Button selectItemButton;
 
-        private InventorySlot inventorySlot;
+        private InventorySlot linkedSlot;
+        /// <summary>
+        /// InventorySlot to which this slot is linked
+        /// </summary>
+        public InventorySlot LinkedSlot => linkedSlot;
 
         /// <summary>
         /// Set item that will be displayed in this slot
         /// </summary>
         public void SetItem(InventorySlot inventorySlot)
         {
-            if(inventorySlot == null || inventorySlot.Item == null)
+            if (inventorySlot == null || inventorySlot.Item == null)
             {
                 OnSlotRemoved();
                 return;
             }
 
-            this.inventorySlot = inventorySlot;
+            this.linkedSlot = inventorySlot;
 
             // set values in UI elements
             itemNameText.text = inventorySlot.ItemName;
             itemAmountText.text = inventorySlot.ItemAmount.ToString();
             itemWeightText.text = inventorySlot.ItemWeight.ToString();
             itemIconImage.sprite = inventorySlot.ItemIcon;
+
+            // set on click listener
+            selectItemButton.onClick.AddListener(() =>
+            {
+                PlayerController.InventorySystem.SetInHandSlot(inventorySlot);
+            });
 
             // listen to events
             inventorySlot.OnAmountUpdate += OnAmountUpdate;
@@ -61,10 +74,10 @@ namespace VoxelTG.UI
         private void OnDestroy()
         {
             // when UI gets destroyed but inventory slot still exists (e.g. when updating UI)
-            if(inventorySlot != null)
+            if (linkedSlot != null)
             {
-                inventorySlot.OnAmountUpdate -= OnAmountUpdate;
-                inventorySlot.OnSlotRemoved -= OnSlotRemoved;
+                linkedSlot.OnAmountUpdate -= OnAmountUpdate;
+                linkedSlot.OnSlotRemoved -= OnSlotRemoved;
             }
         }
     }

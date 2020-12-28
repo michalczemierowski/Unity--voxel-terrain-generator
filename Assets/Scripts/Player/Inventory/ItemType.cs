@@ -5,7 +5,7 @@
 namespace VoxelTG.Player.Inventory
 {
     /// <summary>
-    /// enum containg all possible item types
+    /// enum containg all item types
     /// </summary>
     public enum ItemType
     {

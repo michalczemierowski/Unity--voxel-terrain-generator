@@ -43,28 +43,12 @@ namespace VoxelTG.Player.Inventory
         }
 
         /// <summary>
-        /// Type of tool in slot, NONE if item is not Tool or Weapon
+        /// Type of item, NONE if there is no item
         /// </summary>
-        public ItemType ItemType
-        {
-            get
-            {
-                if (Item)
-                {
-                    if (Item is InventoryItemTool itemTool)
-                        return itemTool.itemType;
-                    else if (Item is InventoryItemWeapon itemWeapon)
-                        return itemWeapon.itemType;
-                    else if (Item is InventoryItemMaterial)
-                        return ItemType.MATERIAL;
-                }
-
-                return ItemType.NONE;
-            }
-        }
+        public ItemType ItemType => Item ? Item.Type : ItemType.NONE;
 
         /// <summary>
-        /// Type of block in slot, AIR if item is not Material
+        /// Type of block in slot, AIR if there is no item or item is not Material
         /// </summary>
         public BlockType BlockType
         {
@@ -79,35 +63,19 @@ namespace VoxelTG.Player.Inventory
         }
 
         /// <summary>
-        /// Mining speed, 0 if item is not tool
-        /// </summary>
-        public float MiningSpeed
-        {
-            get
-            {
-                if (Item && Item is InventoryItemTool itemTool)
-                {
-                    return itemTool.miningSpeed;
-                }
-
-                return 0;
-            }
-        }
-
-        /// <summary>
         /// Weight of all units in inventory
         /// </summary>
-        public int ItemWeight => Item ? Item.weight * ItemAmount : 0;
+        public int ItemWeight => Item ? Item.Weight * ItemAmount : 0;
 
         /// <summary>
         /// Item icon
         /// </summary>
-        public Sprite ItemIcon => Item ? Item.itemIcon : null;
+        public Sprite ItemIcon => Item ? Item.Icon : null;
 
         /// <summary>
         /// Item display name
         /// </summary>
-        public string ItemName => Item ? Item.ItemName : string.Empty;
+        public string ItemName => Item ? Item.Name : string.Empty;
 
         public void InvokeDestroyEvent()
         {

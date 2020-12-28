@@ -20,7 +20,7 @@ namespace VoxelTG.Player
         private float rotationY;
         private float rotationX;
 
-        void Start()
+        private void Start()
         {
             cameraTransform = Camera.main.transform;
             Cursor.lockState = CursorLockMode.Locked;
@@ -33,9 +33,10 @@ namespace VoxelTG.Player
             transformOriginalRotation = transform.rotation;
         }
 
-        void Update()
+        private void Update()
         {
-            HandleMouseLook();
+            if (!UI.UIManager.IsUiModeActive)
+                HandleMouseLook();
         }
 
         private void HandleMouseLook()

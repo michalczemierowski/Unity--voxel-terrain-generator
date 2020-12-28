@@ -27,19 +27,40 @@ namespace VoxelTG.UI
     {
         [Tooltip("Text in which name of item in hand will be displayed")]
         [SerializeField] private TMP_Text currentItemName;
-        
+
         [Tooltip("Parent for all inventory slots")]
         [SerializeField] private RectTransform inventorySlotsParent;
+
         [Tooltip("Inventory item prefab, must contain InventorySlotUI component")]
         [SerializeField] private GameObject inventoryItemUIPrefab;
 
+        [Tooltip("Text in which occupied and max carrying capacity will be displayed")]
+        [SerializeField] private TMP_Text carringCapacityText;
+
+        /// <summary>
+        /// list of UI slots (used to enable/disable slots by groups
+        /// </summary>
+        private List<InventorySlotUI> inventoryUISlots;
+        /// <summary>
+        /// Array containing all group toggles (used to make sure only one is toggled)
+        /// </summary>
+        private InventoryGroupToggle[] groupToggles;
+
+        /// <summary>
+        /// Should slots be updated when opening inventory UI next time (inventory was updated when UI was closed)
+        /// </summary>
         private bool shouldUpdateUI;
+        /// <summary>
+        /// True if inventory UI is opened
+        /// </summary>
         public bool IsInventoryOpened => gameObject.activeSelf;
 
-        private void OnEnable()
+        public void Init()
         {
             PlayerController.InventorySystem.OnInventoryContentsChange += OnInventoryContentsChange;
             PlayerController.InventorySystem.OnMainHandUpdate += OnMainHandUpdate;
+
+            groupToggles = GetComponentsInChildren<InventoryGroupToggle>();
         }
 
         private void OnDestroy()
@@ -50,6 +71,7 @@ namespace VoxelTG.UI
 
         private void OnMainHandUpdate(InventorySlot oldItem, InventorySlot newItem)
         {
+            // display name of item in hand
             if (newItem == null)
                 currentItemName.text = string.Empty;
             else
@@ -58,11 +80,12 @@ namespace VoxelTG.UI
 
         private void OnInventoryContentsChange(HashSet<InventorySlot> inventorySlots, bool onlyAmountChanged)
         {
+            carringCapacityText.text = PlayerController.InventorySystem.OccupiedCarringCapacity + "/" + PlayerController.InventorySystem.CarryingCapacity;
             // amount updates are handled in InventorySlotUI
             if (onlyAmountChanged)
                 return;
             // don't need to update elements when inventory is closed
-            if(!IsInventoryOpened)
+            if (!IsInventoryOpened)
             {
                 shouldUpdateUI = true;
                 return;
@@ -98,7 +121,8 @@ namespace VoxelTG.UI
         private void CreateInventoryItemsUI()
         {
             HashSet<InventorySlot> inventorySlots = PlayerController.InventorySystem.InventorySlots;
-            foreach(var slot in inventorySlots)
+            inventoryUISlots = new List<InventorySlotUI>(inventorySlots.Count);
+            foreach (var slot in inventorySlots)
             {
                 if (slot == null)
                     continue;
@@ -106,6 +130,45 @@ namespace VoxelTG.UI
                 // TODO: pooling
                 InventorySlotUI slotUI = Instantiate(inventoryItemUIPrefab, inventorySlotsParent).GetComponent<InventorySlotUI>();
                 slotUI.SetItem(slot);
+
+                inventoryUISlots.Add(slotUI);
+            }
+
+
+            // check if any toggle was enabled before updating slots
+            foreach (var groupToggle in groupToggles)
+            {
+                if (groupToggle.IsToggled)
+                {
+                    // and toggle filters if they were enabled before
+                    ToggleGroupFiltering(groupToggle.TargetGroup, true);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Toggle filtering items by group (show only items from specific group)
+        /// </summary>
+        /// <param name="itemGroup">group from which slots will be enabled</param>
+        /// <param name="on">if true filter will be enabled, else all items will be visible</param>
+        public void ToggleGroupFiltering(ItemGroup itemGroup, bool on)
+        {
+            if (inventoryUISlots == null)
+                return;
+
+            foreach (var groupToggle in groupToggles)
+            {
+                if (groupToggle.TargetGroup != itemGroup)
+                    groupToggle.IsToggled = false;
+            }
+
+            foreach (var slotUI in inventoryUISlots)
+            {
+                if (slotUI == null)
+                    continue;
+
+                bool shouldBeActive = !on || slotUI.LinkedSlot.Item.Group == itemGroup;
+                slotUI.gameObject.SetActive(shouldBeActive);
             }
         }
 
@@ -117,8 +180,10 @@ namespace VoxelTG.UI
             bool active = !IsInventoryOpened;
             gameObject.SetActive(active);
 
+            UIManager.ToggleUIMode(active);
+
             // if inventory content has changed when UI was disabled
-            if(active && shouldUpdateUI)
+            if (active && shouldUpdateUI)
             {
                 UpdateInventoryUI();
                 shouldUpdateUI = false;

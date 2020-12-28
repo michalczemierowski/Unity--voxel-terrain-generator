@@ -12,9 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: af4d10e84d421ff4b975d02b4565a4ee, type: 3}
   m_Name: RIFLE_AK74
   m_EditorClassIdentifier: 
-  ItemName: 
+  itemName: AK74
   weight: 1
   itemIcon: {fileID: 21300000, guid: 9f76122188e12cf48a7cee25eae866f3, type: 3}
+  itemGroup: 2
   itemType: 1
   damage: 6
   fireRate: 15

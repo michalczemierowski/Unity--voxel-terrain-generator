@@ -12,8 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e0a20800cc863d04fb93ae13e58d4489, type: 3}
   m_Name: COBBLESTONE
   m_EditorClassIdentifier: VTGAssembly:VoxelTG.Player.Inventory:InventoryItemMaterial
-  ItemName: 
+  itemName: Cobblestone
   weight: 1
   itemIcon: {fileID: 2361682385482768142, guid: 9c2a687c7f1a53740953a6a015b4fb37,
     type: 3}
+  itemGroup: 0
   blockType: 5

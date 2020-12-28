@@ -3,6 +3,7 @@ using System.Linq;
 using Unity.Mathematics;
 using UnityEngine;
 using VoxelTG.Entities;
+using VoxelTG.Extensions;
 using VoxelTG.Player.Inventory;
 using VoxelTG.Terrain;
 using VoxelTG.Terrain.Blocks;
@@ -18,15 +19,14 @@ namespace VoxelTG.Player.Interactions
     public class PlayerWeaponController : MonoBehaviour
     {
         [System.NonSerialized]
-        public bool isWeaponInHand = false;
+        public bool isWeaponEquipped = false;
 
         [SerializeField] private LayerMask groundLayer;
         public float bulletDistance = 100;
 
         private Transform cameraTransform;
-        private InventoryItemWeapon currentWeapon;
+        private InventoryItemWeapon weaponInHand;
 
-        public GameObject currentWeaponGameObject { get; private set; }
         private WeaponEffectsController currentWeaponFX;
         private float timeToNextShoot = 0;
 
@@ -37,30 +37,30 @@ namespace VoxelTG.Player.Interactions
         {
             cameraTransform = Camera.main.transform;
 
-            PlayerController.InventorySystem.OnMainHandUpdate += OnActiveToolbarSlotUpdate;
+            PlayerController.InventorySystem.OnMainHandUpdate += OnMainHandUpdate;
             PlayerController.Instance.OnHandObjectLoaded += OnHandObjectLoaded;
         }
 
-        private void OnActiveToolbarSlotUpdate(InventorySlot oldContent, InventorySlot newContent)
+        private void OnMainHandUpdate(InventorySlot oldContent, InventorySlot newContent)
         {
-            if (oldContent.Item.IsSameType(newContent.Item))
+            // if old slot is same as new - return
+            if (!oldContent.IsNullOrEmpty() && !newContent.IsNullOrEmpty() && oldContent.Item.IsSameType(newContent.Item))
                 return;
 
-            if (newContent.Item.IsWeapon())
+            if (!newContent.IsNullOrEmpty() && newContent.Item.IsWeapon())
             {
-                isWeaponInHand = true;
-                currentWeapon = (InventoryItemWeapon)newContent.Item;
+                isWeaponEquipped = true;
+                weaponInHand = (InventoryItemWeapon)newContent.Item;
                 // TODO: read settings etc.
             }
             else
-                isWeaponInHand = false;
+                isWeaponEquipped = false;
         }
 
         private void OnHandObjectLoaded(GameObject handObject, ItemType itemType)
         {
-            if (currentWeapon.itemType == itemType)
+            if (weaponInHand.Type == itemType)
             {
-                currentWeaponGameObject = handObject;
                 currentWeaponFX = handObject.GetComponent<WeaponEffectsController>();
             }
             else
@@ -71,9 +71,9 @@ namespace VoxelTG.Player.Interactions
 
         private void Update()
         {
-            if (PlayerController.AreControlsActive)
+            if (!UIManager.IsUiModeActive)
             {
-                if (!isWeaponInHand || currentWeapon == null) return;
+                if (!isWeaponEquipped || weaponInHand == null) return;
 
                 HandleInput();
             }
@@ -83,21 +83,10 @@ namespace VoxelTG.Player.Interactions
         {
             if (timeToNextShoot <= 0)
             {
-                bool shootButtonDown = currentWeapon.isAutomaticRifle ? Input.GetMouseButton(0) : Input.GetMouseButtonDown(0);
+                bool shootButtonDown = weaponInHand.isAutomaticRifle ? Input.GetMouseButton(0) : Input.GetMouseButtonDown(0);
                 if (shootButtonDown)
                 {
-                    if (currentWeaponGameObject == null)
-                    {
-                        Debug.LogError($"currentWeaponGameObject is null");
-                        return;
-                    }
-                    if (currentWeaponFX == null)
-                    {
-                        Debug.LogError($"{currentWeaponGameObject.name} don't have {nameof(WeaponEffectsController)} component");
-                        return;
-                    }
-
-                    timeToNextShoot = 1f / currentWeapon.fireRate;
+                    timeToNextShoot = 1f / weaponInHand.fireRate;
                     currentWeaponFX.OnShoot();
                     //SoundManager.Instance.PlaySound(SoundType.RIFLE_AK74_SHOOT, transform.position, SoundSettings.DEFAULT);
 
@@ -128,7 +117,7 @@ namespace VoxelTG.Player.Interactions
                             // cannot destroy base layer (at y == 0)
                             if (globalBlockPosition.y > 0)
                             {
-                                bool shouldBeDestroyed = DamageBlock(globalBlockPosition, blockType, currentWeapon.blockDamage);
+                                bool shouldBeDestroyed = DamageBlock(globalBlockPosition, blockType, weaponInHand.blockDamage);
                                 if (shouldBeDestroyed)
                                 {
                                     chunk.SetBlock(blockPosition, BlockType.AIR, new SetBlockSettings(true, false, false, 10));
@@ -138,7 +127,7 @@ namespace VoxelTG.Player.Interactions
                         if (hitInfo.transform.tag.EndsWith("entity"))
                         {
                             Entity entity = hitInfo.transform.GetComponent<Entity>();
-                            entity.Damage(currentWeapon.damage);
+                            entity.Damage(weaponInHand.damage);
                         }
                     }
                 }

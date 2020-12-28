@@ -2,6 +2,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using VoxelTG.Entities.Items;
+using VoxelTG.Extensions;
 using VoxelTG.Player.Inventory;
 using VoxelTG.Terrain;
 using VoxelTG.Terrain.Blocks;
@@ -42,42 +43,48 @@ namespace VoxelTG.Player.Interactions
             cameraTransform = Camera.main.transform;
             miningProgressImage = UIManager.MiningProgressImage;
 
-            PlayerController.InventorySystem.OnMainHandUpdate += OnActiveToolbarSlotUpdate;
+            PlayerController.InventorySystem.OnMainHandUpdate += OnMainHandUpdate;
             selectedBlockOutline = Instantiate(selectedBlockOutlinePrefab, Vector3.zero, Quaternion.identity);
         }
 
-        private void OnActiveToolbarSlotUpdate(InventorySlot oldContent, InventorySlot newContent)
+        private void OnMainHandUpdate(InventorySlot oldContent, InventorySlot newContent)
         {
-            if (oldContent.Item.IsSameType(newContent.Item))
+            // if old slot is same as new - return
+            if (!oldContent.IsNullOrEmpty() && !newContent.IsNullOrEmpty() && oldContent.Item.IsSameType(newContent.Item))
                 return;
 
-            if (newContent.Item.IsMaterial())
+            if (!newContent.IsNullOrEmpty())
             {
-                handleDestroyingBlocks = false;
-                handlePlacingBlocks = true;
-
-                if (newContent.BlockType != lastSelectedBlock)
+                if (newContent.Item.IsMaterial())
                 {
-                    lastSelectedBlock = newContent.BlockType;
+                    handleDestroyingBlocks = false;
+                    handlePlacingBlocks = true;
+
+                    if (newContent.BlockType != lastSelectedBlock)
+                    {
+                        lastSelectedBlock = newContent.BlockType;
+                    }
+                    return;
+                }
+
+                if (newContent.Item.IsTool())
+                {
+                    handleDestroyingBlocks = true;
+                    handlePlacingBlocks = false;
+                    return;
                 }
             }
-            else if (newContent.Item.IsTool())
-            {
-                handleDestroyingBlocks = true;
-                handlePlacingBlocks = false;
-            }
-            else
-            {
-                handleDestroyingBlocks = false;
-                handlePlacingBlocks = false;
 
-                selectedBlockOutline.SetActive(false);
-            }
+            // disallow interactions if any of above is true
+            handleDestroyingBlocks = false;
+            handlePlacingBlocks = false;
+
+            selectedBlockOutline.SetActive(false);
         }
 
         private void Update()
         {
-            if (PlayerController.AreControlsActive)
+            if (!UIManager.IsUiModeActive)
             {
                 HandleInput();
 

@@ -13,23 +13,32 @@ namespace VoxelTG.Player.Inventory
     public class InventoryItemBase : ScriptableObject
     {
         [Header("Inventory item settings")]
+        [Tooltip("Item display name")]
+        [SerializeField] private string itemName;
         /// <summary>
         /// Item display name
         /// </summary>
-        [Tooltip("Item display name")]
-        public string ItemName;
+        public string Name => itemName;
 
+        [Tooltip("Weight of signle unit in inventory")]
+        [SerializeField] private int weight = 1;
         /// <summary>
         /// Weight of signle unit in inventory
         /// </summary>
-        [Tooltip("Weight of signle unit in inventory")]
-        public int weight = 1;
+        public int Weight => weight;
 
-        /// <summary>
-        /// Sprite that will be displayed as item icon in inventory
-        /// </summary>
         [Tooltip("Icon that will be displayed as item icon")]
-        public Sprite itemIcon;
+        [SerializeField] private Sprite itemIcon;
+        /// <summary>
+        /// Sprite that is displayed as item icon in inventory
+        /// </summary>
+        public Sprite Icon => itemIcon;
+
+        [SerializeField] private ItemType itemType;
+        public ItemType Type => itemType;
+
+        [SerializeField] private ItemGroup itemGroup;
+        public ItemGroup Group => itemGroup;
 
         /// <summary>
         /// Check if item is material
@@ -63,10 +72,10 @@ namespace VoxelTG.Player.Inventory
         /// </summary>
         /// <typeparam name="T">type of items to compare (must be child of InventoryItemBase)</typeparam>
         /// <param name="other">item to compare</param>
-        /// <returns>false by default</returns>
+        /// <returns>compare Types by default</returns>
         public virtual bool IsSameType<T>(T other) where T : InventoryItemBase
         {
-            return false;
+            return other.Type == Type;;
         }
     }
 }

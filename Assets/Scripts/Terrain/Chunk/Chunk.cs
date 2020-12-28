@@ -642,11 +642,11 @@ namespace VoxelTG.Terrain
                 WorldData.GetCustomBlockDrops(currentBlock, ref dropItemType, ref dropBlockType, ref count);
 
                 if (dropItemType == ItemType.MATERIAL)
-                    DroppedItemsManager.Instance.DropItemMaterial(dropBlockType, worldPosition, count: count, velocity: blockSettings.droppedItemVelocity, rotate: blockSettings.rotateDroppedItem);
+                    DroppedItemsManager.Instance.DropItem(dropBlockType, worldPosition, amount: count, velocity: blockSettings.droppedItemVelocity, rotate: blockSettings.rotateDroppedItem);
                 // TODO: check if name starts with tool etc.
                 else
                     // TODO: item objects pool
-                    DroppedItemsManager.Instance.DropItemTool(dropItemType, worldPosition, count: count, velocity: blockSettings.droppedItemVelocity);
+                    DroppedItemsManager.Instance.DropItem(dropItemType, worldPosition, amount: count, velocity: blockSettings.droppedItemVelocity);
             }
 
             blocks[Utils.BlockPosition3DtoIndex(blockPosition)] = blockType;

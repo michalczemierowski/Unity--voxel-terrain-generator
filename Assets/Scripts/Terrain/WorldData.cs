@@ -136,6 +136,7 @@ namespace VoxelTG.Terrain
             {
                 case BlockType.AIR:
                 case BlockType.OAK_LEAVES:
+                case BlockType.SPRUCE_LEAVES:
                     return BlockState.TRANSPARENT;
                 case BlockType.GRASS:
                     return BlockState.PLANTS;

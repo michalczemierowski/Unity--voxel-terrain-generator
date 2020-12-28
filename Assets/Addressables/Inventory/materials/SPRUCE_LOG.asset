@@ -12,8 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e0a20800cc863d04fb93ae13e58d4489, type: 3}
   m_Name: SPRUCE_LOG
   m_EditorClassIdentifier: VTGAssembly:VoxelTG.Player.Inventory:InventoryItemMaterial
-  ItemName: 
+  itemName: Spruce log
   weight: 1
   itemIcon: {fileID: 6145179989369080442, guid: 9c2a687c7f1a53740953a6a015b4fb37,
     type: 3}
+  itemGroup: 0
   blockType: 9

@@ -36,37 +36,37 @@ namespace VoxelTG.Entities.Items
         /// </summary>
         /// <param name="itemType">type of item</param>
         /// <param name="position">dropped item position (in world space)</param>
-        /// <param name="count">dropped item count</param>
+        /// <param name="amount">dropped item count</param>
         /// <param name="velocity">velocity multipler (camera.forward * velocity)</param>
         /// <param name="handObjectToCopy">GameObject that will be displayed in dropped item</param>
-        public void DropItemTool(ItemType itemType, Vector3 position, int count = 1, float velocity = 0f, GameObject handObjectToCopy = null)
+        public void DropItem(ItemType itemType, Vector3 position, int amount = 1, float velocity = 0f, GameObject handObjectToCopy = null)
         {
             if (itemType == ItemType.NONE)
                 return;
 
             Chunk chunk = World.GetChunk(position.x, position.z);
-            DroppedItem item = Instantiate(toolItemPrefab, position, Quaternion.identity, chunk.transform).GetComponent<DroppedItem>();
+            DroppedItem droppedItem = Instantiate(toolItemPrefab, position, Quaternion.identity, chunk.transform).GetComponent<DroppedItem>();
 
             if(handObjectToCopy != null)
             {
-                GameObject tool = Instantiate(handObjectToCopy, item.transform);
+                GameObject tool = Instantiate(handObjectToCopy, droppedItem.transform);
                 tool.transform.localPosition = Vector3.zero;
                 tool.transform.localRotation = Quaternion.identity;
             }
             else
             {
-                GameObject primitive = Instantiate(GameObject.CreatePrimitive(PrimitiveType.Sphere), item.transform);
+                GameObject primitive = Instantiate(GameObject.CreatePrimitive(PrimitiveType.Sphere), droppedItem.transform);
                 primitive.transform.localPosition = Vector3.zero;
                 primitive.transform.localRotation = Quaternion.identity;
             }
 
-            // TODO
-            // item.inventoryItemData = new InventorySlot(itemType, count);
+            PlayerController.InventorySystem.GetItemData(itemType, droppedItem);
+            droppedItem.Amount = amount;
 
-            if(velocity != 0 && item.TryGetComponent(out Rigidbody rigidbody))
+            if(velocity != 0 && droppedItem.TryGetComponent(out Rigidbody rigidbody))
             {
                 rigidbody.AddForce(MouseLook.cameraTransform.forward * velocity, ForceMode.Impulse);
-                item.transform.forward = MouseLook.cameraTransform.forward;
+                droppedItem.transform.forward = MouseLook.cameraTransform.forward;
             }
         }
 
@@ -75,28 +75,28 @@ namespace VoxelTG.Entities.Items
         /// </summary>
         /// <param name="blockType">type of material</param>
         /// <param name="position">doppped item position (in world space)</param>
-        /// <param name="count">dropped item count</param>
+        /// <param name="amount">dropped item count</param>
         /// <param name="velocity">velocity multipler (camera.forward * velocity)</param>
         /// <param name="rotate">should object be rotated same as camera</param>
-        public void DropItemMaterial(BlockType blockType, Vector3 position, int count = 1, float velocity = 0f, bool rotate = false)
+        public void DropItem(BlockType blockType, Vector3 position, int amount = 1, float velocity = 0f, bool rotate = false)
         {
             if (blockType == BlockType.AIR)
                 return;
 
             Chunk chunk = World.GetChunk(position.x, position.z);
-            DroppedItem item = Instantiate(materialItemPrefab, position, Quaternion.identity, chunk.transform).GetComponent<DroppedItem>();
-             
-            // TODO
-            // item.inventoryItemData = new InventorySlot(blockType, count);
+            DroppedItem droppedItem = Instantiate(materialItemPrefab, position, Quaternion.identity, chunk.transform).GetComponent<DroppedItem>();
+            
+            PlayerController.InventorySystem.GetItemData(blockType, droppedItem);
+            droppedItem.Amount = amount;
 
-            if (velocity != 0 && item.TryGetComponent(out Rigidbody rigidbody))
+            if (velocity != 0 && droppedItem.TryGetComponent(out Rigidbody rigidbody))
             {
                 rigidbody.AddForce(MouseLook.cameraTransform.forward * velocity, ForceMode.Impulse);
                 if(rotate)
-                    item.transform.forward = MouseLook.cameraTransform.forward;
+                    droppedItem.transform.forward = MouseLook.cameraTransform.forward;
             }
 
-             Mesh mesh = item.GetComponent<MeshFilter>().mesh;
+             Mesh mesh = droppedItem.GetComponent<MeshFilter>().mesh;
              CreateDoppedMaterialMesh(mesh, blockType, 0.75f);
         }
 

@@ -154,7 +154,7 @@ namespace VoxelTG.Player
 
         private void Update()
         {
-            if(PlayerController.AreControlsActive)
+            if(!UIManager.IsUiModeActive)
                 HandleInput();
             else
             {

@@ -4,6 +4,8 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
+using VoxelTG.Entities.Items;
+using VoxelTG.Extensions;
 using VoxelTG.Terrain;
 
 /*
@@ -26,6 +28,7 @@ namespace VoxelTG.Player.Inventory
         public int OccupiedCarringCapacity { get; private set; }
 
         public bool IsOverloaded => OccupiedCarringCapacity > carryingCapacity;
+        public bool IsHandNullOrEmpty => HandSlot.IsNullOrEmpty();
 
         /// <summary>
         /// Array containing all inventory slots
@@ -39,7 +42,7 @@ namespace VoxelTG.Player.Inventory
 
         #region // === Events === \\
 
-        public delegate void MainHandUpdate(InventorySlot oldItem, InventorySlot newItem);
+        public delegate void MainHandUpdate(InventorySlot oldContent, InventorySlot newContent);
         /// <summary>
         /// Called when InventorySlot in main hand changes
         /// </summary>
@@ -53,12 +56,12 @@ namespace VoxelTG.Player.Inventory
 
         #endregion
 
-        private void OnInventoryContentsChangeListener(HashSet<InventorySlot> inventorySlots, bool onlyAmountChanged)
+        private void OnInventoryContentsChangePreProcess(bool onlyAmountChanged)
         {
             OccupiedCarringCapacity = 0;
-            foreach (var slot in inventorySlots)
+            foreach (var slot in InventorySlots)
             {
-                OccupiedCarringCapacity += slot.ItemWeight * slot.ItemAmount;
+                OccupiedCarringCapacity += slot.ItemWeight;
             }
         }
 
@@ -69,33 +72,33 @@ namespace VoxelTG.Player.Inventory
             inventoryMaterialDataCache = new Dictionary<BlockType, InventoryItemBase>();
 
             HandSlot = new InventorySlot(null, 0);
-
-            OnInventoryContentsChange += OnInventoryContentsChangeListener;
         }
 
-        private void AddItem(InventoryItemBase inventoryItem, int amount)
+        public void AddItem(InventoryItemBase inventoryItem, int amount)
         {
             if (amount < 1 || inventoryItem == null)
                 return;
 
-            InventorySlot existingSlot = InventorySlots.FirstOrDefault((item) => item.ItemName.Equals(inventoryItem.ItemName));
+            InventorySlot existingSlot = InventorySlots.FirstOrDefault((item) => item.ItemName.Equals(inventoryItem.Name));
             if (existingSlot != null)
             {
                 existingSlot.ItemAmount += amount;
+                OnInventoryContentsChangePreProcess(true);
                 OnInventoryContentsChange?.Invoke(InventorySlots, true);
             }
             else
             {
                 InventorySlot newSlot = new InventorySlot(inventoryItem, amount);
                 InventorySlots.Add(newSlot);
+                OnInventoryContentsChangePreProcess(false);
                 OnInventoryContentsChange?.Invoke(InventorySlots, false);
             }
         }
 
-        private void RemoveItem(InventoryItemBase inventoryItem, int amount = 1, InventorySlot existingSlot = null)
+        public void RemoveItem(InventoryItemBase inventoryItem, int amount = 1, InventorySlot existingSlot = null)
         {
             if (existingSlot == null)
-                existingSlot = InventorySlots.FirstOrDefault((item) => item.ItemName.Equals(inventoryItem.ItemName));
+                existingSlot = InventorySlots.FirstOrDefault((item) => item.ItemName.Equals(inventoryItem.Name));
 
             if (existingSlot != null)
             {
@@ -103,6 +106,8 @@ namespace VoxelTG.Player.Inventory
                 if (amount < 1)
                 {
                     InventorySlots.Remove(existingSlot);
+                    SetInHandSlot(null);
+                    OnInventoryContentsChangePreProcess(false);
                     OnInventoryContentsChange?.Invoke(InventorySlots, false);
                 }
                 // else substract toRemove from count
@@ -112,11 +117,14 @@ namespace VoxelTG.Player.Inventory
                     if (amountLeft < 1)
                     {
                         InventorySlots.Remove(existingSlot);
+                        SetInHandSlot(null);
+                        OnInventoryContentsChangePreProcess(false);
                         OnInventoryContentsChange?.Invoke(InventorySlots, false);
                     }
                     else
                     {
                         existingSlot.ItemAmount = amountLeft;
+                        OnInventoryContentsChangePreProcess(true);
                         OnInventoryContentsChange?.Invoke(InventorySlots, true);
                     }
                 }
@@ -177,6 +185,66 @@ namespace VoxelTG.Player.Inventory
             }
         }
 
+        public void GetItemData(ItemType itemType, DroppedItem droppedItem)
+        {
+            if (itemType == ItemType.NONE)
+                return;
+
+            // item already in cache
+            if (inventoryItemDataCache.TryGetValue(itemType, out var item))
+            {
+                droppedItem.SetInventoryItem(item);
+            }
+            else
+            {
+                string path = PATH_TO_ITEMS_DATA + itemType.ToString() + ".asset";
+                Addressables.LoadAssetAsync<InventoryItemBase>(path).Completed += (handle) =>
+                {
+                    if (handle.Status != AsyncOperationStatus.Succeeded)
+                    {
+                        Debug.LogError($"Failed to load item data for {itemType} ({path})");
+                        return;
+                    }
+
+                    inventoryItemDataCache.Add(itemType, handle.Result);
+                    if (droppedItem != null)
+                        droppedItem.SetInventoryItem(handle.Result);
+
+                    Addressables.ReleaseInstance(handle);
+                };
+            }
+        }
+
+        public void GetItemData(BlockType blockType, DroppedItem droppedItem)
+        {
+            if (blockType == BlockType.AIR)
+                return;
+
+            // item already in cache
+            if (inventoryMaterialDataCache.TryGetValue(blockType, out var item))
+            {
+                droppedItem.SetInventoryItem(item);
+            }
+            else
+            {
+                string path = PATH_TO_MATERIAL_DATA + blockType.ToString() + ".asset";
+                Addressables.LoadAssetAsync<InventoryItemBase>(path).Completed += (handle) =>
+                {
+                    if (handle.Status != AsyncOperationStatus.Succeeded)
+                    {
+                        Debug.LogError($"Failed to load item data for {blockType} ({path})");
+                        return;
+                    }
+
+                    inventoryMaterialDataCache.Add(blockType, handle.Result);
+                    if (droppedItem != null)
+                        droppedItem.SetInventoryItem(handle.Result);
+
+                    Addressables.ReleaseInstance(handle);
+                };
+            }
+        }
+
         public void RemoveItem(ItemType itemType, BlockType blockType = BlockType.AIR, int amount = 1)
         {
             if (amount == 0)
@@ -196,25 +264,31 @@ namespace VoxelTG.Player.Inventory
 
         public void RemoveItem(InventorySlot inventorySlot, int amount)
         {
-            if (inventorySlot == null || inventorySlot.IsEmpty())
+            if (inventorySlot.IsNullOrEmpty())
                 return;
 
             int toRemove = Mathf.Min(inventorySlot.ItemAmount, amount);
             RemoveItem(inventorySlot.Item, toRemove, inventorySlot);
         }
 
-        public void DropItem(InventorySlot inventorySlot, Vector3 position, int count, float velocityMultipler)
+        public void DropItem(InventorySlot inventorySlot, Vector3 position, int amount, float velocityMultipler, bool rotate = false)
         {
-            // TODO
-        }
-
-        public void SelectInventorySlot(InventorySlot inventorySlot)
-        {
-            if (inventorySlot == null)
+            if (inventorySlot.IsNullOrEmpty())
                 return;
 
-            OnMainHandUpdate?.Invoke(HandSlot, inventorySlot);
+            RemoveItem(inventorySlot, amount);
+
+            if(inventorySlot.Item.IsMaterial())
+                DroppedItemsManager.Instance.DropItem(((InventoryItemMaterial)inventorySlot.Item).blockType, position, amount, velocityMultipler, rotate);
+            else
+                DroppedItemsManager.Instance.DropItem(inventorySlot.Item.Type, position, amount, velocityMultipler, PlayerController.ObjectInHand);
+        }
+
+        public void SetInHandSlot(InventorySlot inventorySlot)
+        {
+            var temp = HandSlot;
             HandSlot = inventorySlot;
+            OnMainHandUpdate?.Invoke(temp, inventorySlot);
         }
     }
 }
