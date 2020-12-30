@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
@@ -25,9 +24,42 @@ namespace VoxelTG.Player.Inventory
 
         public InventorySlot HandSlot { get; private set; }
         public int CarryingCapacity => carryingCapacity;
-        public int OccupiedCarringCapacity { get; private set; }
 
-        public bool IsOverloaded => OccupiedCarringCapacity > carryingCapacity;
+        private int occupiedCarringCapacity;
+        public int OccupiedCarringCapacity
+        {
+            get => occupiedCarringCapacity;
+            private set
+            {
+                // if player is gonna be overloaded
+                if (value > carryingCapacity)
+                {
+                    // if player wasn't overloaded before
+                    if (occupiedCarringCapacity <= carryingCapacity)
+                    {
+                        DebugUtils.DebugConsole.AddDebugMessageStatic("YOU'RE OVERLOADED");
+                    }
+
+                    IsOverloaded = true;
+                }
+                else
+                {
+                    // if player was overloaded before
+                    if(occupiedCarringCapacity > carryingCapacity)
+                    {
+                        DebugUtils.DebugConsole.AddDebugMessageStatic("YOU'RE NO LONGER OVERLOADED");
+                    }
+
+                    IsOverloaded = false;
+                }
+
+                // occupied capacity can't be lower than 0
+                occupiedCarringCapacity = value > 0 ? value : 0;
+            }
+        }
+
+
+        public bool IsOverloaded { get; private set; }
         public bool IsHandNullOrEmpty => HandSlot.IsNullOrEmpty();
 
         /// <summary>
@@ -58,11 +90,13 @@ namespace VoxelTG.Player.Inventory
 
         private void OnInventoryContentsChangePreProcess(bool onlyAmountChanged)
         {
-            OccupiedCarringCapacity = 0;
+            int occupiedCapacity = 0;
             foreach (var slot in InventorySlots)
             {
-                OccupiedCarringCapacity += slot.ItemWeight;
+                occupiedCapacity += slot.ItemWeight;
             }
+
+            OccupiedCarringCapacity = occupiedCapacity;
         }
 
         private void Awake()
@@ -74,18 +108,120 @@ namespace VoxelTG.Player.Inventory
             HandSlot = new InventorySlot(null, 0);
         }
 
+        /// <summary>
+        /// Load and cache item data for provided item type.
+        /// </summary>
+        /// <param name="itemType">type of item</param>
+        /// <param name="onLoadingCompleted">action that will be called when loading is complete</param>
+        private void LoadItemData(ItemType itemType, System.Action<InventoryItemBase> onLoadingCompleted = null)
+        {
+            // return if data is already in cache
+            if (inventoryItemDataCache.ContainsKey(itemType))
+            {
+                Debug.LogError($"Item data for {itemType} is already cached. You should use GetItemData method instead of LoadItemData.", this);
+                return;
+            }
+
+            string path = PATH_TO_ITEMS_DATA + itemType.ToString() + ".asset";
+            Addressables.LoadAssetAsync<InventoryItemBase>(path).Completed += (handle) =>
+            {
+                if (handle.Status != AsyncOperationStatus.Succeeded)
+                {
+                    Debug.LogError($"Failed to load item data for {itemType} ({path})", this);
+                    return;
+                }
+
+                // add data to cache
+                inventoryItemDataCache.Add(itemType, handle.Result);
+                onLoadingCompleted?.Invoke(handle.Result);
+            };
+        }
+
+        /// <summary>
+        /// Load and cache item data for provided item type. (use <see cref="GetItemData"/> if you want to check if object is cached)
+        /// </summary>
+        /// <param name="blockType">type of item</param>
+        /// <param name="onLoadingCompleted">action that will be called when loading is complete</param>
+        private void LoadItemData(BlockType blockType, System.Action<InventoryItemBase> onLoadingCompleted = null)
+        {
+            // return if data is already in cache
+            if (inventoryMaterialDataCache.ContainsKey(blockType))
+            {
+                Debug.LogError($"Item data for {blockType} is already cached. You should use GetItemData method instead of LoadItemData.", this);
+                return;
+            }
+
+            string path = PATH_TO_MATERIAL_DATA + blockType.ToString() + ".asset";
+            Addressables.LoadAssetAsync<InventoryItemBase>(path).Completed += (handle) =>
+            {
+                if (handle.Status != AsyncOperationStatus.Succeeded)
+                {
+                    Debug.LogError($"Failed to load item data for {blockType} ({path})");
+                    return;
+                }
+
+                // add data to cache
+                inventoryMaterialDataCache.Add(blockType, handle.Result);
+                onLoadingCompleted?.Invoke(handle.Result);
+            };
+        }
+
+        /// <summary>
+        /// Get cached item data or load data from file system and call action
+        /// </summary>
+        /// <param name="itemType">type of item</param>
+        /// <param name="action">action that will be called if item data was found</param>
+        public void GetItemData(ItemType itemType, System.Action<InventoryItemBase> action)
+        {
+            if (itemType == ItemType.NONE || action == null)
+                return;
+
+            // item already in cache
+            if (inventoryItemDataCache.TryGetValue(itemType, out var item))
+                action.Invoke(item);
+            // else - load data from file system
+            else
+                LoadItemData(itemType, action);
+        }
+
+        /// <summary>
+        /// Get cached item data or load data from file system and call action
+        /// </summary>
+        /// <param name="blockType">type of item</param>
+        /// <param name="action">action that will be called if item data was found</param>
+        public void GetItemData(BlockType blockType, System.Action<InventoryItemBase> action)
+        {
+            if (blockType == BlockType.AIR || action == null)
+                return;
+
+            // item already in cache
+            if (inventoryMaterialDataCache.TryGetValue(blockType, out var item))
+                action.Invoke(item);
+            // else - load data from file system
+            else
+                LoadItemData(blockType, action);
+        }
+
+        /// <summary>
+        /// Add 'amount' of 'inventoryItem' to inventory
+        /// </summary>
+        /// <param name="inventoryItem">inventory item which you want to add</param>
+        /// <param name="amount">amount of item</param>
         public void AddItem(InventoryItemBase inventoryItem, int amount)
         {
             if (amount < 1 || inventoryItem == null)
                 return;
 
+            // check if containing this type of item exists
             InventorySlot existingSlot = InventorySlots.FirstOrDefault((item) => item.ItemName.Equals(inventoryItem.Name));
+            // if so, just update amount
             if (existingSlot != null)
             {
                 existingSlot.ItemAmount += amount;
                 OnInventoryContentsChangePreProcess(true);
                 OnInventoryContentsChange?.Invoke(InventorySlots, true);
             }
+            // else, create new slot
             else
             {
                 InventorySlot newSlot = new InventorySlot(inventoryItem, amount);
@@ -95,27 +231,77 @@ namespace VoxelTG.Player.Inventory
             }
         }
 
-        public void RemoveItem(InventoryItemBase inventoryItem, int amount = 1, InventorySlot existingSlot = null)
+        /// <summary>
+        /// Add item to inventory
+        /// </summary>
+        /// <param name="itemType">type of item</param>
+        /// <param name="amount">item amount</param>
+        public void AddItem(ItemType itemType, int amount)
         {
+            if (amount < 1 || itemType == ItemType.NONE)
+                return;
+
+            // item already in cache
+            if (inventoryItemDataCache.TryGetValue(itemType, out var item))
+                AddItem(item, amount);
+            // else - load data from file system
+            else
+                LoadItemData(itemType, (result) => AddItem(result, amount));
+        }
+
+        /// <summary>
+        /// Add item to inventory
+        /// </summary>
+        /// <param name="blockType">type of item</param>
+        /// <param name="amount">item amount</param>
+        public void AddItem(BlockType blockType, int amount)
+        {
+            if (amount < 1 || blockType == BlockType.AIR)
+                return;
+
+            // item already in cache
+            if (inventoryMaterialDataCache.TryGetValue(blockType, out var item))
+                AddItem(item, amount);
+            // else - load data from file system
+            else
+                LoadItemData(blockType, (result) => AddItem(result, amount));
+        }
+
+        /// <summary>
+        /// Decrease amount of 'inventoryItem' by 'amount'
+        /// </summary>
+        /// <param name="inventoryItem">type of item</param>
+        /// <param name="amount">amount to remove</param>
+        /// <param name="existingSlot">inventory slot in which you want to decrease item amount (will try to find one if null)</param>
+        /// <returns>removed items count</returns>
+        public int RemoveItem(InventoryItemBase inventoryItem, int amount = 1, InventorySlot existingSlot = null)
+        {
+            if (amount == 0)
+                return 0;
+
             if (existingSlot == null)
                 existingSlot = InventorySlots.FirstOrDefault((item) => item.ItemName.Equals(inventoryItem.Name));
 
             if (existingSlot != null)
             {
-                // if toRemove < 1 - remove item from inventory
-                if (amount < 1)
+                // if amount < 0 - remove item from inventory
+                if (amount < 0)
                 {
                     InventorySlots.Remove(existingSlot);
                     SetInHandSlot(null);
                     OnInventoryContentsChangePreProcess(false);
                     OnInventoryContentsChange?.Invoke(InventorySlots, false);
+
+                    return existingSlot.ItemAmount;
                 }
                 // else substract toRemove from count
                 else
                 {
-                    int amountLeft = existingSlot.ItemAmount - amount;
+                    int toRemove = Mathf.Min(existingSlot.ItemAmount, amount);
+                    int amountLeft = existingSlot.ItemAmount - toRemove;
                     if (amountLeft < 1)
                     {
+                        existingSlot.InvokeDestroyEvent();
                         InventorySlots.Remove(existingSlot);
                         SetInHandSlot(null);
                         OnInventoryContentsChangePreProcess(false);
@@ -127,150 +313,72 @@ namespace VoxelTG.Player.Inventory
                         OnInventoryContentsChangePreProcess(true);
                         OnInventoryContentsChange?.Invoke(InventorySlots, true);
                     }
+
+                    return toRemove;
                 }
             }
+
+            return 0;
         }
 
-        public void AddItem(ItemType itemType, int amount)
+        /// <summary>
+        /// Decrease amount of item 'itemType' by 'amount'
+        /// </summary>
+        /// <param name="blockType">type of item</param>
+        /// <param name="amount">amount to remove</param>
+        /// <returns>removed items count</returns>
+        public int RemoveItem(BlockType blockType, int amount = 1)
         {
-            if (amount < 1 || itemType == ItemType.NONE)
-                return;
+            if (amount == 0 || blockType == BlockType.AIR)
+                return 0;
 
-            // item already in cache
-            if (inventoryItemDataCache.TryGetValue(itemType, out var item))
-            {
-                AddItem(item, amount);
-            }
-            else
-            {
-                string path = PATH_TO_ITEMS_DATA + itemType.ToString() + ".asset";
-                Addressables.LoadAssetAsync<InventoryItemBase>(path).Completed += (handle) =>
-                {
-                    if (handle.Status != AsyncOperationStatus.Succeeded)
-                    {
-                        Debug.LogError($"Failed to load item data for {itemType} ({path})");
-                        return;
-                    }
+            // remove item if slot is found
+            if (inventoryMaterialDataCache.TryGetValue(blockType, out var inventoryItem))
+                return RemoveItem(inventoryItem, amount);
 
-                    inventoryItemDataCache.Add(itemType, handle.Result);
-                    AddItem(handle.Result, amount);
-                };
-            }
+            return 0;
         }
 
-        public void AddItem(BlockType blockType, int amount)
+        /// <summary>
+        /// Decrease amount of item 'itemType' by 'amount'
+        /// </summary>
+        /// <param name="itemType">type of item</param>
+        /// <param name="amount">amount to remove</param>
+        /// <returns>removed items count</returns>
+        public int RemoveItem(ItemType itemType, int amount = 1)
         {
-            if (amount < 1 || blockType == BlockType.AIR)
-                return;
+            if (amount == 0 || itemType == ItemType.NONE)
+                return 0;
 
-            // item already in cache
-            if (inventoryMaterialDataCache.TryGetValue(blockType, out var item))
-            {
-                AddItem(item, amount);
-            }
-            else
-            {
-                string path = PATH_TO_MATERIAL_DATA + blockType.ToString() + ".asset";
-                Addressables.LoadAssetAsync<InventoryItemBase>(path).Completed += (handle) =>
-                {
-                    if (handle.Status != AsyncOperationStatus.Succeeded)
-                    {
-                        Debug.LogError($"Failed to load item data for {blockType} ({path})");
-                        return;
-                    }
+            // remove item if slot is found
+            if (inventoryItemDataCache.TryGetValue(itemType, out var inventoryItem))
+                return RemoveItem(inventoryItem, amount);
 
-                    inventoryMaterialDataCache.Add(blockType, handle.Result);
-                    AddItem(handle.Result, amount);
-                };
-            }
+            return 0;
         }
 
-        public void GetItemData(ItemType itemType, DroppedItem droppedItem)
-        {
-            if (itemType == ItemType.NONE)
-                return;
-
-            // item already in cache
-            if (inventoryItemDataCache.TryGetValue(itemType, out var item))
-            {
-                droppedItem.SetInventoryItem(item);
-            }
-            else
-            {
-                string path = PATH_TO_ITEMS_DATA + itemType.ToString() + ".asset";
-                Addressables.LoadAssetAsync<InventoryItemBase>(path).Completed += (handle) =>
-                {
-                    if (handle.Status != AsyncOperationStatus.Succeeded)
-                    {
-                        Debug.LogError($"Failed to load item data for {itemType} ({path})");
-                        return;
-                    }
-
-                    inventoryItemDataCache.Add(itemType, handle.Result);
-                    if (droppedItem != null)
-                        droppedItem.SetInventoryItem(handle.Result);
-
-                    Addressables.ReleaseInstance(handle);
-                };
-            }
-        }
-
-        public void GetItemData(BlockType blockType, DroppedItem droppedItem)
-        {
-            if (blockType == BlockType.AIR)
-                return;
-
-            // item already in cache
-            if (inventoryMaterialDataCache.TryGetValue(blockType, out var item))
-            {
-                droppedItem.SetInventoryItem(item);
-            }
-            else
-            {
-                string path = PATH_TO_MATERIAL_DATA + blockType.ToString() + ".asset";
-                Addressables.LoadAssetAsync<InventoryItemBase>(path).Completed += (handle) =>
-                {
-                    if (handle.Status != AsyncOperationStatus.Succeeded)
-                    {
-                        Debug.LogError($"Failed to load item data for {blockType} ({path})");
-                        return;
-                    }
-
-                    inventoryMaterialDataCache.Add(blockType, handle.Result);
-                    if (droppedItem != null)
-                        droppedItem.SetInventoryItem(handle.Result);
-
-                    Addressables.ReleaseInstance(handle);
-                };
-            }
-        }
-
-        public void RemoveItem(ItemType itemType, BlockType blockType = BlockType.AIR, int amount = 1)
-        {
-            if (amount == 0)
-                return;
-
-            if (itemType == ItemType.MATERIAL && blockType != BlockType.AIR)
-            {
-                if (inventoryMaterialDataCache.TryGetValue(blockType, out var inventoryItem))
-                    RemoveItem(inventoryItem, amount);
-            }
-            else if (itemType != ItemType.NONE)
-            {
-                if (inventoryItemDataCache.TryGetValue(itemType, out var inventoryItem))
-                    RemoveItem(inventoryItem, amount);
-            }
-        }
-
-        public void RemoveItem(InventorySlot inventorySlot, int amount)
+        /// <summary>
+        /// Decrease item amount in 'inventorySlot' by 'amount'
+        /// </summary>
+        /// <param name="inventorySlot">inventory slot in which you want to decrease item amount</param>
+        /// <param name="amount">amount to remove</param>
+        /// <returns>removed items count</returns>
+        public int RemoveItem(InventorySlot inventorySlot, int amount)
         {
             if (inventorySlot.IsNullOrEmpty())
-                return;
+                return 0;
 
-            int toRemove = Mathf.Min(inventorySlot.ItemAmount, amount);
-            RemoveItem(inventorySlot.Item, toRemove, inventorySlot);
+            return RemoveItem(inventorySlot.Item, amount, inventorySlot);
         }
 
+        /// <summary>
+        /// Remove item from inventory and drop on the ground.
+        /// </summary>
+        /// <param name="inventorySlot">inventory slot from which you want to take item to drop</param>
+        /// <param name="position">possition of dropped item</param>
+        /// <param name="amount">amount to be dropped</param>
+        /// <param name="velocityMultipler">velocity multipler (camera.forward * velocity)</param>
+        /// <param name="rotate">should object be rotated same as camera</param>
         public void DropItem(InventorySlot inventorySlot, Vector3 position, int amount, float velocityMultipler, bool rotate = false)
         {
             if (inventorySlot.IsNullOrEmpty())
@@ -278,12 +386,15 @@ namespace VoxelTG.Player.Inventory
 
             RemoveItem(inventorySlot, amount);
 
-            if(inventorySlot.Item.IsMaterial())
+            if (inventorySlot.Item.IsMaterial())
                 DroppedItemsManager.Instance.DropItem(((InventoryItemMaterial)inventorySlot.Item).blockType, position, amount, velocityMultipler, rotate);
             else
                 DroppedItemsManager.Instance.DropItem(inventorySlot.Item.Type, position, amount, velocityMultipler, PlayerController.ObjectInHand);
         }
 
+        /// <summary>
+        /// Set inventory slot as main hand slot
+        /// </summary>
         public void SetInHandSlot(InventorySlot inventorySlot)
         {
             var temp = HandSlot;

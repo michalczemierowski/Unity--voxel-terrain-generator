@@ -1,9 +1,5 @@
-﻿using System;
-using Unity.Mathematics;
-using UnityEngine;
-using VoxelTG.Player.Inventory.Tools;
+﻿using UnityEngine;
 using VoxelTG.Terrain;
-using VoxelTG.UI;
 
 /*
  * Michał Czemierowski

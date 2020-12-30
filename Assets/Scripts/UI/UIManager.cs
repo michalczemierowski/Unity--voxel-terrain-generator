@@ -16,6 +16,8 @@ namespace VoxelTG.UI
         /// </summary>
         public static bool IsUiModeActive => Instance.isUiModeActive;
 
+        private IToggleableUI activeUiObject;
+
         [SerializeField] private GameObject inWaterOverlay;
         public static GameObject InWaterOverlay => Instance.inWaterOverlay;
 
@@ -46,23 +48,21 @@ namespace VoxelTG.UI
                 Time.timeScale = 1;
         }
 
-        private void Update()
-        {
-            // TODO: input system integration
-            if (Input.GetKeyDown(KeyCode.I))
-            {
-                inventoryUI.ToggleInventoryUI();
-            }
-        }
-
         /// <summary>
         /// Toggle UI mode, when UI mode is active player is unable to move or perform actions outside UI.
         /// timeScale is set to 0 when UI mode is active
         /// </summary>
         /// <param name="active"></param>
-        public static void ToggleUIMode(bool active)
+        public static void ToggleUIMode(bool active, IToggleableUI toggleableUI = null)
         {
+            // disable last active object before replacing with new one
+            // check if object are not equal to avoid stack overflow
+            if(toggleableUI != Instance.activeUiObject)
+                Instance.activeUiObject?.ToggleUI();
+                
+            Instance.activeUiObject = toggleableUI;
             Instance.isUiModeActive = active;
+
             Time.timeScale = active ? 0 : 1;
             Cursor.lockState = active ? CursorLockMode.None : CursorLockMode.Locked;
             Cursor.visible = active;

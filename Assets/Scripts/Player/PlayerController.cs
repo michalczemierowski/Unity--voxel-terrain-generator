@@ -1,6 +1,5 @@
 ﻿using UnityEngine;
 using UnityEngine.AddressableAssets;
-using UnityEngine.EventSystems;
 using UnityEngine.ResourceManagement.AsyncOperations;
 using VoxelTG.Extensions;
 using VoxelTG.Player.Interactions;
@@ -102,11 +101,67 @@ namespace VoxelTG.Player
         {
             if (!UIManager.IsUiModeActive)
                 HandleInput();
+
+            HandleUIInput();
+        }
+
+        // TODO: input system
+        private void HandleUIInput()
+        {
+            // inventory
+            if (Input.GetKeyDown(KeyCode.I))
+            {
+                UIManager.InventoryUI.ToggleUI();
+            }
+
+            // linked slots
+            for (int i = 0; i < UIManager.InventoryUI.LinkedSlotsCount; i++)
+            {
+                if (Input.GetKeyDown(KeyCode.Alpha1 + i))
+                {
+                    var slot = UIManager.InventoryUI.GetLinkedSlot(i);
+                    if (slot == null)
+                        continue;
+
+                    if (UIManager.IsUiModeActive)
+                    {
+                        // if hand slot isn't empty, try to link it
+                        if (!inventorySystem.IsHandNullOrEmpty)
+                            UIManager.InventoryUI.TryToLinkSlot(slot, inventorySystem.HandSlot);
+                    }
+                    else
+                        inventorySystem.SetInHandSlot(slot.LinkedSlot);
+
+                    break;
+                }
+            }
+
+            // empty hand
+            if (Input.GetKeyDown(KeyCode.X))
+                inventorySystem.SetInHandSlot(null);
+
+            // inputs available only in UI mode
+            if (UIManager.IsUiModeActive)
+            {
+                // close active window when pressing Escape
+                if (Input.GetKeyDown(KeyCode.Escape))
+                {
+                    UIManager.ToggleUIMode(false);
+                }
+            }
         }
 
         // TODO: input system
         private void HandleInput()
         {
+            // jumping
+            if (Input.GetKeyDown(KeyCode.Space))
+                m_PlayerMovement.TryToJump();
+
+            // flying
+            if (Input.GetKeyDown(KeyCode.Z))
+                m_PlayerMovement.ToggleFlying();
+
             // drop item
             if (Input.GetKeyDown(KeyCode.Q))
             {

@@ -12,70 +12,85 @@ namespace VoxelTG.Player
     [RequireComponent(typeof(PlayerController))]
     public class PlayerMovement : MonoBehaviour
     {
-        public bool fly;
-
-        private float defaultSpeed;
-        public float movementSpeed = 6.0f;
-        public float acceleration = 10f;
-        public float decleration = 20f;
-        public float jumpSpeed = 8.0f;
-        public float jumpHeight = 3f;
-        public float gravity = -9.81f;
-        public float waterSpeedMultipler = 0.5f;
-
-        private float _speed;
-        private float speed{
-            get => _speed;
-            set{
-                _speed = value;
+        [SerializeField] private float speed = 6f;
+        public float Speed
+        {
+            get => speed;
+            set
+            {
+                speed = value;
                 playerController.CameraAnimator.SetFloat("movementSpeed", value);
             }
         }
 
-        public Transform groundCheck;
-        public Vector3 groundDistance = new Vector3(0.4f, 0.4f, 0.4f);
-        public LayerMask groundMask;
-
-        [Space(20)]
-        [SerializeField] private GameObject waterImage;
-
-        private Rigidbody m_Rigidbody;
-        private BoxCollider m_BoxCollider;
-
-        private bool isInWater;
-        private bool _isWalking;
-        public bool isWalking
+        private float maxMovementSpeed;
+        public float MaxMovementSpeed
         {
-            get => _isWalking;
-            set
+            get
             {
-                if (value != _isWalking)
+                float result = maxMovementSpeed;
+
+                // apply multiplers
+                if (PlayerController.InventorySystem.IsOverloaded)
+                    result *= overloadedSpeedMultipler;
+                if (IsInWater)
+                    result *= waterSpeedMultipler;
+
+                return result;
+            }
+        }
+
+        [Tooltip("Speed multipler when player is overloaded (too many items in inventory)")]
+        [SerializeField] private float overloadedSpeedMultipler = 0.75f;
+        [Tooltip("Speed multipler when player is swimming")]
+        [SerializeField] private float waterSpeedMultipler = 0.5f;
+
+        [SerializeField] private float acceleration = 10f;
+        [SerializeField] private float deceleration = 20f;
+        [SerializeField] private float jumpSpeed = 8f;
+        [SerializeField] private float jumpHeight = 3f;
+        [SerializeField] private float gravity = -19.62f;
+
+        [SerializeField] private Transform groundCheck;
+        [SerializeField] private Vector3 groundDistance = new Vector3(0.4f, 0.4f, 0.4f);
+        [SerializeField] private LayerMask groundMask;
+
+        public bool IsInWater { get; private set; }
+        private bool isWalking;
+        public bool IsWalking
+        {
+            get => isWalking;
+            private set
+            {
+                if (value != isWalking)
                 {
                     playerController.CameraAnimator.SetBool("isWalking", value);
-                    _isWalking = value;
+                    isWalking = value;
                 }
             }
         }
 
-        private bool _isGrounded;
-        private bool isGrounded
+        private bool isGrounded;
+        public bool IsGrounded
         {
-            get => _isGrounded;
-            set
+            get => isGrounded;
+            private set
             {
-                if(value != _isGrounded)
+                if (value != isGrounded)
                 {
                     playerController.CameraAnimator.SetBool("isGrounded", value);
-                    _isGrounded = value;
+                    isGrounded = value;
                 }
             }
         }
-        private bool jump;
-
+        public bool IsJumping { get; private set; }
+        public bool IsFlyingModeActive { get; private set; }
         private Vector2 moveVector;
 
         private Chunk currentChunk;
         private PlayerController playerController;
+        private Rigidbody m_Rigidbody;
+        private BoxCollider m_BoxCollider;
 
         // above head; head; legs; below legs
         private BlockType[] nearbyBlocks = new BlockType[4];
@@ -97,6 +112,9 @@ namespace VoxelTG.Player
             }
         }
 
+        /// <summary>
+        /// Called whenever player's rounded position changes (Vector3Int currentPosition)
+        /// </summary>
         private void OnPositionChange()
         {
             int x = _currentPosition.x;
@@ -125,20 +143,18 @@ namespace VoxelTG.Player
 
             DebugConsole.SetPositionText(positionString);
 
-            CheckWater();
+            CheckIfInWater();
         }
 
-        private void CheckWater()
+        /// <summary>
+        /// Check if player is in water
+        /// </summary>
+        private void CheckIfInWater()
         {
             bool headInWater = nearbyBlocks[1] == BlockType.WATER;
             UIManager.InWaterOverlay.SetActive(headInWater);
 
-            isInWater = nearbyBlocks[1] == BlockType.WATER || nearbyBlocks[2] == BlockType.WATER;
-
-            if (isInWater)
-                movementSpeed = defaultSpeed * waterSpeedMultipler;
-            else
-                movementSpeed = defaultSpeed;
+            IsInWater = nearbyBlocks[1] == BlockType.WATER || nearbyBlocks[2] == BlockType.WATER;
         }
 
         private void Start()
@@ -147,25 +163,25 @@ namespace VoxelTG.Player
             m_BoxCollider = GetComponent<BoxCollider>();
             playerController = GetComponent<PlayerController>();
 
-            defaultSpeed = movementSpeed;
+            maxMovementSpeed = speed;
 
             currentPosition = new Vector3Int(Mathf.CeilToInt(transform.position.x), Mathf.RoundToInt(transform.position.y), Mathf.CeilToInt(transform.position.z));
         }
 
         private void Update()
         {
-            if(!UIManager.IsUiModeActive)
+            if (!UIManager.IsUiModeActive)
                 HandleInput();
             else
             {
-                isWalking = false;
+                IsWalking = false;
                 moveVector = Vector2.zero;
             }
         }
 
         private void FixedUpdate()
         {
-            if (fly)
+            if (IsFlyingModeActive)
                 HandleFlying();
             else
             {
@@ -177,73 +193,79 @@ namespace VoxelTG.Player
 
         private void HandleInput()
         {
-            if (Input.GetKeyDown(KeyCode.Z))
-                SwitchFlying();
-
             float horizontal = Input.GetAxis("Horizontal");
             float vertical = Input.GetAxis("Vertical");
 
-            if (horizontal == 0 && vertical == 0)
-                isWalking = false;
-            else
-                isWalking = true;
-
             moveVector = new Vector2(horizontal, vertical).normalized;
 
-            float acc = moveVector.magnitude > 0 ? acceleration : decleration;
-            speed = Mathf.MoveTowards(speed, moveVector.magnitude * movementSpeed, acc * Time.deltaTime);
-            moveVector *= speed;
+            // check if player is walking
+            IsWalking = moveVector.sqrMagnitude != 0;
 
-            isGrounded = Physics.CheckBox(groundCheck.position, groundDistance, Quaternion.identity, groundMask);
+            // handle acceleration/deceleration
+            bool isAccelerating = moveVector.sqrMagnitude > 0;
+            float targetSpeed = isAccelerating ? MaxMovementSpeed : 0;
+            float accelerationSpeed = Time.deltaTime * (targetSpeed > Speed ? acceleration : deceleration);
 
-            if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
-                jump = true;
+            Speed = Mathf.MoveTowards(Speed, targetSpeed, accelerationSpeed);
+            moveVector *= Speed;
         }
 
+        /// <summary>
+        /// Handle default movement
+        /// </summary>
         private void HandleWalking()
         {
-            Vector3 npos = (transform.forward * moveVector.y) + (transform.right * moveVector.x);
+            // check if player is grounded
+            IsGrounded = Physics.CheckBox(groundCheck.position, groundDistance, Quaternion.identity, groundMask);
 
+            Vector3 npos = (transform.forward * moveVector.y) + (transform.right * moveVector.x);
             m_Rigidbody.velocity = new Vector3(npos.x, m_Rigidbody.velocity.y, npos.z);
-            if (isInWater)
+
+            // FIXME: rework swimming
+            if (IsInWater)
             {
                 if (Input.GetKey(KeyCode.Space))
                     m_Rigidbody.velocity = new Vector3(m_Rigidbody.velocity.x, 1, m_Rigidbody.velocity.z);//  .MovePosition(transform.position + (transform.up * speed * Time.deltaTime));
             }
-            else if (jump)
+            else if (IsJumping)
             {
                 m_Rigidbody.AddForce(new Vector3(0, Mathf.Sqrt(-2 * gravity * jumpHeight), 0), ForceMode.VelocityChange);
-                jump = false;
+                IsJumping = false;
             }
 
             // ceil x, round y, ceil z
             currentPosition = new Vector3Int(Mathf.CeilToInt(transform.position.x), Mathf.RoundToInt(transform.position.y), Mathf.CeilToInt(transform.position.z));
         }
 
+        /// <summary>
+        /// Handle movement when flying is enabled
+        /// </summary>
         private void HandleFlying()
         {
             Vector3 npos = (transform.position + (transform.forward * moveVector.y * Time.deltaTime + transform.right * moveVector.x * Time.deltaTime));
             if (Input.GetKey(KeyCode.Space))
-                npos += Vector3.up * movementSpeed * Time.deltaTime;
+                npos += Vector3.up * maxMovementSpeed * Time.deltaTime;
             else if (Input.GetKey(KeyCode.LeftShift))
-                npos += Vector3.down * movementSpeed * Time.deltaTime;
+                npos += Vector3.down * maxMovementSpeed * Time.deltaTime;
 
             transform.position = npos;
         }
 
-        private void SwitchFlying()
+        public void ToggleFlying()
         {
-            if (fly)
-            {
-                m_Rigidbody.isKinematic = false;
-                m_BoxCollider.enabled = true;
-            }
-            else
-            {
-                m_Rigidbody.isKinematic = true;
-                m_BoxCollider.enabled = false;
-            }
-            fly = !fly;
+            IsFlyingModeActive = !IsFlyingModeActive;
+
+            m_Rigidbody.isKinematic = IsFlyingModeActive;
+            m_BoxCollider.enabled = !IsFlyingModeActive;
+        }
+
+        /// <summary>
+        /// Try to jump (possible only when player is grounded)
+        /// </summary>
+        public void TryToJump()
+        {
+            if (IsGrounded)
+                IsJumping = true;
         }
     }
 }

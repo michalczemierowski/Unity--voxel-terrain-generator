@@ -1,23 +1,46 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
 using VoxelTG.Player.Inventory;
 
+/*
+ * Michał Czemierowski
+ * https://github.com/michalczemierowski
+*/
 namespace VoxelTG.UI
 {
     [System.Serializable] public class InventoryGroupToggleEvent : UnityEvent<ItemGroup, bool> { }
 
     [RequireComponent(typeof(Button))]
+    [RequireComponent(typeof(Image))]
     public class InventoryGroupToggle : MonoBehaviour
     {
+        [SerializeField] private Color toggledColor;
         [SerializeField] private ItemGroup targetGroup;
         public ItemGroup TargetGroup => targetGroup;
-        public InventoryGroupToggleEvent OnInventoryGroupToggle;
 
         private Button button;
-        public bool IsToggled { get; set; }
+        private Image image;
+        private Color defualtColor;
+
+        /// <summary>
+        /// Event that will be called when toggle switch changes state
+        /// </summary>
+        public InventoryGroupToggleEvent OnInventoryGroupToggle;
+
+        private bool isToggled;
+        /// <summary>
+        /// Is filtering enabled
+        /// </summary>
+        public bool IsToggled
+        {
+            get => isToggled;
+            set
+            {
+                image.color = value ? toggledColor : defualtColor;
+                isToggled = value;
+            }
+        }
 
         private void Awake()
         {
@@ -27,6 +50,9 @@ namespace VoxelTG.UI
                 IsToggled = !IsToggled;
                 OnInventoryGroupToggle?.Invoke(targetGroup, IsToggled);
             });
+
+            image = GetComponent<Image>();
+            defualtColor = image.color;
         }
     }
 }

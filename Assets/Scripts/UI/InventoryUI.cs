@@ -1,18 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
-using UnityEngine.AddressableAssets;
-using UnityEngine.ResourceManagement.AsyncOperations;
-using UnityEngine.ResourceManagement.ResourceLocations;
-using UnityEngine.UI;
-using VoxelTG.DebugUtils;
-using VoxelTG.Entities.Items;
 using VoxelTG.Player;
 using VoxelTG.Player.Inventory;
-using VoxelTG.Player.Inventory.Tools;
-using VoxelTG.Terrain;
 
 /*
  * Michał Czemierowski
@@ -23,7 +13,7 @@ namespace VoxelTG.UI
     /// <summary>
     /// Class capable of handling Inventory UI
     /// </summary>
-    public class InventoryUI : MonoBehaviour
+    public class InventoryUI : MonoBehaviour, IToggleableUI
     {
         [Tooltip("Text in which name of item in hand will be displayed")]
         [SerializeField] private TMP_Text currentItemName;
@@ -34,8 +24,18 @@ namespace VoxelTG.UI
         [Tooltip("Inventory item prefab, must contain InventorySlotUI component")]
         [SerializeField] private GameObject inventoryItemUIPrefab;
 
+        [Header("Capacity")]
+
         [Tooltip("Text in which occupied and max carrying capacity will be displayed")]
-        [SerializeField] private TMP_Text carringCapacityText;
+        [SerializeField] private TMP_Text carryingCapacityText;
+
+        [Tooltip("Color of Carrying Capacity Text when player is overweighted")]
+        [SerializeField] private Color capacityColorOverloaded;
+
+        [Header("Linked slots")]
+
+        [Tooltip("Array that should containg all linked slots")]
+        [SerializeField] private InventoryLinkedSlotUI[] linkedSlotUIs;
 
         /// <summary>
         /// list of UI slots (used to enable/disable slots by groups
@@ -46,14 +46,22 @@ namespace VoxelTG.UI
         /// </summary>
         private InventoryGroupToggle[] groupToggles;
 
+        private Color capacityColorDefault;
+
         /// <summary>
         /// Should slots be updated when opening inventory UI next time (inventory was updated when UI was closed)
         /// </summary>
         private bool shouldUpdateUI;
+
         /// <summary>
         /// True if inventory UI is opened
         /// </summary>
         public bool IsInventoryOpened => gameObject.activeSelf;
+
+        /// <summary>
+        /// How many linked slots are available
+        /// </summary>
+        public int LinkedSlotsCount => linkedSlotUIs.Length;
 
         public void Init()
         {
@@ -61,6 +69,13 @@ namespace VoxelTG.UI
             PlayerController.InventorySystem.OnMainHandUpdate += OnMainHandUpdate;
 
             groupToggles = GetComponentsInChildren<InventoryGroupToggle>();
+
+            capacityColorDefault = carryingCapacityText.color;
+
+            for (int i = 0; i < linkedSlotUIs.Length; i++)
+            {
+                linkedSlotUIs[i].Index = i;
+            }
         }
 
         private void OnDestroy()
@@ -73,14 +88,32 @@ namespace VoxelTG.UI
         {
             // display name of item in hand
             if (newItem == null)
+            {
                 currentItemName.text = string.Empty;
+
+                // no overlay should be active when hand is empty
+                foreach (var slotUI in inventoryUISlots)
+                    slotUI.SetOverlayActive(false);
+            }
             else
+            {
+                // TODO: display more info
                 currentItemName.text = newItem.ItemName;
+
+                // enable overlay on used item
+                foreach (var slotUI in inventoryUISlots)
+                {
+                    bool active = slotUI.LinkedSlot == newItem;
+                    slotUI.SetOverlayActive(active);
+                }
+            }
         }
 
         private void OnInventoryContentsChange(HashSet<InventorySlot> inventorySlots, bool onlyAmountChanged)
         {
-            carringCapacityText.text = PlayerController.InventorySystem.OccupiedCarringCapacity + "/" + PlayerController.InventorySystem.CarryingCapacity;
+            carryingCapacityText.text = PlayerController.InventorySystem.OccupiedCarringCapacity + "/" + PlayerController.InventorySystem.CarryingCapacity;
+            carryingCapacityText.color = PlayerController.InventorySystem.IsOverloaded ? capacityColorOverloaded : capacityColorDefault;
+
             // amount updates are handled in InventorySlotUI
             if (onlyAmountChanged)
                 return;
@@ -175,12 +208,12 @@ namespace VoxelTG.UI
         /// <summary>
         /// Enable/disable inventory UI
         /// </summary>
-        public void ToggleInventoryUI()
+        public void ToggleUI()
         {
             bool active = !IsInventoryOpened;
             gameObject.SetActive(active);
 
-            UIManager.ToggleUIMode(active);
+            UIManager.ToggleUIMode(active, this);
 
             // if inventory content has changed when UI was disabled
             if (active && shouldUpdateUI)
@@ -188,6 +221,47 @@ namespace VoxelTG.UI
                 UpdateInventoryUI();
                 shouldUpdateUI = false;
             }
+        }
+
+        /// <summary>
+        /// Get linked slot by index
+        /// </summary>
+        /// <param name="index">index that should be in range from 0 to <see cref="LinkedSlotsCount"/> - 1</param>
+        /// <returns>linked inventory slot (may be null or contain null item)</returns>
+        public InventoryLinkedSlotUI GetLinkedSlot(int index)
+        {
+            if (index < 0 || index >= linkedSlotUIs.Length)
+            {
+                Debug.LogError($"Index out of range. index: {index} range:<0; {linkedSlotUIs.Length - 1}>", this);
+                return null;
+            }
+
+            InventoryLinkedSlotUI linkedSlotUI = linkedSlotUIs[index];
+            return linkedSlotUI;
+        }
+
+        /// <summary>
+        /// Try to link InventorySlot to InventoryLinkedSlotUI (each InventorySlot may be linked to only one InventoryLinkedSlotUI)
+        /// </summary>
+        public void TryToLinkSlot(InventoryLinkedSlotUI linkedSlotUI, InventorySlot inventorySlot)
+        {
+            if (linkedSlotUI == null)
+                return;
+
+            // check only for non null slots
+            if (inventorySlot != null)
+            {
+                // check if inventory slot is linked to any other InventoryLinkedSlotUI
+                // and return if so
+                foreach (var linkedSlot in linkedSlotUIs)
+                {
+                    if (linkedSlot.LinkedSlot == inventorySlot)
+                        return;
+                }
+            }
+
+            // else, link slot
+            linkedSlotUI.LinkedSlot = inventorySlot;
         }
     }
 }

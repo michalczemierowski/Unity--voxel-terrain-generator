@@ -1,14 +1,13 @@
-﻿/*
- * Michał Czemierowski
- * https://github.com/michalczemierowski
-*/
-using System;
-using TMPro;
+﻿using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using VoxelTG.Player;
 using VoxelTG.Player.Inventory;
 
+/*
+ * Michał Czemierowski
+ * https://github.com/michalczemierowski
+*/
 namespace VoxelTG.UI
 {
     public class InventorySlotUI : MonoBehaviour
@@ -19,10 +18,11 @@ namespace VoxelTG.UI
         [SerializeField] private TMP_Text itemAmountText;
         [Tooltip("Text in which item's total weight will be displayed")]
         [SerializeField] private TMP_Text itemWeightText;
-        [Tooltip("Text in which item's icon will be displayed")]
+        [Tooltip("Image in which item's icon will be displayed")]
         [SerializeField] private Image itemIconImage;
-        [Tooltip("TODO")]
         [SerializeField] private Button selectItemButton;
+        [Tooltip("GameObject that will be enabled when item is in main hand")]
+        [SerializeField] private GameObject activeOverlay;
 
         private InventorySlot linkedSlot;
         /// <summary>
@@ -58,6 +58,13 @@ namespace VoxelTG.UI
             // listen to events
             inventorySlot.OnAmountUpdate += OnAmountUpdate;
             inventorySlot.OnSlotRemoved += OnSlotRemoved;
+        }
+
+        public void SetOverlayActive(bool active)
+        {
+            // to prevent null exception when removing slot
+            if(activeOverlay != null)
+                activeOverlay.SetActive(active);
         }
 
         private void OnAmountUpdate(int newAmount, int newWeight)

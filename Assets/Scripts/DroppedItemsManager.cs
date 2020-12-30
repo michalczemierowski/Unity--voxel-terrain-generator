@@ -32,7 +32,7 @@ namespace VoxelTG.Entities.Items
         }
 
         /// <summary>
-        /// Drop tool/weapon item (axe, gun etc.)
+        /// Drop pickupable prefab on ground.
         /// </summary>
         /// <param name="itemType">type of item</param>
         /// <param name="position">dropped item position (in world space)</param>
@@ -60,7 +60,7 @@ namespace VoxelTG.Entities.Items
                 primitive.transform.localRotation = Quaternion.identity;
             }
 
-            PlayerController.InventorySystem.GetItemData(itemType, droppedItem);
+            PlayerController.InventorySystem.GetItemData(itemType, (item) => droppedItem.SetInventoryItem(item));
             droppedItem.Amount = amount;
 
             if(velocity != 0 && droppedItem.TryGetComponent(out Rigidbody rigidbody))
@@ -71,7 +71,7 @@ namespace VoxelTG.Entities.Items
         }
 
         /// <summary>
-        /// Drop material item (dirt, stone etc.)
+        /// Drop pickupable prefab on ground.
         /// </summary>
         /// <param name="blockType">type of material</param>
         /// <param name="position">doppped item position (in world space)</param>
@@ -86,7 +86,7 @@ namespace VoxelTG.Entities.Items
             Chunk chunk = World.GetChunk(position.x, position.z);
             DroppedItem droppedItem = Instantiate(materialItemPrefab, position, Quaternion.identity, chunk.transform).GetComponent<DroppedItem>();
             
-            PlayerController.InventorySystem.GetItemData(blockType, droppedItem);
+            PlayerController.InventorySystem.GetItemData(blockType, (item) => droppedItem.SetInventoryItem(item));
             droppedItem.Amount = amount;
 
             if (velocity != 0 && droppedItem.TryGetComponent(out Rigidbody rigidbody))
