@@ -7,21 +7,21 @@ namespace VoxelTG.Player.Inventory
     public class InventoryItemMaterial : InventoryItemBase
     {
         [Header("Inventory item material settings")]
+
+        [Tooltip("Type of block stored in item")]
+        [SerializeField] private BlockType blockType = BlockType.AIR;
         /// <summary>
         /// Type of block stored in item
         /// </summary>
-        public BlockType blockType = BlockType.AIR;
+        public BlockType BlockType => blockType;
 
-        public override bool IsMaterial()
-        {
-            return true;
-        }
+        public override bool IsMaterial => true;
 
         public override bool IsSameType<T>(T other)
         {
             if(other is InventoryItemMaterial otherMaterial)
             {
-                return otherMaterial.blockType == blockType;
+                return otherMaterial.BlockType == BlockType;
             }
             
             return false;

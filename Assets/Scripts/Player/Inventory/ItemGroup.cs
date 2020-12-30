@@ -11,6 +11,7 @@ namespace VoxelTG.Player.Inventory
     {
         MATERIALS,
         TOOLS,
-        WEAPONS
+        WEAPONS,
+        CLOTHES
     }
 }

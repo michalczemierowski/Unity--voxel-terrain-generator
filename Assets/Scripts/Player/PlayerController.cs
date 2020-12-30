@@ -220,24 +220,24 @@ namespace VoxelTG.Player
             RemoveInHandModel();
 
             // TODO: cache tools & weapons
-            if (inventorySystem.HandSlot.Item.IsTool())
+            if (inventorySystem.HandSlot.Item.IsTool)
             {
                 InventoryItemTool inventoryItemTool = (InventoryItemTool)inventorySystem.HandSlot.Item;
-                if (inventoryItemTool.addressablePathToModel != string.Empty)
+                if (inventoryItemTool.AddressablePathToModel != string.Empty)
                 {
-                    Addressables.LoadAssetAsync<GameObject>(inventoryItemTool.addressablePathToModel).Completed += (handle) =>
+                    Addressables.LoadAssetAsync<GameObject>(inventoryItemTool.AddressablePathToModel).Completed += (handle) =>
                     {
                         OnHandObjectPrefabLoaded(handle, inventoryItemTool.Type);
                         Addressables.Release(handle);
                     };
                 }
             }
-            else if (inventorySystem.HandSlot.Item.IsWeapon())
+            else if (inventorySystem.HandSlot.Item.IsWeapon)
             {
                 InventoryItemWeapon inventoryItemWeapon = (InventoryItemWeapon)inventorySystem.HandSlot.Item;
-                if (inventoryItemWeapon.addressablePathToModel != string.Empty)
+                if (inventoryItemWeapon.AddressablePathToModel != string.Empty)
                 {
-                    Addressables.LoadAssetAsync<GameObject>(inventoryItemWeapon.addressablePathToModel).Completed += (handle) =>
+                    Addressables.LoadAssetAsync<GameObject>(inventoryItemWeapon.AddressablePathToModel).Completed += (handle) =>
                     {
                         OnHandObjectPrefabLoaded(handle, inventoryItemWeapon.Type);
                         Addressables.Release(handle);

@@ -47,7 +47,7 @@ namespace VoxelTG.Player.Interactions
             if (!oldContent.IsNullOrEmpty() && !newContent.IsNullOrEmpty() && oldContent.Item.IsSameType(newContent.Item))
                 return;
 
-            if (!newContent.IsNullOrEmpty() && newContent.Item.IsWeapon())
+            if (!newContent.IsNullOrEmpty() && newContent.Item.IsWeapon)
             {
                 isWeaponEquipped = true;
                 weaponInHand = (InventoryItemWeapon)newContent.Item;
@@ -83,10 +83,10 @@ namespace VoxelTG.Player.Interactions
         {
             if (timeToNextShoot <= 0)
             {
-                bool shootButtonDown = weaponInHand.isAutomaticRifle ? Input.GetMouseButton(0) : Input.GetMouseButtonDown(0);
+                bool shootButtonDown = weaponInHand.IsAutomaticRifle ? Input.GetMouseButton(0) : Input.GetMouseButtonDown(0);
                 if (shootButtonDown)
                 {
-                    timeToNextShoot = 1f / weaponInHand.fireRate;
+                    timeToNextShoot = 1f / weaponInHand.FireRate;
                     currentWeaponFX.OnShoot();
                     //SoundManager.Instance.PlaySound(SoundType.RIFLE_AK74_SHOOT, transform.position, SoundSettings.DEFAULT);
 
@@ -117,7 +117,7 @@ namespace VoxelTG.Player.Interactions
                             // cannot destroy base layer (at y == 0)
                             if (globalBlockPosition.y > 0)
                             {
-                                bool shouldBeDestroyed = DamageBlock(globalBlockPosition, blockType, weaponInHand.blockDamage);
+                                bool shouldBeDestroyed = DamageBlock(globalBlockPosition, blockType, weaponInHand.BlockDamage);
                                 if (shouldBeDestroyed)
                                 {
                                     chunk.SetBlock(blockPosition, BlockType.AIR, new SetBlockSettings(true, false, false, 10));
@@ -127,7 +127,7 @@ namespace VoxelTG.Player.Interactions
                         if (hitInfo.transform.tag.EndsWith("entity"))
                         {
                             Entity entity = hitInfo.transform.GetComponent<Entity>();
-                            entity.Damage(weaponInHand.damage);
+                            entity.Damage(weaponInHand.Damage);
                         }
                     }
                 }

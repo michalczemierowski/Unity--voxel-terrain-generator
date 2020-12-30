@@ -15,11 +15,11 @@ MonoBehaviour:
   itemName: M1911
   weight: 1
   itemIcon: {fileID: 21300000, guid: 9f76122188e12cf48a7cee25eae866f3, type: 3}
+  itemType: 4
   itemGroup: 2
-  itemType: 3
   damage: 6
   fireRate: 3
   isAutomaticRifle: 0
   blockDamage: 2
-  maxAmmo: 8
+  magazineCapacity: 30
   addressablePathToModel: DEFAULT_WEAPON

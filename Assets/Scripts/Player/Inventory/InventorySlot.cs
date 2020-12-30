@@ -52,7 +52,7 @@ namespace VoxelTG.Player.Inventory
             {
                 if (Item && Item is InventoryItemMaterial itemMaterial)
                 {
-                    return itemMaterial.blockType;
+                    return itemMaterial.BlockType;
                 }
                 return BlockType.AIR;
             }

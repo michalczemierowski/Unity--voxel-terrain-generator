@@ -1,7 +1,6 @@
 ﻿using UnityEngine;
 using VoxelTG.Player;
 using VoxelTG.Player.Inventory;
-using VoxelTG.Player.Inventory.Tools;
 using VoxelTG.Terrain;
 
 /*

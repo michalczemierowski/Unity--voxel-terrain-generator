@@ -47,7 +47,6 @@ namespace VoxelTG.Player
 
         [SerializeField] private float acceleration = 10f;
         [SerializeField] private float deceleration = 20f;
-        [SerializeField] private float jumpSpeed = 8f;
         [SerializeField] private float jumpHeight = 3f;
         [SerializeField] private float gravity = -19.62f;
 

@@ -386,8 +386,8 @@ namespace VoxelTG.Player.Inventory
 
             RemoveItem(inventorySlot, amount);
 
-            if (inventorySlot.Item.IsMaterial())
-                DroppedItemsManager.Instance.DropItem(((InventoryItemMaterial)inventorySlot.Item).blockType, position, amount, velocityMultipler, rotate);
+            if (inventorySlot.Item.IsMaterial)
+                DroppedItemsManager.Instance.DropItem(((InventoryItemMaterial)inventorySlot.Item).BlockType, position, amount, velocityMultipler, rotate);
             else
                 DroppedItemsManager.Instance.DropItem(inventorySlot.Item.Type, position, amount, velocityMultipler, PlayerController.ObjectInHand);
         }

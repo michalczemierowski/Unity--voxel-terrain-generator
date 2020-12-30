@@ -55,7 +55,7 @@ namespace VoxelTG.Player.Interactions
 
             if (!newContent.IsNullOrEmpty())
             {
-                if (newContent.Item.IsMaterial())
+                if (newContent.Item.IsMaterial)
                 {
                     handleDestroyingBlocks = false;
                     handlePlacingBlocks = true;
@@ -67,7 +67,7 @@ namespace VoxelTG.Player.Interactions
                     return;
                 }
 
-                if (newContent.Item.IsTool())
+                if (newContent.Item.IsTool)
                 {
                     handleDestroyingBlocks = true;
                     handlePlacingBlocks = false;
@@ -100,7 +100,7 @@ namespace VoxelTG.Player.Interactions
             bool inputDestroy = Input.GetMouseButton(0);
             bool inputPlace = Input.GetMouseButtonDown(1);
 
-            if (handlePlacingBlocks && inputPlace && PlayerController.InventorySystem.HandSlot.Item.IsMaterial())
+            if (handlePlacingBlocks && inputPlace && PlayerController.InventorySystem.HandSlot.Item.IsMaterial)
             {
                 HandlePlacing();
             }
@@ -164,7 +164,7 @@ namespace VoxelTG.Player.Interactions
         private void HandlePlacing()
         {
             // return if item in hand is not material
-            if (!PlayerController.InventorySystem.HandSlot.Item.IsMaterial())
+            if (!PlayerController.InventorySystem.HandSlot.Item.IsMaterial)
                 return;
 
             if (Physics.Raycast(cameraTransform.position, cameraTransform.forward, out RaycastHit hitInfo, maxInteractDistance, groundLayer) && hitInfo.transform.CompareTag("Terrain"))
@@ -190,14 +190,14 @@ namespace VoxelTG.Player.Interactions
 
                 // get selected block type from inventory
                 InventoryItemMaterial inventoryItemMaterial = (InventoryItemMaterial)PlayerController.InventorySystem.HandSlot.Item;
-                Block block = WorldData.GetBlockData(inventoryItemMaterial.blockType);
+                Block block = WorldData.GetBlockData(inventoryItemMaterial.BlockType);
 
                 if (block.shape == BlockShape.HALF_BLOCK)
                     chunk.SetParameters(new BlockParameter(blockPosition, ParameterType.ROTATION), (short)(Mathf.RoundToInt(cameraTransform.eulerAngles.y / 90) * 90));
                 if (block.type == BlockType.WATER)
                     chunk.SetParameters(new BlockParameter(blockPosition, ParameterType.WATER_SOURCE_DISTANCE), 8);
 
-                BlockType activeBlockType = inventoryItemMaterial.blockType;
+                BlockType activeBlockType = inventoryItemMaterial.BlockType;
 
                 chunk.SetBlock(blockPosition, activeBlockType, SetBlockSettings.PLACE);
                 PlayerController.InventorySystem.RemoveItem(PlayerController.InventorySystem.HandSlot, 1);
@@ -207,7 +207,7 @@ namespace VoxelTG.Player.Interactions
         private void HandleDestroying(bool inputDestroy, bool inputPlace)
         {
             // return if item in hand is not tool
-            if (!PlayerController.InventorySystem.HandSlot.Item.IsTool())
+            if (!PlayerController.InventorySystem.HandSlot.Item.IsTool)
                 return;
 
             if (Physics.Raycast(cameraTransform.position, cameraTransform.forward, out RaycastHit hitInfo, maxInteractDistance, groundLayer) && hitInfo.transform.CompareTag("Terrain"))
@@ -241,7 +241,7 @@ namespace VoxelTG.Player.Interactions
                         InventoryItemTool inventoryItemTool = (InventoryItemTool)PlayerController.InventorySystem.HandSlot.Item;
                         Block block = WorldData.GetBlockData(chunk.GetBlock(blockPosition));
                         miningBlockPosition = globalBlockPosition;
-                        miningBlockMaxDurability = WorldData.GetBlockDurability(block.type) / inventoryItemTool.miningSpeed;
+                        miningBlockMaxDurability = WorldData.GetBlockDurability(block.type) / inventoryItemTool.MiningSpeed;
                         miningBlockDurability = miningBlockMaxDurability;
                     }
                 }

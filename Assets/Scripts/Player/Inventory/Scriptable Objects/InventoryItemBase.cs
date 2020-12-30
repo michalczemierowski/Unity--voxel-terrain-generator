@@ -13,6 +13,7 @@ namespace VoxelTG.Player.Inventory
     public class InventoryItemBase : ScriptableObject
     {
         [Header("Inventory item settings")]
+
         [Tooltip("Item display name")]
         [SerializeField] private string itemName;
         /// <summary>
@@ -34,38 +35,39 @@ namespace VoxelTG.Player.Inventory
         /// </summary>
         public Sprite Icon => itemIcon;
 
+        [Tooltip("Type of item")]
         [SerializeField] private ItemType itemType;
+        /// <summary>
+        /// Type of item
+        /// </summary>
         public ItemType Type => itemType;
 
+        [Tooltip("Group to which item belongs")]
         [SerializeField] private ItemGroup itemGroup;
+        /// <summary>
+        /// Group to which item belongs
+        /// </summary>
         public ItemGroup Group => itemGroup;
 
         /// <summary>
         /// Check if item is material
         /// </summary>
-        /// <returns>false by default</returns>
-        public virtual bool IsMaterial()
-        {
-            return false;
-        }
+        public virtual bool IsMaterial => false;
 
         /// <summary>
         /// Check if item is material
         /// </summary>
-        /// <returns>false by default</returns>
-        public virtual bool IsTool()
-        {
-            return false;
-        }
+        public virtual bool IsTool => false;
 
         /// <summary>
         /// Check if item is material
         /// </summary>
-        /// <returns>false by default</returns>
-        public virtual bool IsWeapon()
-        {
-            return false;
-        }
+        public virtual bool IsWeapon => false;
+
+        /// <summary>
+        /// Check if item is cloth
+        /// </summary>
+        public virtual bool IsCloth => false;
 
         /// <summary>
         /// Check if items are same type
