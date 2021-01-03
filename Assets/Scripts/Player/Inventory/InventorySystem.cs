@@ -37,7 +37,7 @@ namespace VoxelTG.Player.Inventory
                     // if player wasn't overloaded before
                     if (occupiedCarringCapacity <= carryingCapacity)
                     {
-                        DebugUtils.DebugConsole.AddDebugMessageStatic("YOU'RE OVERLOADED");
+                        DebugUtils.DebugManager.AddDebugMessageStatic("YOU'RE OVERLOADED");
                     }
 
                     IsOverloaded = true;
@@ -45,9 +45,9 @@ namespace VoxelTG.Player.Inventory
                 else
                 {
                     // if player was overloaded before
-                    if(occupiedCarringCapacity > carryingCapacity)
+                    if (occupiedCarringCapacity > carryingCapacity)
                     {
-                        DebugUtils.DebugConsole.AddDebugMessageStatic("YOU'RE NO LONGER OVERLOADED");
+                        DebugUtils.DebugManager.AddDebugMessageStatic("YOU'RE NO LONGER OVERLOADED");
                     }
 
                     IsOverloaded = false;
@@ -268,7 +268,7 @@ namespace VoxelTG.Player.Inventory
         }
 
         /// <summary>
-        /// Decrease amount of 'inventoryItem' by 'amount'
+        /// Decrease amount of 'inventoryItem' by 'amount' (remove item completly if amount < 0)
         /// </summary>
         /// <param name="inventoryItem">type of item</param>
         /// <param name="amount">amount to remove</param>
@@ -303,13 +303,16 @@ namespace VoxelTG.Player.Inventory
                     {
                         existingSlot.InvokeDestroyEvent();
                         InventorySlots.Remove(existingSlot);
+
                         SetInHandSlot(null);
+
                         OnInventoryContentsChangePreProcess(false);
                         OnInventoryContentsChange?.Invoke(InventorySlots, false);
                     }
                     else
                     {
                         existingSlot.ItemAmount = amountLeft;
+                        
                         OnInventoryContentsChangePreProcess(true);
                         OnInventoryContentsChange?.Invoke(InventorySlots, true);
                     }
@@ -322,7 +325,7 @@ namespace VoxelTG.Player.Inventory
         }
 
         /// <summary>
-        /// Decrease amount of item 'itemType' by 'amount'
+        /// Decrease amount of item 'itemType' by 'amount' (remove item completly if amount < 0)
         /// </summary>
         /// <param name="blockType">type of item</param>
         /// <param name="amount">amount to remove</param>
@@ -340,7 +343,7 @@ namespace VoxelTG.Player.Inventory
         }
 
         /// <summary>
-        /// Decrease amount of item 'itemType' by 'amount'
+        /// Decrease amount of item 'itemType' by 'amount' (remove item completly if amount < 0)
         /// </summary>
         /// <param name="itemType">type of item</param>
         /// <param name="amount">amount to remove</param>
@@ -358,7 +361,7 @@ namespace VoxelTG.Player.Inventory
         }
 
         /// <summary>
-        /// Decrease item amount in 'inventorySlot' by 'amount'
+        /// Decrease item amount in 'inventorySlot' by 'amount' (remove item completly if amount < 0)
         /// </summary>
         /// <param name="inventorySlot">inventory slot in which you want to decrease item amount</param>
         /// <param name="amount">amount to remove</param>
@@ -390,6 +393,40 @@ namespace VoxelTG.Player.Inventory
                 DroppedItemsManager.Instance.DropItem(((InventoryItemMaterial)inventorySlot.Item).BlockType, position, amount, velocityMultipler, rotate);
             else
                 DroppedItemsManager.Instance.DropItem(inventorySlot.Item.Type, position, amount, velocityMultipler, PlayerController.ObjectInHand);
+        }
+
+        /// <summary>
+        /// Try to find item slot containing provided item
+        /// </summary>
+        /// <param name="itemType">item to search for</param>
+        /// <param name="inventorySlot">reference to slot containing item</param>
+        /// <returns>true if item found</returns>
+        public bool TryFindInventorySlotWithItem(ItemType itemType, out InventorySlot inventorySlot)
+        {
+            inventorySlot = InventorySlots.FirstOrDefault((item) =>
+            { 
+                return item.ItemType != ItemType.MATERIAL 
+                    && item.ItemType == itemType;
+            });
+
+            return inventorySlot != null;
+        }
+
+        /// <summary>
+        /// Try to find item slot containing provided material
+        /// </summary>
+        /// <param name="blockType">material to search for</param>
+        /// <param name="inventorySlot">reference to slot containing item</param>
+        /// <returns>true if item found</returns>
+        public bool TryFindInventorySlotWithItem(BlockType blockType, out InventorySlot inventorySlot)
+        {
+            inventorySlot = InventorySlots.FirstOrDefault((item) =>
+            { 
+                return item.ItemType == ItemType.MATERIAL 
+                    && item.BlockType == blockType;
+            });
+
+            return inventorySlot != null;
         }
 
         /// <summary>

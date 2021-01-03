@@ -35,7 +35,7 @@ namespace VoxelTG.Player
 
         private void Update()
         {
-            if (!UI.UIManager.IsUiModeActive)
+            if (!UI.UIManager.IsUIModeActive)
                 HandleMouseLook();
         }
 

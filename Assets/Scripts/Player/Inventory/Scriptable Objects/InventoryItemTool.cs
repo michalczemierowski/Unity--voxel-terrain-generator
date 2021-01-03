@@ -32,5 +32,14 @@ namespace VoxelTG.Player.Inventory
         public string AddressablePathToModel => addressablePathToModel;
 
         public override bool IsTool => true;
+
+        #region // === Metadata keys === \\
+
+        /// <summary>
+        /// Metadata key that is used to store tool's durability
+        /// </summary>
+        public const string DURABILITY_MDK = "durability";
+
+        #endregion
     }
 }

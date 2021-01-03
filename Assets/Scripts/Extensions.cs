@@ -1,10 +1,7 @@
-using Unity.Burst;
-using Unity.Mathematics;
+using System;
+using System.Collections;
 using UnityEngine;
-using VoxelTG.Entities.Items;
 using VoxelTG.Player.Inventory;
-using VoxelTG.Terrain;
-using VoxelTG.Terrain.Blocks;
 using static VoxelTG.Terrain.WorldSettings;
 
 /*
@@ -23,6 +20,23 @@ namespace VoxelTG.Extensions
         public static bool IsNullOrEmpty(this InventorySlot slot)
         {
             return slot == null || slot.IsEmpty();
+        }
+
+        /// <summary>
+        /// Call action with 1 frame delay
+        /// </summary>
+        public static void OneFrameDelay(this MonoBehaviour mono, Action action)
+        {
+            if (action == null)
+                return;
+
+            mono.StartCoroutine(waitOneFrame(action));
+        }
+
+        private static IEnumerator waitOneFrame(Action action)
+        {
+            yield return null;
+            action.Invoke();
         }
     }
 }

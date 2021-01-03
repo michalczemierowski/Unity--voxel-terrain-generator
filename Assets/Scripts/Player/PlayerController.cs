@@ -85,6 +85,8 @@ namespace VoxelTG.Player
             inventorySystem.AddItem(ItemType.RIFLE_AK74, 1);
             inventorySystem.AddItem(ItemType.PISTOL_M1911, 1);
 
+            inventorySystem.AddItem(ItemType.AMMO_PISTOL, 100);
+
             inventorySystem.AddItem(BlockType.COBBLESTONE, 32);
             inventorySystem.AddItem(BlockType.DIRT, 32);
             inventorySystem.AddItem(BlockType.GRASS_BLOCK, 32);
@@ -99,14 +101,14 @@ namespace VoxelTG.Player
 
         private void Update()
         {
-            if (!UIManager.IsUiModeActive)
-                HandleInput();
-
-            HandleUIInput();
+            if (!UIManager.IsUIModeActive)
+                HandleInGameInput();
+            if(!UIManager.IsUsingUIInput)
+                HandleAnyInput();
         }
 
         // TODO: input system
-        private void HandleUIInput()
+        private void HandleAnyInput()
         {
             // inventory
             if (Input.GetKeyDown(KeyCode.I))
@@ -123,7 +125,7 @@ namespace VoxelTG.Player
                     if (slot == null)
                         continue;
 
-                    if (UIManager.IsUiModeActive)
+                    if (UIManager.IsUIModeActive)
                     {
                         // if hand slot isn't empty, try to link it
                         if (!inventorySystem.IsHandNullOrEmpty)
@@ -136,12 +138,17 @@ namespace VoxelTG.Player
                 }
             }
 
+            if (Input.GetKeyDown(KeyCode.BackQuote))
+            {
+                DebugUtils.DebugManager.CommandHandler.ToggleUI();
+            }
+
             // empty hand
             if (Input.GetKeyDown(KeyCode.X))
                 inventorySystem.SetInHandSlot(null);
 
             // inputs available only in UI mode
-            if (UIManager.IsUiModeActive)
+            if (UIManager.IsUIModeActive)
             {
                 // close active window when pressing Escape
                 if (Input.GetKeyDown(KeyCode.Escape))
@@ -152,7 +159,7 @@ namespace VoxelTG.Player
         }
 
         // TODO: input system
-        private void HandleInput()
+        private void HandleInGameInput()
         {
             // jumping
             if (Input.GetKeyDown(KeyCode.Space))

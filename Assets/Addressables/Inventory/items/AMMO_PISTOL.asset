@@ -9,14 +9,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a11f777812fd9314eb20c5438593f29c, type: 3}
-  m_Name: AXE
+  m_Script: {fileID: 11500000, guid: 0b65f80a9c9e0b448be9f89c7b7ecd17, type: 3}
+  m_Name: AMMO_PISTOL
   m_EditorClassIdentifier: 
-  itemName: Iron Axe
-  weight: 1
-  itemIcon: {fileID: 21300000, guid: 9f76122188e12cf48a7cee25eae866f3, type: 3}
-  itemType: 5
-  itemGroup: 1
-  durability: 15
-  miningSpeed: 2
-  addressablePathToModel: 
+  itemName: Pistol ammo
+  weight: 0
+  itemIcon: {fileID: 10901, guid: 0000000000000000f000000000000000, type: 0}
+  itemType: 2000
+  itemGroup: 2

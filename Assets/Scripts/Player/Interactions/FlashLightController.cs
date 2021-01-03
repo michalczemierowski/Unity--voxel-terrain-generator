@@ -26,7 +26,7 @@ namespace VoxelTG.Player.Interactions
                 flashLightModes[nextMode-1].enabled = true;
             }
 
-            DebugConsole.AddDebugMessageStatic("FLASHLIGHT MODE SET TO: " + nextMode);
+            DebugManager.AddDebugMessageStatic("FLASHLIGHT MODE SET TO: " + nextMode);
             currentMode = nextMode;
         }
     }

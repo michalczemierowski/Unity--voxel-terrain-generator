@@ -18,8 +18,9 @@ MonoBehaviour:
   itemType: 2
   itemGroup: 2
   damage: 6
-  fireRate: 15
+  ammoItemType: 2000
+  fireRate: 20
   isAutomaticRifle: 1
   blockDamage: 2
-  magazineCapacity: 30
+  clipSize: 30
   addressablePathToModel: DEFAULT_WEAPON

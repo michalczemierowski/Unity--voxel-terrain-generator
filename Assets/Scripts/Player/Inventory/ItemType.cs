@@ -14,5 +14,10 @@ namespace VoxelTG.Player.Inventory
         AXE,
 
         CLOTHING_TEST = 1000,
+
+        AMMO_PISTOL = 2000,
+        AMMO_RIFLE,
+        AMMO_SHOTGUN,
+        AMMO_SNIPER
     }
 }

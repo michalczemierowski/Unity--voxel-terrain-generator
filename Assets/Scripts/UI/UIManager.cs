@@ -10,13 +10,18 @@ namespace VoxelTG.UI
     public class UIManager : MonoBehaviour
     {
         public static UIManager Instance;
-        private bool isUiModeActive;
+        private bool isUIModeActive;
         /// <summary>
-        /// True if player using UI (game is paused)
+        /// True if player using UI
         /// </summary>
-        public static bool IsUiModeActive => Instance.isUiModeActive;
+        public static bool IsUIModeActive => Instance.isUIModeActive;
 
-        private IToggleableUI activeUiObject;
+        /// <summary>
+        /// True if player is using UI element (e.g. input field)
+        /// </summary>
+        public static bool IsUsingUIInput { get; set; }
+
+        private ToggleableUI activeUiObject;
 
         [SerializeField] private GameObject inWaterOverlay;
         public static GameObject InWaterOverlay => Instance.inWaterOverlay;
@@ -53,15 +58,17 @@ namespace VoxelTG.UI
         /// timeScale is set to 0 when UI mode is active
         /// </summary>
         /// <param name="active"></param>
-        public static void ToggleUIMode(bool active, IToggleableUI toggleableUI = null)
+        public static void ToggleUIMode(bool active, ToggleableUI toggleableUI = null)
         {
+            if (toggleableUI == Instance.activeUiObject)
+                return;
+
             // disable last active object before replacing with new one
-            // check if object are not equal to avoid stack overflow
-            if(toggleableUI != Instance.activeUiObject)
-                Instance.activeUiObject?.ToggleUI();
-                
+            if (Instance.activeUiObject != null && Instance.activeUiObject.IsUIAcive)
+                Instance.activeUiObject.CloseUI();
+
             Instance.activeUiObject = toggleableUI;
-            Instance.isUiModeActive = active;
+            Instance.isUIModeActive = active;
 
             Time.timeScale = active ? 0 : 1;
             Cursor.lockState = active ? CursorLockMode.None : CursorLockMode.Locked;

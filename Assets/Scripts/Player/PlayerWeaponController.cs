@@ -18,11 +18,27 @@ namespace VoxelTG.Player.Interactions
     [RequireComponent(typeof(PlayerController))]
     public class PlayerWeaponController : MonoBehaviour
     {
-        [System.NonSerialized]
-        public bool isWeaponEquipped = false;
+        /// <summary>
+        /// Is player using weapon
+        /// </summary>
+        public bool IsWeaponEquipped { get; private set; } = false;
 
-        [SerializeField] private LayerMask groundLayer;
-        public float bulletDistance = 100;
+        [Tooltip("Layers on which interactions are possible")]
+        [SerializeField] private LayerMask interactionLayers;
+        /// <summary>
+        /// Layers on which interactions are possible
+        /// </summary>
+        public LayerMask InteractionLayers => interactionLayers;
+
+        [Tooltip("Max distance at which weapon can deal damage")]
+        [SerializeField] private float maxDistance = 100;
+        /// <summary>
+        /// Max distance at which weapon can deal damage
+        /// </summary>
+        public float MaxDistance => maxDistance;
+
+        [Tooltip("Max size of damaged blocks cache (cache containing health state of damaged blocks)")]
+        [SerializeField] private int maxDamagedBlocksCount;
 
         private Transform cameraTransform;
         private InventoryItemWeapon weaponInHand;
@@ -30,7 +46,9 @@ namespace VoxelTG.Player.Interactions
         private WeaponEffectsController currentWeaponFX;
         private float timeToNextShoot = 0;
 
-        [SerializeField] private int maxDamagedBlocksCount;
+        /// <summary>
+        /// Cache containing health state of damaged blocks
+        /// </summary>
         private Dictionary<int3, float> damagedBlocksDict = new Dictionary<int3, float>();
 
         private void Start()
@@ -49,12 +67,12 @@ namespace VoxelTG.Player.Interactions
 
             if (!newContent.IsNullOrEmpty() && newContent.Item.IsWeapon)
             {
-                isWeaponEquipped = true;
+                IsWeaponEquipped = true;
                 weaponInHand = (InventoryItemWeapon)newContent.Item;
                 // TODO: read settings etc.
             }
             else
-                isWeaponEquipped = false;
+                IsWeaponEquipped = false;
         }
 
         private void OnHandObjectLoaded(GameObject handObject, ItemType itemType)
@@ -71,9 +89,9 @@ namespace VoxelTG.Player.Interactions
 
         private void Update()
         {
-            if (!UIManager.IsUiModeActive)
+            if (!UIManager.IsUIModeActive)
             {
-                if (!isWeaponEquipped || weaponInHand == null) return;
+                if (!IsWeaponEquipped || weaponInHand == null) return;
 
                 HandleInput();
             }
@@ -88,18 +106,14 @@ namespace VoxelTG.Player.Interactions
                 {
                     timeToNextShoot = 1f / weaponInHand.FireRate;
                     currentWeaponFX.OnShoot();
-                    //SoundManager.Instance.PlaySound(SoundType.RIFLE_AK74_SHOOT, transform.position, SoundSettings.DEFAULT);
 
-                    if (Physics.Raycast(cameraTransform.position, cameraTransform.forward, out RaycastHit hitInfo, bulletDistance, groundLayer))
+                    if (Physics.Raycast(cameraTransform.position, cameraTransform.forward, out RaycastHit hitInfo, maxDistance, interactionLayers))
                     {
                         if (hitInfo.transform.CompareTag("Terrain"))
                         {
                             Vector3 pointInTargetBlock;
-
                             // move towards block position
                             pointInTargetBlock = hitInfo.point + cameraTransform.forward * .01f;
-
-                            //SoundManager.Instance.PlaySound(SoundType.DESTROY_WOOD, pointInTargetBlock, SoundSettings.DEFAULT);
 
                             // get block & chunk
                             int3 globalBlockPosition = new int3(

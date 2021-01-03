@@ -18,6 +18,13 @@ namespace VoxelTG.Player.Inventory
         /// </summary>
         public float Damage => damage;
 
+        [Tooltip("Type of item that will be used as ammunition")]
+        [SerializeField] private ItemType ammoItemType = ItemType.AMMO_PISTOL;
+        /// <summary>
+        /// Type of item that will be used as ammunition
+        /// </summary>
+        public ItemType AmmoItemType => ammoItemType;
+
         [Tooltip("How many bullets can be fired in a second")]
         [SerializeField] private float fireRate = 5f;
         /// <summary>
@@ -40,11 +47,11 @@ namespace VoxelTG.Player.Inventory
         public float BlockDamage => blockDamage;
         
         [Tooltip("Maximum number of bullets in the clip")]
-        [SerializeField] private int magazineCapacity = 30;
+        [SerializeField] private int clipSize = 30;
         /// <summary>
         /// Maximum number of bullets in the clip
         /// </summary>
-        public int MagazineCapacity => magazineCapacity;
+        public int ClipSize => clipSize;
 
         [Tooltip("Addressables key to in-hand object")]
         [SerializeField] private string addressablePathToModel;
@@ -54,5 +61,14 @@ namespace VoxelTG.Player.Inventory
         public string AddressablePathToModel => addressablePathToModel;
 
         public override bool IsWeapon => true;
+
+        #region // === Metadata keys === \\
+
+        /// <summary>
+        /// Metadata key that is used to store amount of ammo in clip
+        /// </summary>
+        public const string AMMO_CURRENT_CLIP_MDK = "ammo_current_clip";
+
+        #endregion
     }
 }

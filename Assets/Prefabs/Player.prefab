@@ -688,12 +688,11 @@ MonoBehaviour:
   waterSpeedMultipler: 0.5
   acceleration: 15
   deceleration: 20
-  jumpSpeed: 5
   jumpHeight: 1.25
   gravity: -19.62
   groundCheck: {fileID: 8438437526185233712}
   groundDistance: {x: 0.3, y: 0.1, z: 0.3}
-  groundMask:
+  groundLayer:
     serializedVersion: 2
     m_Bits: 256
 --- !u!114 &8438437527126469098
@@ -723,7 +722,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7cf2c94b7be3b654ba69399e4803046a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  groundLayer:
+  interactionLayers:
     serializedVersion: 2
     m_Bits: 256
   selectedBlockOutlinePrefab: {fileID: 7509570983786330179, guid: dac4423c92ef29a409f24c4850a14148,
@@ -740,10 +739,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0e0abd05c5d0c5742bfa1172cb8b7f71, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  groundLayer:
+  interactionLayers:
     serializedVersion: 2
     m_Bits: 768
-  bulletDistance: 100
+  maxDistance: 100
   maxDamagedBlocksCount: 32
 --- !u!33 &8438437527126469094
 MeshFilter:

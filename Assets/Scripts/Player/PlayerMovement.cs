@@ -52,7 +52,7 @@ namespace VoxelTG.Player
 
         [SerializeField] private Transform groundCheck;
         [SerializeField] private Vector3 groundDistance = new Vector3(0.4f, 0.4f, 0.4f);
-        [SerializeField] private LayerMask groundMask;
+        [SerializeField] private LayerMask groundLayer;
 
         public bool IsInWater { get; private set; }
         private bool isWalking;
@@ -140,7 +140,7 @@ namespace VoxelTG.Player
                 //debugText += nearbyBlocks[_y].ToString() + "\n";
             }
 
-            DebugConsole.SetPositionText(positionString);
+            DebugManager.SetPositionText(positionString);
 
             CheckIfInWater();
         }
@@ -169,7 +169,7 @@ namespace VoxelTG.Player
 
         private void Update()
         {
-            if (!UIManager.IsUiModeActive)
+            if (!UIManager.IsUIModeActive)
                 HandleInput();
             else
             {
@@ -215,7 +215,7 @@ namespace VoxelTG.Player
         private void HandleWalking()
         {
             // check if player is grounded
-            IsGrounded = Physics.CheckBox(groundCheck.position, groundDistance, Quaternion.identity, groundMask);
+            IsGrounded = Physics.CheckBox(groundCheck.position, groundDistance, Quaternion.identity, groundLayer);
 
             Vector3 npos = (transform.forward * moveVector.y) + (transform.right * moveVector.x);
             m_Rigidbody.velocity = new Vector3(npos.x, m_Rigidbody.velocity.y, npos.z);

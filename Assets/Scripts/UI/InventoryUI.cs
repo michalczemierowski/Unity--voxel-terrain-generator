@@ -13,10 +13,8 @@ namespace VoxelTG.UI
     /// <summary>
     /// Class capable of handling Inventory UI
     /// </summary>
-    public class InventoryUI : MonoBehaviour, IToggleableUI
+    public class InventoryUI : ToggleableUI
     {
-        [Tooltip("Text in which name of item in hand will be displayed")]
-        [SerializeField] private TMP_Text currentItemName;
 
         [Tooltip("Parent for all inventory slots")]
         [SerializeField] private RectTransform inventorySlotsParent;
@@ -37,6 +35,9 @@ namespace VoxelTG.UI
         [Tooltip("Array that should containg all linked slots")]
         [SerializeField] private InventoryLinkedSlotUI[] linkedSlotUIs;
 
+        [Header("References")]
+        [SerializeField] private HandItemInfoUI handItemInfoUI;
+
         /// <summary>
         /// list of UI slots (used to enable/disable slots by groups
         /// </summary>
@@ -56,12 +57,13 @@ namespace VoxelTG.UI
         /// <summary>
         /// True if inventory UI is opened
         /// </summary>
-        public bool IsInventoryOpened => gameObject.activeSelf;
+        public override bool IsUIAcive => gameObject.activeSelf;
 
         /// <summary>
         /// How many linked slots are available
         /// </summary>
         public int LinkedSlotsCount => linkedSlotUIs.Length;
+
 
         public void Init()
         {
@@ -84,29 +86,26 @@ namespace VoxelTG.UI
             PlayerController.InventorySystem.OnMainHandUpdate -= OnMainHandUpdate;
         }
 
-        private void OnMainHandUpdate(InventorySlot oldItem, InventorySlot newItem)
+        private void OnMainHandUpdate(InventorySlot oldContent, InventorySlot newContent)
         {
             // display name of item in hand
-            if (newItem == null)
+            if (newContent == null)
             {
-                currentItemName.text = string.Empty;
-
                 // no overlay should be active when hand is empty
                 foreach (var slotUI in inventoryUISlots)
                     slotUI.SetOverlayActive(false);
             }
             else
             {
-                // TODO: display more info
-                currentItemName.text = newItem.ItemName;
-
                 // enable overlay on used item
                 foreach (var slotUI in inventoryUISlots)
                 {
-                    bool active = slotUI.LinkedSlot == newItem;
+                    bool active = slotUI.LinkedSlot == newContent;
                     slotUI.SetOverlayActive(active);
                 }
             }
+
+            handItemInfoUI.SetSlot(newContent);
         }
 
         private void OnInventoryContentsChange(HashSet<InventorySlot> inventorySlots, bool onlyAmountChanged)
@@ -118,7 +117,7 @@ namespace VoxelTG.UI
             if (onlyAmountChanged)
                 return;
             // don't need to update elements when inventory is closed
-            if (!IsInventoryOpened)
+            if (!IsUIAcive)
             {
                 shouldUpdateUI = true;
                 return;
@@ -205,22 +204,25 @@ namespace VoxelTG.UI
             }
         }
 
-        /// <summary>
-        /// Enable/disable inventory UI
-        /// </summary>
-        public void ToggleUI()
+        public override void OpenUI()
         {
-            bool active = !IsInventoryOpened;
-            gameObject.SetActive(active);
-
-            UIManager.ToggleUIMode(active, this);
+            gameObject.SetActive(true);
 
             // if inventory content has changed when UI was disabled
-            if (active && shouldUpdateUI)
+            if (shouldUpdateUI)
             {
                 UpdateInventoryUI();
                 shouldUpdateUI = false;
             }
+
+            base.OpenUI();
+        }
+
+        public override void CloseUI()
+        {
+            gameObject.SetActive(false);
+
+            base.CloseUI();
         }
 
         /// <summary>

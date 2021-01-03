@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using VoxelTG.UI;
 
 /*
  * Michał Czemierowski
@@ -10,16 +11,23 @@ using UnityEngine;
 */
 namespace VoxelTG.DebugUtils
 {
-    public class DebugConsole : MonoBehaviour
+    public class DebugManager : MonoBehaviour
     {
-        public static DebugConsole Instance;
+        public static DebugManager Instance;
+
+        [Header("References")]
+        [SerializeField] private DebugCommandHandler debugCommandHandler;
+        public static DebugCommandHandler CommandHandler => Instance.debugCommandHandler;
 
         [SerializeField] private TMP_Text debugText;
         [SerializeField] private TMP_Text positionText;
         [SerializeField] private TMP_Text fpsText;
+
+        [Header("Settings")]
         [SerializeField] private int maxMessages = 10;
         [SerializeField] private float consoleMessageLifetime = 2;
         [SerializeField] private bool addTimestamp;
+
         private List<string> content = new List<string>();
 
         void Awake()
@@ -37,7 +45,7 @@ namespace VoxelTG.DebugUtils
 
         public void AddDebugMessage(string msg)
         {
-            if(addTimestamp)
+            if (addTimestamp)
             {
                 DateTime date = DateTime.Now;
                 msg = $"[ {date.ToLongTimeString()}:{date.Millisecond.ToString("000")} ] " + msg;
@@ -55,7 +63,7 @@ namespace VoxelTG.DebugUtils
 
         private IEnumerator RemoveConsoleMessagesCoroutine()
         {
-            while(content.Count > 0)
+            while (content.Count > 0)
             {
                 yield return new WaitForSeconds(consoleMessageLifetime);
 
