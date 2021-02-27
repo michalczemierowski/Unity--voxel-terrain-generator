@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.AddressableAssets;
 
 /*
  * Michał Czemierowski
@@ -12,7 +13,7 @@ namespace VoxelTG.Player.Inventory
     /// </summary>
     public class InventoryItemBase : ScriptableObject
     {
-        [Header("Inventory item settings")]
+        [Header("Base item settings")]
 
         [Tooltip("Item display name")]
         [SerializeField] private string itemName;
@@ -34,6 +35,13 @@ namespace VoxelTG.Player.Inventory
         /// Sprite that is displayed as item icon in inventory
         /// </summary>
         public Sprite Icon => itemIcon;
+
+        [Tooltip("Addressables key to in-hand object")]
+        [SerializeField] private AssetReferenceT<GameObject> addressablePathToModel;
+        /// <summary>
+        /// Addressables key to in-hand object
+        /// </summary>
+        public AssetReferenceT<GameObject> AddressablePathToModel => addressablePathToModel;
 
         [Tooltip("Type of item")]
         [SerializeField] private ItemType itemType;

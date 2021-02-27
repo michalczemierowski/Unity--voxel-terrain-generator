@@ -95,13 +95,13 @@ namespace VoxelTG.Player
         private BlockType[] nearbyBlocks = new BlockType[4];
 
         private Vector3Int _currentPosition;
-        private Vector3Int currentPosition
+        public Vector3Int CurrentPosition
         {
             get
             {
                 return _currentPosition;
             }
-            set
+            private set
             {
                 if (value != _currentPosition)
                 {
@@ -141,6 +141,7 @@ namespace VoxelTG.Player
             }
 
             DebugManager.SetPositionText(positionString);
+            DebugManager.UpdateBiomeInfoText();
 
             CheckIfInWater();
         }
@@ -164,7 +165,7 @@ namespace VoxelTG.Player
 
             maxMovementSpeed = speed;
 
-            currentPosition = new Vector3Int(Mathf.CeilToInt(transform.position.x), Mathf.RoundToInt(transform.position.y), Mathf.CeilToInt(transform.position.z));
+            CurrentPosition = new Vector3Int(Mathf.CeilToInt(transform.position.x), Mathf.RoundToInt(transform.position.y), Mathf.CeilToInt(transform.position.z));
         }
 
         private void Update()
@@ -233,7 +234,7 @@ namespace VoxelTG.Player
             }
 
             // ceil x, round y, ceil z
-            currentPosition = new Vector3Int(Mathf.CeilToInt(transform.position.x), Mathf.RoundToInt(transform.position.y), Mathf.CeilToInt(transform.position.z));
+            CurrentPosition = new Vector3Int(Mathf.CeilToInt(transform.position.x), Mathf.RoundToInt(transform.position.y), Mathf.CeilToInt(transform.position.z));
         }
 
         /// <summary>

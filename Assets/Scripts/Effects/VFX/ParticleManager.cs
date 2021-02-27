@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Unity.Mathematics;
 using UnityEngine;
 using VoxelTG.Terrain;
+using static VoxelTG.WorldSettings.Textures;
 
 /*
  * Michał Czemierowski
@@ -135,12 +136,13 @@ namespace VoxelTG.Effects.VFX
         private static Mesh CreateBlockParticleMeh(BlockType type)
         {
             Mesh particleMesh;
-            Block block = WorldData.GetBlockData(type);
+            BlockStructure block = WorldData.GetBlockData(type);
 
-            float offsetX = UnityEngine.Random.Range(0f, 1 - blockDestroyParticleUvSize) / Terrain.Blocks.BlockUVs.textureSize;
-            float offsetY = UnityEngine.Random.Range(0f, blockDestroyParticleUvSize) / Terrain.Blocks.BlockUVs.textureSize;
-            float size = blockDestroyParticleUvSize / Terrain.Blocks.BlockUVs.textureSize;
+            float offsetX = UnityEngine.Random.Range(0f, 1 - blockDestroyParticleUvSize) / BlockTextureSize;
+            float offsetY = UnityEngine.Random.Range(0f, blockDestroyParticleUvSize) / BlockTextureSize;
+            float size = blockDestroyParticleUvSize / BlockTextureSize;
             
+            // if mesh is in cache
             if (particleMeshes.ContainsKey(type))
             {
                 particleMesh = particleMeshes[type];

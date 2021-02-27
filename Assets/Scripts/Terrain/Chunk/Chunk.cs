@@ -10,7 +10,7 @@ using VoxelTG.Player;
 using VoxelTG.Player.Inventory;
 using VoxelTG.Terrain.Blocks;
 using VoxelTG.Terrain.Chunks;
-using static VoxelTG.Terrain.WorldSettings;
+using static VoxelTG.WorldSettings;
 
 /*
  * Michał Czemierowski
@@ -166,7 +166,7 @@ namespace VoxelTG.Terrain
 
         private IEnumerator CheckNeighbours()
         {
-            yield return new WaitForEndOfFrame();      
+            yield return new WaitForEndOfFrame();
 
             neigbourChunks = new Chunk[]
             {
@@ -201,9 +201,8 @@ namespace VoxelTG.Terrain
                 blockData = blocks,
                 biomeTypes = biomeTypes,
                 blockParameters = blockParameters,
-                noises = World.biomeNoises,
-                baseNoise = World.baseNoise,
-                generatorSettings = World.generatorSettings,
+                noise = World.FastNoise,
+                biomeConfigs = Biomes.biomeConfigs,
                 random = new Unity.Mathematics.Random((uint)(xPos * 10000 + zPos + 1000))
             };
 
@@ -284,6 +283,37 @@ namespace VoxelTG.Terrain
 
             JobHandle handle = createMeshData.Schedule();
             jobHandles.Add(handle);
+        }
+
+        private Texture2D blocksTexture;
+        private Texture2D plantsTexture;
+        public void CreateBiomeTexture()
+        {
+            Color[] colors = new Color[ChunkSizeXZ * ChunkSizeXZ];
+            for (int x = 0; x < ChunkSizeXZ; x++)
+            {
+                for (int y = 0; y < ChunkSizeXZ; y++)
+                {
+                    BiomeType biomeType = biomeTypes[Utils.BlockPosition2DtoIndex(x, y)];
+                    colors[y * ChunkSizeXZ + x] = biomeType == BiomeType.FOREST ? Color.blue : Color.white;
+                }
+            }
+
+            blocksTexture = new Texture2D(ChunkSizeXZ, ChunkSizeXZ, TextureFormat.RGB24, true);
+            blocksTexture.filterMode = FilterMode.Point;
+            blocksTexture.SetPixels(colors);
+            blocksTexture.Compress(false);
+            blocksTexture.Apply();
+
+            blockMeshFilter.GetComponent<MeshRenderer>().material.SetTexture("_BiomeTexture", blocksTexture);
+
+            plantsTexture = new Texture2D(ChunkSizeXZ, ChunkSizeXZ, TextureFormat.RGB24, true);
+            plantsTexture.filterMode = FilterMode.Point;
+            plantsTexture.SetPixels(colors);
+            plantsTexture.Compress(false);
+            plantsTexture.Apply();
+
+            plantsMeshFilter.GetComponent<MeshRenderer>().material.SetTexture("_BiomeTexture", plantsTexture);
         }
 
         /// <summary>
@@ -623,9 +653,6 @@ namespace VoxelTG.Terrain
             //if (!Utils.IsPositionInChunkBounds(blockPosition)) return;
 
             BlockType currentBlock = GetBlock(blockPosition);
-
-            if (currentBlock == BlockType.WATER && blockType != BlockType.WATER)
-                ClearParameters(blockPosition);
 
             if (blockSettings.callDestroyEvent)
                 World.InvokeBlockDestroyEvent(new BlockEventData(this, blockPosition, currentBlock));

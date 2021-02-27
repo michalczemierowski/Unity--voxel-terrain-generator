@@ -46,6 +46,7 @@ namespace VoxelTG.Player
         [SerializeField] private Transform handTransform;
 
         private GameObject objectInHand;
+        private AsyncOperationHandle objectInHanHandle;
         public static GameObject ObjectInHand => Instance.objectInHand;
 
         public delegate void HandObjectLoaded(GameObject handObject, ItemType itemType);
@@ -92,6 +93,7 @@ namespace VoxelTG.Player
             inventorySystem.AddItem(BlockType.GRASS_BLOCK, 32);
             inventorySystem.AddItem(BlockType.OAK_LEAVES, 32);
             inventorySystem.AddItem(BlockType.OAK_LOG, 32);
+            inventorySystem.AddItem(BlockType.OAK_PLANKS, 32);
             inventorySystem.AddItem(BlockType.OBSIDIAN, 32);
             inventorySystem.AddItem(BlockType.SAND, 32);
             inventorySystem.AddItem(BlockType.SPRUCE_LEAVES, 32);
@@ -103,7 +105,7 @@ namespace VoxelTG.Player
         {
             if (!UIManager.IsUIModeActive)
                 HandleInGameInput();
-            if(!UIManager.IsUsingUIInput)
+            if (!UIManager.IsUsingUIInput)
                 HandleAnyInput();
         }
 
@@ -111,7 +113,7 @@ namespace VoxelTG.Player
         private void HandleAnyInput()
         {
             // inventory
-            if (Input.GetKeyDown(KeyCode.I))
+            if (Input.GetKeyDown(KeyCode.E))
             {
                 UIManager.InventoryUI.ToggleUI();
             }
@@ -220,36 +222,21 @@ namespace VoxelTG.Player
         /// </summary>
         private void LoadInHandModel()
         {
+            RemoveInHandModel();
+
             // don't need to load model for empty hand
             if (inventorySystem.IsHandNullOrEmpty)
                 return;
 
-            RemoveInHandModel();
-
-            // TODO: cache tools & weapons
-            if (inventorySystem.HandSlot.Item.IsTool)
+            var item = inventorySystem.HandSlot.Item;
+            if (item.AddressablePathToModel.RuntimeKeyIsValid())
             {
-                InventoryItemTool inventoryItemTool = (InventoryItemTool)inventorySystem.HandSlot.Item;
-                if (inventoryItemTool.AddressablePathToModel != string.Empty)
+                ItemType itemType = item.Type;
+                Addressables.LoadAssetAsync<GameObject>(item.AddressablePathToModel).Completed += (handle) =>
                 {
-                    Addressables.LoadAssetAsync<GameObject>(inventoryItemTool.AddressablePathToModel).Completed += (handle) =>
-                    {
-                        OnHandObjectPrefabLoaded(handle, inventoryItemTool.Type);
-                        Addressables.Release(handle);
-                    };
-                }
-            }
-            else if (inventorySystem.HandSlot.Item.IsWeapon)
-            {
-                InventoryItemWeapon inventoryItemWeapon = (InventoryItemWeapon)inventorySystem.HandSlot.Item;
-                if (inventoryItemWeapon.AddressablePathToModel != string.Empty)
-                {
-                    Addressables.LoadAssetAsync<GameObject>(inventoryItemWeapon.AddressablePathToModel).Completed += (handle) =>
-                    {
-                        OnHandObjectPrefabLoaded(handle, inventoryItemWeapon.Type);
-                        Addressables.Release(handle);
-                    };
-                }
+                    objectInHanHandle = handle;
+                    OnHandObjectPrefabLoaded(handle, itemType);
+                };
             }
         }
 
@@ -258,6 +245,9 @@ namespace VoxelTG.Player
         /// </summary>
         private void RemoveInHandModel()
         {
+            if (objectInHanHandle.IsValid())
+                Addressables.Release(objectInHanHandle);
+
             for (int j = 0; j < handTransform.childCount; j++)
             {
                 Destroy(handTransform.GetChild(j).gameObject);

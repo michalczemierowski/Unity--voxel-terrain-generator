@@ -1,4 +1,5 @@
 ﻿using Unity.Mathematics;
+using static VoxelTG.WorldSettings.Textures;
 
 /*
  * Michał Czemierowski
@@ -11,7 +12,6 @@ namespace VoxelTG.Terrain.Blocks
     /// </summary>
     public struct BlockUVs
     {
-        public const float textureSize = 16f;
         public float2 uv0, uv1, uv2, uv3;
 
         public static readonly BlockUVs AIR_UV = new BlockUVs
@@ -31,12 +31,29 @@ namespace VoxelTG.Terrain.Blocks
         public static readonly BlockUVs STONE_UV = CreateUVs(0, 2);
         public static readonly BlockUVs COBBLESTONE_UV = CreateUVs(1, 2);
         public static readonly BlockUVs OBSIDIAN_UV = CreateUVs(2, 2);
-        public static readonly BlockUVs OAK_LOG_TOP_UV = CreateUVs(0, 4);
-        public static readonly BlockUVs SPRUCE_LOG_TOP_UV = CreateUVs(1, 4);
+
         public static readonly BlockUVs OAK_LOG_SIDE_UV = CreateUVs(0, 3);
         public static readonly BlockUVs SPRUCE_LOG_SIDE_UV = CreateUVs(1, 3);
+        public static readonly BlockUVs BIRCH_LOG_SIDE_UV = CreateUVs(2, 3);
+        public static readonly BlockUVs JUNGLE_LOG_SIDE_UV = CreateUVs(3, 3);
+
+        public static readonly BlockUVs OAK_LOG_TOP_UV = CreateUVs(0, 4);
+        public static readonly BlockUVs SPRUCE_LOG_TOP_UV = CreateUVs(1, 4);
+        public static readonly BlockUVs BIRCH_LOG_TOP_UV = CreateUVs(2, 4);
+        public static readonly BlockUVs JUNGLE_LOG_TOP_UV = CreateUVs(3, 4);
+
         public static readonly BlockUVs OAK_LEAVES_UV = CreateUVs(0, 5);
         public static readonly BlockUVs SPRUCE_LEAVES_UV = CreateUVs(1, 5);
+        public static readonly BlockUVs BIRCH_LEAVES_UV = CreateUVs(2, 5);
+        public static readonly BlockUVs JUNGLE_LEAVES_UV = CreateUVs(3, 5);
+
+        public static readonly BlockUVs OAK_PLANKS_UV = CreateUVs(0, 6);
+        public static readonly BlockUVs SPRUCE_PLANKS_UV = CreateUVs(1, 6);
+        public static readonly BlockUVs BIRCH_PLANKS_UV = CreateUVs(2, 6);
+        public static readonly BlockUVs JUNGLE_PLANKS_UV = CreateUVs(3, 6);
+
+        public static readonly BlockUVs ICE_UV = CreateUVs(4, 0);
+        public static readonly BlockUVs SNOW_UV = CreateUVs(4, 1);
 
         #endregion
 
@@ -51,9 +68,9 @@ namespace VoxelTG.Terrain.Blocks
 
         public static readonly BlockUVs GRASS_UV_0 = CreateUVs(3, 0);
 
-        public static readonly BlockUVs GRASS_UV_1 = CreateUVs(3, 2);
+        public static readonly BlockUVs GRASS_UV_1 = CreateUVs(3, 1);
 
-        public static readonly BlockUVs GRASS_UV_2 = CreateUVs(3, 3);
+        public static readonly BlockUVs GRASS_UV_2 = CreateUVs(3, 2);
 
         #endregion
 
@@ -79,17 +96,44 @@ namespace VoxelTG.Terrain.Blocks
 
                 case TextureTile.OAK_LOG_SIDE:
                     return OAK_LOG_SIDE_UV;
-                case TextureTile.OAK_LOG_TOP:
-                    return OAK_LOG_TOP_UV;
-                case TextureTile.OAK_LEAVES:
-                    return OAK_LEAVES_UV;
-
                 case TextureTile.SPRUCE_LOG_SIDE:
                     return SPRUCE_LOG_SIDE_UV;
+                case TextureTile.BIRCH_LOG_SIDE:
+                    return BIRCH_LOG_SIDE_UV;
+                case TextureTile.JUNGLE_LOG_SIDE:
+                    return JUNGLE_LOG_SIDE_UV;
+
+                case TextureTile.OAK_LOG_TOP:
+                    return OAK_LOG_TOP_UV;
                 case TextureTile.SPRUCE_LOG_TOP:
                     return SPRUCE_LOG_TOP_UV;
+                case TextureTile.BIRCH_LOG_TOP:
+                    return BIRCH_LOG_TOP_UV;
+                case TextureTile.JUNGLE_LOG_TOP:
+                    return JUNGLE_LOG_TOP_UV;
+
+                case TextureTile.OAK_LEAVES:
+                    return OAK_LEAVES_UV;
                 case TextureTile.SPRUCE_LEAVES:
                     return SPRUCE_LEAVES_UV;
+                case TextureTile.BIRCH_LEAVES:
+                    return BIRCH_LEAVES_UV;
+                case TextureTile.JUNGLE_LEAVES:
+                    return JUNGLE_LEAVES_UV;
+
+                case TextureTile.OAK_PLANKS:
+                    return OAK_PLANKS_UV;
+                case TextureTile.SPRUCE_PLANKS:
+                    return SPRUCE_PLANKS_UV;
+                case TextureTile.BIRCH_PLANKS:
+                    return BIRCH_PLANKS_UV;
+                case TextureTile.JUNGLE_PLANKS:
+                    return JUNGLE_PLANKS_UV;
+
+                case TextureTile.ICE:
+                    return ICE_UV;
+                case TextureTile.SNOW:
+                    return SNOW_UV;
 
                 case TextureTile.WATER:
                     return WATER_UV;
@@ -100,12 +144,13 @@ namespace VoxelTG.Terrain.Blocks
                     return GRASS_UV_1;
                 case TextureTile.GRASS_2:
                     return GRASS_UV_2;
+
                 default:
                     return DIRT_UV;
             }
         }
 
-        private static BlockUVs CreateUVs(int x, int y, float textureSizeX = textureSize, float textureSizeY = textureSize)
+        private static BlockUVs CreateUVs(int x, int y, float textureSizeX = BlockTextureSize, float textureSizeY = BlockTextureSize)
         {
             return new BlockUVs
             {

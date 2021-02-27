@@ -6,7 +6,7 @@ namespace VoxelTG.Player.Inventory
     [CreateAssetMenu(fileName = "InventoryItemMaterial_0", menuName = "Scriptable Objects/Inventory/Material")]
     public class InventoryItemMaterial : InventoryItemBase
     {
-        [Header("Inventory item material settings")]
+        [Header("Material settings")]
 
         [Tooltip("Type of block stored in item")]
         [SerializeField] private BlockType blockType = BlockType.AIR;

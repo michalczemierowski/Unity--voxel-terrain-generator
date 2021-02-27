@@ -17,8 +17,11 @@ namespace VoxelTG.Player.Inventory
     {
         #region // === Variables === \\
 
-        private const string PATH_TO_ITEMS_DATA = "inventory/items/";
-        private const string PATH_TO_MATERIAL_DATA = "inventory/materials/";
+        private const string PATH_TO_ITEMS_DATA = "inventory_data/items/";
+        private const string PATH_TO_MATERIAL_DATA = "inventory_data/materials/";
+        private const string PATH_TO_TOOLS_DATA = "inventory_data/tools/";
+        private const string PATH_TO_WEAPONS_DATA = "inventory_data/weapons/";
+        private const string PATH_TO_CLOTHES_DATA = "inventory_data/clothes/";
 
         [SerializeField] private int carryingCapacity;
 
@@ -109,6 +112,35 @@ namespace VoxelTG.Player.Inventory
         }
 
         /// <summary>
+        /// Get adressables path to specified item scriptable object (used when loading resources)
+        /// </summary>
+        private string GetPathToItemData(ItemType itemType)
+        {
+            string result;
+            switch ((int)itemType)
+            {
+                case int n when n >= 2 && n < 1000:
+                    result = PATH_TO_ITEMS_DATA;
+                    break;
+                case int n when n >= 1000 && n < 2000:
+                    result = PATH_TO_TOOLS_DATA;
+                    break;
+                case int n when n >= 2000 && n < 2999:
+                    result = PATH_TO_WEAPONS_DATA;
+                    break;
+                case int n when n >= 3000:
+                    result = PATH_TO_CLOTHES_DATA;
+                    break;
+                default:
+                    Debug.LogError("Unable to find addressable path for " + itemType, this);
+                    result = string.Empty;
+                    break;
+            }
+
+            return result + itemType + ".asset";
+        }
+
+        /// <summary>
         /// Load and cache item data for provided item type.
         /// </summary>
         /// <param name="itemType">type of item</param>
@@ -122,7 +154,7 @@ namespace VoxelTG.Player.Inventory
                 return;
             }
 
-            string path = PATH_TO_ITEMS_DATA + itemType.ToString() + ".asset";
+            string path = GetPathToItemData(itemType);
             Addressables.LoadAssetAsync<InventoryItemBase>(path).Completed += (handle) =>
             {
                 if (handle.Status != AsyncOperationStatus.Succeeded)
@@ -312,7 +344,7 @@ namespace VoxelTG.Player.Inventory
                     else
                     {
                         existingSlot.ItemAmount = amountLeft;
-                        
+
                         OnInventoryContentsChangePreProcess(true);
                         OnInventoryContentsChange?.Invoke(InventorySlots, true);
                     }
@@ -404,8 +436,8 @@ namespace VoxelTG.Player.Inventory
         public bool TryFindInventorySlotWithItem(ItemType itemType, out InventorySlot inventorySlot)
         {
             inventorySlot = InventorySlots.FirstOrDefault((item) =>
-            { 
-                return item.ItemType != ItemType.MATERIAL 
+            {
+                return item.ItemType != ItemType.MATERIAL
                     && item.ItemType == itemType;
             });
 
@@ -421,8 +453,8 @@ namespace VoxelTG.Player.Inventory
         public bool TryFindInventorySlotWithItem(BlockType blockType, out InventorySlot inventorySlot)
         {
             inventorySlot = InventorySlots.FirstOrDefault((item) =>
-            { 
-                return item.ItemType == ItemType.MATERIAL 
+            {
+                return item.ItemType == ItemType.MATERIAL
                     && item.BlockType == blockType;
             });
 

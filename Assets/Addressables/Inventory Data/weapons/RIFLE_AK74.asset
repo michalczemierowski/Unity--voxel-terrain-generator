@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: af4d10e84d421ff4b975d02b4565a4ee, type: 3}
+  m_Name: RIFLE_AK74
+  m_EditorClassIdentifier: 
+  itemName: AK74
+  weight: 1
+  itemIcon: {fileID: 21300000, guid: 9f76122188e12cf48a7cee25eae866f3, type: 3}
+  itemType: 2000
+  itemGroup: 2
+  damage: 6
+  ammoItemType: 3
+  fireRate: 20
+  isAutomaticRifle: 1
+  blockDamage: 0.5
+  clipSize: 30
+  addressablePathToModel:
+    m_AssetGUID: 81d6f61e9544534488178eceee5641bc
+    m_SubObjectName: 
+    m_SubObjectType: 

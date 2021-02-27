@@ -1,5 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AddressableAssets;
+using UnityEngine.ResourceManagement.AsyncOperations;
 using VoxelTG.Terrain;
 
 /*
@@ -10,15 +12,11 @@ namespace VoxelTG.Effects.SFX
 {
     public class SoundManager : MonoBehaviour
     {
-        [SerializeField] private GameObject audioSourcePrefab;
+        private const string PATH_TO_ENVIROMENT_SFX = "sfx/enviroment/";
+        private const string PATH_TO_ITEM_SFX = "sfx/item/";
 
-        [Header("Path settings")]
-        [Tooltip("Path to resource folder containing SFX assets (parent folder for all directories below)")]
-        [SerializeField] private string pathToSFX = "SFX";
-        [Tooltip("Path to resource folder containing enviroment sounds (releative to 'PathToSFX' path)")]
-        [SerializeField] private string enviromentDirectoryName = "enviroment";
-        [Tooltip("Path to resource folder containing item sounds (releative to 'PathToSFX' path)")]
-        [SerializeField] private string itemsDirectoryName = "items";
+        [SerializeField] private GameObject audioSourcePrefab;
+        [SerializeField] private string audioClipsExtension = ".mp3";
 
         /// <summary>
         /// Audio clip cache (sound after first load will be stored here)
@@ -26,20 +24,36 @@ namespace VoxelTG.Effects.SFX
         private Dictionary<SoundType, AudioClip> audioCache = new Dictionary<SoundType, AudioClip>();
 
         /// <summary>
-        /// Get path to specified sound resource (used when loading resources)
+        /// Get adressables path to specified sound resource (used when loading resources)
         /// </summary>
-        private string GetPathToResource(SoundType soundType)
+        private string GetPathToAudioClip(SoundType soundType)
         {
-            string result = pathToSFX + "/";
-            int soundTypeInt = (int)soundType;
+            string result;
+            switch ((int)soundType)
+            {
+                case int n when n < 1000:
+                    result = PATH_TO_ENVIROMENT_SFX;
+                    break;
+                case int n when n >= 1000 && n < 2000:
+                    result = PATH_TO_ITEM_SFX;
+                    break;
+                default:
+                    result = string.Empty;
+                    break;
+            }
 
-            if (soundTypeInt < 100)
-                result += enviromentDirectoryName;
-            else if (soundTypeInt > 99 && soundTypeInt < 200)
-                result += itemsDirectoryName;
+            return result + soundType + audioClipsExtension;
+        }
 
-            result += "/" + soundType;
-            return result;
+        private void OnAudioClipLoadingComplete(SoundType soundType, AsyncOperationHandle<AudioClip> handle)
+        {
+            if (handle.Status == AsyncOperationStatus.Succeeded)
+            {
+                var clip = handle.Result;
+                audioCache[soundType] = clip;
+            }
+            else
+                Debug.LogError(handle.OperationException.Message, this);
         }
 
         /// <summary>
@@ -61,19 +75,23 @@ namespace VoxelTG.Effects.SFX
             AudioClip clip;
             if (!audioCache.ContainsKey(soundType))
             {
-                clip = Resources.Load<AudioClip>(GetPathToResource(soundType));
+                // try to load audio clip an call method again when loading is complete
+                System.Action onComplete = () => PlaySound(soundType, worldPosition, soundSettings);
+                CacheSound(soundType, onComplete);
 
-                if (clip != null)
-                {
-                    audioCache.Add(soundType, clip);
-                }
-                else
-                    return;
+                return;
             }
             else
                 clip = audioCache[soundType];
 
+            if (clip == null)
+                return;
+
             AudioSource audioSource = Instantiate(audioSourcePrefab, worldPosition, Quaternion.identity, transform).GetComponent<AudioSource>();
+
+            // set audio source parent to player transform
+            if (soundSettings.followPlayer)
+                audioSource.transform.parent = Player.PlayerController.Instance.transform;
 
             // apply settings
             audioSource.priority = soundSettings.priority;
@@ -87,6 +105,26 @@ namespace VoxelTG.Effects.SFX
             audioSource.clip = clip;
             audioSource.Play();
             Destroy(audioSource.gameObject, clip.length);
+        }
+
+        /// <summary>
+        /// Load AudioClip and save it in cache
+        /// </summary>
+        public void CacheSound(SoundType soundType, System.Action OnComplete = null)
+        {
+            if (!audioCache.ContainsKey(soundType))
+            {
+                // int value to not load it many times
+                audioCache[soundType] = null;
+
+                string path = GetPathToAudioClip(soundType);
+                // call 'OnAudioClipLoadingComplete' on complete
+                Addressables.LoadAssetAsync<AudioClip>(path).Completed += (handle) =>
+                {
+                    OnAudioClipLoadingComplete(soundType, handle);
+                    OnComplete?.Invoke();
+                };
+            }
         }
     }
 }

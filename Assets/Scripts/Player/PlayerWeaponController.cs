@@ -77,14 +77,17 @@ namespace VoxelTG.Player.Interactions
 
         private void OnHandObjectLoaded(GameObject handObject, ItemType itemType)
         {
+            if (weaponInHand == null)
+                return;
+
             if (weaponInHand.Type == itemType)
             {
                 currentWeaponFX = handObject.GetComponent<WeaponEffectsController>();
+                if (currentWeaponFX == null)
+                    Debug.LogError($"{handObject} doesn't have {nameof(WeaponEffectsController)} component", this);
             }
             else
-            {
                 Debug.LogWarning("Current weapon item type is different than current hand object item type", this);
-            }
         }
 
         private void Update()
@@ -105,7 +108,7 @@ namespace VoxelTG.Player.Interactions
                 if (shootButtonDown)
                 {
                     timeToNextShoot = 1f / weaponInHand.FireRate;
-                    currentWeaponFX.OnShoot();
+                    currentWeaponFX?.OnShoot();
 
                     if (Physics.Raycast(cameraTransform.position, cameraTransform.forward, out RaycastHit hitInfo, maxDistance, interactionLayers))
                     {
@@ -126,7 +129,7 @@ namespace VoxelTG.Player.Interactions
                             Chunk chunk = World.GetChunk(globalBlockPosition.x, globalBlockPosition.z);
                             BlockType blockType = chunk.GetBlock(blockPosition);
 
-                            currentWeaponFX.OnBulletHitTerrain(hitInfo, chunk, blockPosition, blockType);
+                            currentWeaponFX?.OnBulletHitTerrain(hitInfo, chunk, blockPosition, blockType);
 
                             // cannot destroy base layer (at y == 0)
                             if (globalBlockPosition.y > 0)

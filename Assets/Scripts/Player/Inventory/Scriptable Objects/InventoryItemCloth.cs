@@ -9,7 +9,7 @@ namespace VoxelTG.Player.Inventory
     [CreateAssetMenu(fileName = "InventoryItemCloth_0", menuName = "Scriptable Objects/Inventory/Cloth")]
     public class InventoryItemCloth : InventoryItemBase
     {
-        [Header("Inventory item cloth settings")]
+        [Header("Cloth settings")]
         
         [Tooltip("Slot in which you can carry this item")]
         [SerializeField] private ClothingSlot clothingSlot;

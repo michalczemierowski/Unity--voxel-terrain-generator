@@ -40,6 +40,8 @@ namespace VoxelTG.Player.Interactions
         private void Start()
         {
             animator = GetComponent<Animator>();
+            // cache sound
+            World.SoundManager.CacheSound(shootSoundType);
         }
 
         public void OnShoot()
@@ -62,7 +64,7 @@ namespace VoxelTG.Player.Interactions
         /// </summary>
         public void OnBulletHitTerrain(RaycastHit hitInfo, Chunk chunk, BlockPosition blockPosition, BlockType blockType)
         {
-            //SoundManager.Instance.PlaySound(SoundType.DESTROY_WOOD, hitInfo.point, SoundSettings.DEFAULT);
+            World.SoundManager.PlaySound(blockType, hitInfo.point, SoundSettings.DEFAULT);
             World.ParticleManager.InstantiateBlockParticle(ParticleType.BULLET_HIT, hitInfo.point, blockType);
         }
 

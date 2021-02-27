@@ -6,8 +6,7 @@ using UnityEngine;
 using VoxelTG.Extensions;
 using VoxelTG.Terrain;
 using VoxelTG.Terrain.Blocks;
-
-using static VoxelTG.Terrain.WorldSettings;
+using static VoxelTG.WorldSettings;
 
 /*
  * Michał Czemierowski

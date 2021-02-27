@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a11f777812fd9314eb20c5438593f29c, type: 3}
+  m_Name: AXE
+  m_EditorClassIdentifier: 
+  itemName: Axe
+  weight: 1
+  itemIcon: {fileID: 21300000, guid: 9f76122188e12cf48a7cee25eae866f3, type: 3}
+  addressablePathToModel:
+    m_AssetGUID: 76ea03daea1f4f047814d635da8d1708
+    m_SubObjectName: 
+    m_SubObjectType: 
+  itemType: 1000
+  itemGroup: 1
+  durability: 32
+  miningSpeed: 6

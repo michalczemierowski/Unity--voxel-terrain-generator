@@ -2,7 +2,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
+using Unity.Mathematics;
 using UnityEngine;
+using VoxelTG.Terrain;
 using VoxelTG.UI;
 
 /*
@@ -22,6 +24,7 @@ namespace VoxelTG.DebugUtils
         [SerializeField] private TMP_Text debugText;
         [SerializeField] private TMP_Text positionText;
         [SerializeField] private TMP_Text fpsText;
+        [SerializeField] private TMP_Text biomeInfoText;
 
         [Header("Settings")]
         [SerializeField] private int maxMessages = 10;
@@ -85,6 +88,18 @@ namespace VoxelTG.DebugUtils
         {
             int fps = Mathf.RoundToInt(1f / Time.deltaTime);
             fpsText.text = $"{fps} FPS";
+        }
+
+        public static void UpdateBiomeInfoText()
+        {
+            int x = Player.PlayerController.Movement.CurrentPosition.x;
+            int z = Player.PlayerController.Movement.CurrentPosition.z;
+
+            float height = World.FastNoise.GetSimplex(x / WorldSettings.Biomes.BiomeSize, z / WorldSettings.Biomes.BiomeSize) + 1;
+            float temperature = World.FastNoise.GetSimplex((x / WorldSettings.Biomes.BiomeSize) * 0.1f, (z / WorldSettings.Biomes.BiomeSize) * 0.1f) + 1;
+            float moistrue = World.FastNoise.GetSimplex((x / WorldSettings.Biomes.BiomeSize) * 0.25f, (z / WorldSettings.Biomes.BiomeSize) * 0.25f) + 1;
+
+            Instance.biomeInfoText.text = $"height: {height.ToString("0.00")}\ntemperature: {temperature.ToString("0.00")}\nmoistrue: {moistrue.ToString("0.00")}\nbiome: {WorldSettings.Biomes.GetBiome(x, z)}";
         }
 
         public static void AddDebugMessageStatic(string msg)

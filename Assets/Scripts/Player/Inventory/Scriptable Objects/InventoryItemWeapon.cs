@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.AddressableAssets;
 
 /*
  * Michał Czemierowski
@@ -9,7 +10,7 @@ namespace VoxelTG.Player.Inventory
     [CreateAssetMenu(fileName = "InventoryItemWeapon_0", menuName = "Scriptable Objects/Inventory/Weapon")]
     public class InventoryItemWeapon : InventoryItemBase
     {
-        [Header("Inventory item weapon settings")]
+        [Header("Weapon settings")]
 
         [Tooltip("Damage that will be dealed to living entity on hit")]
         [SerializeField] private float damage;
@@ -52,13 +53,6 @@ namespace VoxelTG.Player.Inventory
         /// Maximum number of bullets in the clip
         /// </summary>
         public int ClipSize => clipSize;
-
-        [Tooltip("Addressables key to in-hand object")]
-        [SerializeField] private string addressablePathToModel;
-        /// <summary>
-        /// Addressables key to in-hand object
-        /// </summary>
-        public string AddressablePathToModel => addressablePathToModel;
 
         public override bool IsWeapon => true;
 

@@ -1,4 +1,5 @@
-﻿using Unity.Mathematics;
+﻿using System;
+using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.UI;
 using VoxelTG.Entities.Items;
@@ -62,6 +63,7 @@ namespace VoxelTG.Player.Interactions
             selectedBlockOutline = Instantiate(selectedBlockOutlinePrefab, Vector3.zero, Quaternion.identity);
 
             PlayerController.InventorySystem.OnMainHandUpdate += OnMainHandUpdate;
+            PlayerController.Instance.OnHandObjectLoaded += OnHandObjectLoaded;
         }
 
         private void OnMainHandUpdate(InventorySlot oldContent, InventorySlot newContent)
@@ -101,6 +103,20 @@ namespace VoxelTG.Player.Interactions
             selectedBlockOutline.SetActive(false);
         }
 
+        private void OnHandObjectLoaded(GameObject handObject, ItemType itemType)
+        {
+            if (itemType != ItemType.MATERIAL || handObject == null)
+                return;
+
+            // search for object named "block_cube" and apply block settings
+            for (int i = 0; i < handObject.transform.childCount; i++)
+            {
+                Transform child = handObject.transform.GetChild(i);
+                if (child.name.Equals(WorldSettings.Textures.BlockCubeName) && child.TryGetComponent(out MeshFilter meshFilter))
+                    MeshUtils.CreateBlockCube(meshFilter.mesh, LastUsedMaterial, 1);
+            }
+        }
+
         private void Update()
         {
             if (!UIManager.IsUIModeActive)
@@ -114,6 +130,7 @@ namespace VoxelTG.Player.Interactions
             }
         }
 
+        // TODO: input system
         private void HandleInput()
         {
             bool inputDestroy = Input.GetMouseButton(0);
@@ -209,7 +226,7 @@ namespace VoxelTG.Player.Interactions
 
                 // get selected block type from inventory
                 InventoryItemMaterial inventoryItemMaterial = (InventoryItemMaterial)PlayerController.InventorySystem.HandSlot.Item;
-                Block block = WorldData.GetBlockData(inventoryItemMaterial.BlockType);
+                BlockStructure block = WorldData.GetBlockData(inventoryItemMaterial.BlockType);
 
                 if (block.shape == BlockShape.HALF_BLOCK)
                     chunk.SetParameters(new BlockParameter(blockPosition, ParameterType.ROTATION), (short)(Mathf.RoundToInt(cameraTransform.eulerAngles.y / 90) * 90));
@@ -255,7 +272,7 @@ namespace VoxelTG.Player.Interactions
                     else
                     {
                         var tool = (InventoryItemTool)PlayerController.InventorySystem.HandSlot.Item;
-                        Block block = WorldData.GetBlockData(chunk.GetBlock(blockPosition));
+                        BlockStructure block = WorldData.GetBlockData(chunk.GetBlock(blockPosition));
 
                         miningBlockPosition = globalBlockPosition;
                         miningBlockMaxDurability = WorldData.GetBlockDurability(block.type) / tool.MiningSpeed;

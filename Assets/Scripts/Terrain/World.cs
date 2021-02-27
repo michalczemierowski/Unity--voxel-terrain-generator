@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Runtime.Serialization.Formatters.Binary;
 using Unity.Collections;
 using Unity.Jobs;
@@ -15,8 +14,8 @@ using VoxelTG.Player;
 using VoxelTG.Terrain.Blocks;
 using VoxelTG.Entities.Items;
 using VoxelTG.Effects.VFX;
-using static VoxelTG.Terrain.WorldSettings;
 using VoxelTG.Terrain;
+using static VoxelTG.WorldSettings;
 
 /*
  * Michał Czemierowski
@@ -42,9 +41,7 @@ namespace VoxelTG
         public static int RenderDistance { get; private set; }
         public static int CurrentTick { get; private set; }
 
-        public static FastNoise baseNoise { get; private set; }
-        public static NativeArray<GeneratorSettings> generatorSettings;
-        public static NativeArray<FastNoise> biomeNoises;
+        public static FastNoise FastNoise { get; private set; }
         public static WorldSave WorldSave { get; private set; } = new WorldSave();
         public static Dictionary<Vector2Int, Chunk> chunks { get; private set; } = new Dictionary<Vector2Int, Chunk>();
 
@@ -72,8 +69,6 @@ namespace VoxelTG
         [SerializeField] private float ticksPerSecond = 20;
         [SerializeField] private float buildChecksPerSecond = 10;
         [SerializeField] public GameObject chunkPrefab;
-
-        public GeneratorSettings[] generatorSettingsArray;
 
         #endregion
 
@@ -166,6 +161,8 @@ namespace VoxelTG
             else
                 Instance = this;
 
+            WorldSettings.Init();
+
             // instantiate player gameobject
             GameObject playerObject = Instantiate(Instance.playerPrefab);
             playerObject.SetActive(false);
@@ -185,24 +182,13 @@ namespace VoxelTG
             //player.position = worldSave.playerPosition.ToVector3();
 
             // TODO: seed is always the same
-            //seed = UnityEngine.Random.Range(0, int.MaxValue);
-            Seed = 420;
-            baseNoise = new FastNoise(Seed, 0.005f);
+            Seed = UnityEngine.Random.Range(0, int.MaxValue);
+            //Seed = 420;
+            FastNoise = new FastNoise(Seed, 0.005f);
 
             // init native conainters
             pendingJobs = new NativeQueue<JobHandle>(Allocator.Persistent);
             meshBakingJobs = new NativeQueue<JobHandle>(Allocator.Persistent);
-            generatorSettings = new NativeArray<GeneratorSettings>(generatorSettingsArray, Allocator.Persistent);
-            biomeNoises = new NativeArray<FastNoise>(generatorSettingsArray.Length, Allocator.Persistent);
-
-            // load noises from settings
-            for (int i = 0; i < generatorSettingsArray.Length; i++)
-            {
-                NoiseSettings noiseSettings = generatorSettingsArray[i].noiseSettings;
-                FastNoise noise = new FastNoise(Seed, noiseSettings.frequency, noiseSettings.interp, noiseSettings.noiseType,
-                                                noiseSettings.octaves, noiseSettings.lancuarity, noiseSettings.gain, noiseSettings.fractalType);
-                biomeNoises[i] = noise;
-            }
         }
 
         private void OnDestroy()
@@ -210,12 +196,11 @@ namespace VoxelTG
             SaveChunkData();
             
             PathFinding.Dispose();
+            WorldSettings.Dispose();
 
             // dispose native containers
             pendingJobs.Dispose();
             meshBakingJobs.Dispose();
-            biomeNoises.Dispose();
-            generatorSettings.Dispose();
         }
 
 
@@ -491,7 +476,7 @@ namespace VoxelTG
         /// <param name="y">world position y</param>
         /// <param name="z">world position z</param>
         /// <returns></returns>
-        public static Block GetBlock(int x, int y, int z)
+        public static BlockStructure GetBlock(int x, int y, int z)
         {
             Chunk chunk = GetChunk(x, z);
             if (!chunk)
@@ -619,6 +604,7 @@ namespace VoxelTG
                         Chunk tc = terrainChunks.Dequeue();
 
                         tc.gameObject.SetActive(true);
+                        tc.CreateBiomeTexture();
                         tc.Animation();
                         tc.ApplyMesh();
 

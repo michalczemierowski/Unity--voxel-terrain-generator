@@ -2,7 +2,7 @@ using System;
 using System.Collections;
 using UnityEngine;
 using VoxelTG.Player.Inventory;
-using static VoxelTG.Terrain.WorldSettings;
+using static VoxelTG.WorldSettings;
 
 /*
  * Michał Czemierowski
