@@ -40,6 +40,57 @@ namespace VoxelTG.Jobs
             GenerateTrees();
         }
 
+        private void GenerateBlockTypes()
+        {
+            for (int x = 0; x < FixedChunkSizeXZ; x++)
+            {
+                for (int z = 0; z < FixedChunkSizeXZ; z++)
+                {
+                    int bix = chunkPosX + x - 1;
+                    int biz = chunkPosZ + z - 1;
+
+                    BiomeType biomeType = GetBiome(bix, biz, out float biomeHeight);
+                    biomeTypes[Utils.BlockPosition2DtoIndex(x, z)] = biomeType;
+
+                    #region noise
+
+                    float simplex1 = (noise.GetSimplex(bix, biz) + 0.8f) / 2;
+                    float simplex2 = (noise.GetSimplex(bix * 0.5f, biz * 0.5f) + 0.8f) / 2;
+                    float simplex3 = noise.GetSimplex(bix * 5f, biz * 5f) * (biomeHeight * biomeHeight);
+
+                    float heightMap = (simplex1 + simplex2) / 2 + (simplex3 * 0.05f);
+                    heightMap += biomeHeight * 0.3f;
+                    int baseLandHeight = (int)math.round((ChunkSizeY * BaseLandHeightMultipler) + ((ChunkSizeY * BaseLandHeightMultipler) * heightMap));
+
+                    #endregion
+
+                    switch (biomeType)
+                    {
+                        case BiomeType.FOREST:
+                            GenerateForest(bix, biz, baseLandHeight, x, z);
+                            break;
+                        case BiomeType.PLAINS:
+                            GeneratePlains(bix, biz, baseLandHeight, x, z);
+                            break;
+                        case BiomeType.MOUNTAIN_PLAINS:
+                            GenerateMountainPlains(bix, biz, baseLandHeight, x, z);
+                            break;
+                        case BiomeType.MOUNTAINS:
+                            GenerateMountains(bix, biz, baseLandHeight, x, z);
+                            break;
+                        case BiomeType.DESERT:
+                            GenerateDesert(bix, biz, baseLandHeight, x, z);
+                            break;
+                        case BiomeType.COLD_PLAINS:
+                            GenerateColdPlains(bix, biz, baseLandHeight, x, z);
+                            break;
+                        default:
+                            GeneratePlains(bix, biz, baseLandHeight, x, z);
+                            break;
+                    }
+                }
+            }
+        }
 
         private BiomeType GetBiome(int x, int z, out float height)
         {
@@ -63,58 +114,9 @@ namespace VoxelTG.Jobs
                 }
             }
 
-            height -= 1;
+            //height -= 1;
+            height *= height;
             return selectedType;
-        }
-
-        private bool TransitionForestPlains(float val, out bool forest)
-        {
-            forest = false;
-            float transition = BiomeTransition * random.NextFloat(0.5f, 5f);
-            bool inRange = val > 0.4f - transition && val < 0.4f + transition;
-            if (inRange)
-            {
-                float diff = math.abs(val - (0.4f + transition));
-                forest = diff * (1 / BiomeTransition) < random.NextFloat();
-            }
-            return inRange;
-        }
-
-        private void GenerateBlockTypes()
-        {
-            for (int x = 0; x < FixedChunkSizeX; x++)
-            {
-                for (int z = 0; z < FixedChunkSizeX; z++)
-                {
-                    int bix = chunkPosX + x - 1;
-                    int biz = chunkPosZ + z - 1;
-
-                    BiomeType biomeType = GetBiome(bix, biz, out float biomeHeight);
-                    biomeTypes[Utils.BlockPosition2DtoIndex(x, z)] = biomeType;
-
-                    #region noise
-
-                    float simplex1 = (noise.GetSimplex(bix, biz) + 0.8f) / 2;
-                    float simplex2 = (noise.GetSimplex(bix * 0.5f, biz * 0.5f) + 0.8f) / 2;
-                    float simplex3 = noise.GetSimplex(bix * 8f, biz * 8f) * 2 - 1;
-
-                    float heightMap = (simplex1 + simplex2) / 2 + (simplex3 * 0.025f);
-                    heightMap += biomeHeight * 0.3f;
-                    int baseLandHeight = (int)math.round((ChunkSizeY * BaseLandHeightMultipler) + ((ChunkSizeY * BaseLandHeightMultipler) * heightMap));
-
-                    #endregion
-
-                    switch (biomeType)
-                    {
-                        case BiomeType.FOREST:
-                            GenerateForest(bix, biz, baseLandHeight, x, z);
-                            break;
-                        default:
-                            GeneratePlains(bix, biz, baseLandHeight, x, z);
-                            break;
-                    }
-                }
-            }
         }
 
         private void GeneratePlains(int bix, int biz, int baseLandHeight, int x, int z)
@@ -200,6 +202,148 @@ namespace VoxelTG.Jobs
                     blockParameters.TryAdd(new BlockParameter(new int3(x, y, z), ParameterType.BLOCK_TYPE), (short)random.NextInt(0, 3));
                 else if (lastBlock == BlockType.WATER)  // set source distance to 8 (full water block)
                     blockParameters.TryAdd(new BlockParameter(new int3(x, y, z), ParameterType.WATER_SOURCE_DISTANCE), 8);
+            }
+        }
+
+        private void GenerateMountainPlains(int bix, int biz, int baseLandHeight, int x, int z)
+        {
+            float caveMask = noise.GetSimplex(bix * 0.3f, biz * 0.3f) + 0.3f;
+
+            BlockType lastBlock = BlockType.AIR;
+            for (int y = 0; y < ChunkSizeY; y++)
+            {
+                float caveNoise = noise.GetPerlinFractal(bix * 7.5f, y * 15f, biz * 7.5f);
+                BlockType blockType = BlockType.AIR;
+
+                if (caveNoise > math.max(caveMask, 0.2f))
+                    blockType = BlockType.AIR;
+                else if (y < baseLandHeight && caveNoise > math.max(caveMask, 0.2f) * 0.9f)
+                    blockType = BlockType.COBBLESTONE;
+                else if (y <= baseLandHeight)
+                {
+                    if (y == baseLandHeight && y > WaterLevelY - 1)
+                        blockType = WorldData.CanPlaceGrass(lastBlock) && random.NextFloat() < 0.05f ? BlockType.GRASS : BlockType.AIR;
+                    else if (y > baseLandHeight * 0.95)
+                        blockType = BlockType.DIRT;
+                    else
+                        blockType = BlockType.STONE;
+                }
+
+                if (y >= baseLandHeight && y <= WaterLevelY)
+                    blockType = BlockType.WATER;
+
+                if (y <= noise.GetWhiteNoise(bix, biz) * 3)
+                    blockType = BlockType.OBSIDIAN;
+
+                lastBlock = blockData[Utils.BlockPosition3DtoIndex(x, y, z)] = blockType;
+
+                if (lastBlock == BlockType.GRASS)       // assing random block type to grass
+                    blockParameters.TryAdd(new BlockParameter(new int3(x, y, z), ParameterType.BLOCK_TYPE), (short)random.NextInt(0, 3));
+                else if (lastBlock == BlockType.WATER)  // set source distance to 8 (full water block)
+                    blockParameters.TryAdd(new BlockParameter(new int3(x, y, z), ParameterType.WATER_SOURCE_DISTANCE), 8);
+            }
+        }
+
+        private void GenerateMountains(int bix, int biz, int baseLandHeight, int x, int z)
+        {
+            float caveMask = noise.GetSimplex(bix * 0.3f, biz * 0.3f) + 0.3f;
+
+            BlockType lastBlock = BlockType.AIR;
+            for (int y = 0; y < ChunkSizeY; y++)
+            {
+                float caveNoise = noise.GetPerlinFractal(bix * 7.5f, y * 15f, biz * 7.5f);
+                BlockType blockType = BlockType.AIR;
+
+                if (caveNoise > math.max(caveMask, 0.2f))
+                    blockType = BlockType.AIR;
+                else if (y < baseLandHeight && caveNoise > math.max(caveMask, 0.2f) * 0.9f)
+                    blockType = BlockType.COBBLESTONE;
+                else if (y <= baseLandHeight)
+                {
+                    if (y == baseLandHeight && y > WaterLevelY - 1)
+                        blockType = WorldData.CanPlaceGrass(lastBlock) && random.NextFloat() < 0.1f ? BlockType.GRASS : BlockType.AIR;
+                    else if (y == baseLandHeight - 1 && y > WaterLevelY - 1)
+                        blockType = BlockType.STONE;
+                    else
+                        blockType = BlockType.STONE;
+                }
+
+                if (y >= baseLandHeight && y <= WaterLevelY)
+                    blockType = BlockType.WATER;
+
+                if (y <= noise.GetWhiteNoise(bix, biz) * 3)
+                    blockType = BlockType.OBSIDIAN;
+
+                lastBlock = blockData[Utils.BlockPosition3DtoIndex(x, y, z)] = blockType;
+
+                if (lastBlock == BlockType.GRASS)       // assing random block type to grass
+                    blockParameters.TryAdd(new BlockParameter(new int3(x, y, z), ParameterType.BLOCK_TYPE), (short)random.NextInt(0, 3));
+                else if (lastBlock == BlockType.WATER)  // set source distance to 8 (full water block)
+                    blockParameters.TryAdd(new BlockParameter(new int3(x, y, z), ParameterType.WATER_SOURCE_DISTANCE), 8);
+            }
+        }
+
+        private void GenerateDesert(int bix, int biz, int baseLandHeight, int x, int z)
+        {
+            float caveMask = noise.GetSimplex(bix * 0.3f, biz * 0.3f) + 0.3f;
+
+            for (int y = 0; y < ChunkSizeY; y++)
+            {
+                float caveNoise = noise.GetPerlinFractal(bix * 7.5f, y * 15f, biz * 7.5f);
+                BlockType blockType = BlockType.AIR;
+
+                if (caveNoise > math.max(caveMask, 0.2f))
+                    blockType = BlockType.AIR;
+                else if (y < baseLandHeight && caveNoise > math.max(caveMask, 0.2f) * 0.9f)
+                    blockType = BlockType.COBBLESTONE;
+                else if (y <= baseLandHeight)
+                {
+                    if (y > baseLandHeight * 0.95)
+                        blockType = BlockType.SAND;
+                    else
+                        blockType = BlockType.STONE;
+                }
+
+                if (y >= baseLandHeight && y <= WaterLevelY)
+                    blockType = BlockType.WATER;
+
+                if (y <= noise.GetWhiteNoise(bix, biz) * 3)
+                    blockType = BlockType.OBSIDIAN;
+
+                blockData[Utils.BlockPosition3DtoIndex(x, y, z)] = blockType;
+            }
+        }
+
+        private void GenerateColdPlains(int bix, int biz, int baseLandHeight, int x, int z)
+        {
+            float caveMask = noise.GetSimplex(bix * 0.3f, biz * 0.3f) + 0.3f;
+
+            for (int y = 0; y < ChunkSizeY; y++)
+            {
+                float caveNoise = noise.GetPerlinFractal(bix * 7.5f, y * 15f, biz * 7.5f);
+                BlockType blockType = BlockType.AIR;
+
+                if (caveNoise > math.max(caveMask, 0.2f))
+                    blockType = BlockType.AIR;
+                else if (y < baseLandHeight && caveNoise > math.max(caveMask, 0.2f) * 0.9f)
+                    blockType = BlockType.COBBLESTONE;
+                else if (y < baseLandHeight)
+                {
+                    if (y == baseLandHeight - 1)
+                        blockType = BlockType.SNOW;
+                    else if (y > baseLandHeight * 0.95)
+                        blockType = BlockType.DIRT;
+                    else
+                        blockType = BlockType.STONE;
+                }
+
+                if (y >= baseLandHeight && y <= WaterLevelY)
+                    blockType = BlockType.ICE;
+
+                if (y <= noise.GetWhiteNoise(bix, biz) * 3)
+                    blockType = BlockType.OBSIDIAN;
+
+                blockData[Utils.BlockPosition3DtoIndex(x, y, z)] = blockType;
             }
         }
 

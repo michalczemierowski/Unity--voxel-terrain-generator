@@ -35,7 +35,7 @@ namespace VoxelTG
         /// <returns>index that can be used in Chunk.blocks</returns>
         public static int BlockPosition3DtoIndex(BlockPosition pos)
         {
-            return (pos.z * FixedChunkSizeX * ChunkSizeY) + (pos.y * FixedChunkSizeX) + pos.x;
+            return (pos.z * FixedChunkSizeXZ * ChunkSizeY) + (pos.y * FixedChunkSizeXZ) + pos.x;
         }
 
         /// <summary>
@@ -44,7 +44,7 @@ namespace VoxelTG
         /// <returns>index that can be used in Chunk.blocks</returns>
         public static int BlockPosition3DtoIndex(int3 pos)
         {
-            return (pos.z * FixedChunkSizeX * ChunkSizeY) + (pos.y * FixedChunkSizeX) + pos.x;
+            return (pos.z * FixedChunkSizeXZ * ChunkSizeY) + (pos.y * FixedChunkSizeXZ) + pos.x;
         }
 
         /// <summary>
@@ -53,7 +53,7 @@ namespace VoxelTG
         /// <returns>index that can be used in Chunk.blocks</returns>
         public static int BlockPosition3DtoIndex(int x, int y, int z)
         {
-            return (z * FixedChunkSizeX * ChunkSizeY) + (y * FixedChunkSizeX) + x;
+            return (z * FixedChunkSizeXZ * ChunkSizeY) + (y * FixedChunkSizeXZ) + x;
         }
 
         /// <summary>
@@ -62,7 +62,7 @@ namespace VoxelTG
         /// <returns>index that can be used in Chunk.biomeTypes</returns>
         public static int BlockPosition2DtoIndex(int x, int z)
         {
-            return x * FixedChunkSizeX + z;
+            return x * FixedChunkSizeXZ + z;
         }
 
         /// <summary>

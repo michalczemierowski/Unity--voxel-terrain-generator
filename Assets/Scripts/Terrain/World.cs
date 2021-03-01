@@ -16,6 +16,7 @@ using VoxelTG.Entities.Items;
 using VoxelTG.Effects.VFX;
 using VoxelTG.Terrain;
 using static VoxelTG.WorldSettings;
+using VoxelTG.Config;
 
 /*
  * Michał Czemierowski
@@ -68,7 +69,8 @@ namespace VoxelTG
         [Header("Settings")]
         [SerializeField] private float ticksPerSecond = 20;
         [SerializeField] private float buildChecksPerSecond = 10;
-        [SerializeField] public GameObject chunkPrefab;
+        [SerializeField] private GameObject chunkPrefab;
+        [SerializeField] private BiomeColorsObject biomeColors;
 
         #endregion
 
@@ -584,6 +586,11 @@ namespace VoxelTG
             return chunk != null;
         }
 
+        public static Color GetBiomeColor(BiomeType biomeType)
+        {
+            return Instance.biomeColors.GetBiomeColor(biomeType);
+        }
+
         #endregion
 
         #region // === Ticks === \\
@@ -698,7 +705,7 @@ namespace VoxelTG
         #region  // == STATIC == \\
 
         /// <summary>
-        /// Called when scene is
+        /// Called when scene is loaded first time
         /// </summary>
         public static void OnFirstLoadDone()
         {

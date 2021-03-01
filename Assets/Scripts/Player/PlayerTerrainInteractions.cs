@@ -113,7 +113,10 @@ namespace VoxelTG.Player.Interactions
             {
                 Transform child = handObject.transform.GetChild(i);
                 if (child.name.Equals(WorldSettings.Textures.BlockCubeName) && child.TryGetComponent(out MeshFilter meshFilter))
+                {
                     MeshUtils.CreateBlockCube(meshFilter.mesh, LastUsedMaterial, 1);
+                    meshFilter.ClearMeshOnDestroy();
+                }
             }
         }
 

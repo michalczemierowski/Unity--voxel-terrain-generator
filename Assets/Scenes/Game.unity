@@ -929,6 +929,7 @@ MonoBehaviour:
   buildChecksPerSecond: 10
   chunkPrefab: {fileID: 6546764858940181633, guid: 5ce7861e514decf459c0596a9a9e7c6c,
     type: 3}
+  biomeColors: {fileID: 11400000, guid: dfd098691be87d14aa944892aa09f92e, type: 2}
 --- !u!4 &220957753
 Transform:
   m_ObjectHideFlags: 0

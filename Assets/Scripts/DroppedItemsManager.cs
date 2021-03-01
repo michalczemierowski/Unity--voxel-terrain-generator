@@ -84,19 +84,20 @@ namespace VoxelTG.Entities.Items
 
             Chunk chunk = World.GetChunk(position.x, position.z);
             DroppedItem droppedItem = Instantiate(materialItemPrefab, position, Quaternion.identity, chunk.transform).GetComponent<DroppedItem>();
-            
+
             PlayerController.InventorySystem.GetItemData(blockType, (item) => droppedItem.SetInventoryItem(item));
             droppedItem.Amount = amount;
 
             if (velocity != 0 && droppedItem.TryGetComponent(out Rigidbody rigidbody))
             {
                 rigidbody.AddForce(MouseLook.cameraTransform.forward * velocity, ForceMode.Impulse);
-                if(rotate)
+                if (rotate)
                     droppedItem.transform.forward = MouseLook.cameraTransform.forward;
             }
 
-             Mesh mesh = droppedItem.GetComponent<MeshFilter>().mesh;
-             MeshUtils.CreateBlockCube(mesh, blockType, 0.75f);
+            MeshFilter meshFilter = droppedItem.GetComponent<MeshFilter>();
+            MeshUtils.CreateBlockCube(meshFilter.mesh, blockType, 0.75f);
+            meshFilter.ClearMeshOnDestroy();
         }
     }
 }

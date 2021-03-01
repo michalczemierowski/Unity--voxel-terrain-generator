@@ -17,7 +17,7 @@ namespace VoxelTG.Tests
         public void BlockPositionRangeTest()
         {
             BlockPosition bp;
-            for (int x = 0; x < WorldSettings.FixedChunkSizeX * 2; x++)
+            for (int x = 0; x < WorldSettings.FixedChunkSizeXZ * 2; x++)
             {
                 bp = new BlockPosition(x, 0, 0);
                 Assert.IsTrue(bp.x >= 1 && bp.x <= WorldSettings.ChunkSizeXZ);
@@ -27,7 +27,7 @@ namespace VoxelTG.Tests
                 bp = new BlockPosition(0, y, 0);
                 Assert.IsTrue(bp.y >= 0 && bp.y <= WorldSettings.ChunkSizeY);
             }
-            for (int z = 0; z < WorldSettings.FixedChunkSizeX * 2; z++)
+            for (int z = 0; z < WorldSettings.FixedChunkSizeXZ * 2; z++)
             {
                 bp = new BlockPosition(0, 0, z);
                 Assert.IsTrue(bp.z >= 1 && bp.z <= WorldSettings.ChunkSizeXZ);

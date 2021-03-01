@@ -91,8 +91,8 @@ namespace VoxelTG.Terrain
         private void OnEnable()
         {
             // init native containers
-            blocks = new NativeArray<BlockType>(FixedChunkSizeX * ChunkSizeY * FixedChunkSizeX, Allocator.Persistent);
-            biomeTypes = new NativeArray<BiomeType>(FixedChunkSizeX * FixedChunkSizeX, Allocator.Persistent);
+            blocks = new NativeArray<BlockType>(FixedChunkSizeXZ * ChunkSizeY * FixedChunkSizeXZ, Allocator.Persistent);
+            biomeTypes = new NativeArray<BiomeType>(FixedChunkSizeXZ * FixedChunkSizeXZ, Allocator.Persistent);
             blockParameters = new NativeHashMap<BlockParameter, short>(2048, Allocator.Persistent);
 
             blockVerticles = new NativeList<float3>(16384, Allocator.Persistent);
@@ -285,37 +285,6 @@ namespace VoxelTG.Terrain
             jobHandles.Add(handle);
         }
 
-        private Texture2D blocksTexture;
-        private Texture2D plantsTexture;
-        public void CreateBiomeTexture()
-        {
-            Color[] colors = new Color[ChunkSizeXZ * ChunkSizeXZ];
-            for (int x = 0; x < ChunkSizeXZ; x++)
-            {
-                for (int y = 0; y < ChunkSizeXZ; y++)
-                {
-                    BiomeType biomeType = biomeTypes[Utils.BlockPosition2DtoIndex(x, y)];
-                    colors[y * ChunkSizeXZ + x] = biomeType == BiomeType.FOREST ? Color.blue : Color.white;
-                }
-            }
-
-            blocksTexture = new Texture2D(ChunkSizeXZ, ChunkSizeXZ, TextureFormat.RGB24, true);
-            blocksTexture.filterMode = FilterMode.Point;
-            blocksTexture.SetPixels(colors);
-            blocksTexture.Compress(false);
-            blocksTexture.Apply();
-
-            blockMeshFilter.GetComponent<MeshRenderer>().material.SetTexture("_BiomeTexture", blocksTexture);
-
-            plantsTexture = new Texture2D(ChunkSizeXZ, ChunkSizeXZ, TextureFormat.RGB24, true);
-            plantsTexture.filterMode = FilterMode.Point;
-            plantsTexture.SetPixels(colors);
-            plantsTexture.Compress(false);
-            plantsTexture.Apply();
-
-            plantsMeshFilter.GetComponent<MeshRenderer>().material.SetTexture("_BiomeTexture", plantsTexture);
-        }
-
         /// <summary>
         /// Apply values from native containers (jobs) to meshes
         /// </summary>
@@ -350,7 +319,7 @@ namespace VoxelTG.Terrain
 
             // bake mesh immediately if player is near
             Vector2 playerPosition = new Vector2(PlayerController.PlayerTransform.position.x, PlayerController.PlayerTransform.position.z);
-            if (Vector2.Distance(new Vector2(ChunkPosition.x, ChunkPosition.y), playerPosition) < FixedChunkSizeX * 2)
+            if (Vector2.Distance(new Vector2(ChunkPosition.x, ChunkPosition.y), playerPosition) < FixedChunkSizeXZ * 2)
                 blockMeshCollider.sharedMesh = blockMesh;
             else
                 World.SchedulePhysicsBake(this);
@@ -1034,6 +1003,44 @@ namespace VoxelTG.Terrain
                 //blockParameterKeys.Dispose();
                 //blockParameterValues.Dispose();
             }
+        }
+
+        private Texture2D blocksTexture;
+        private Texture2D plantsTexture;
+        public void CreateBiomeTexture()
+        {
+            int upscaling = 2;
+            int size = FixedChunkSizeXZ * upscaling;
+            Color[] colors = new Color[size * size];
+            for (int x = 0; x < size; x++)
+            {
+                for (int y = 0; y < size; y++)
+                {
+                    int _x = x / upscaling;
+                    int _y = y / upscaling;
+                    BiomeType biomeType = biomeTypes[Utils.BlockPosition2DtoIndex(_x, _y)];
+                    Color color = World.GetBiomeColor(biomeType);
+                    colors[y * size + x] = color;
+                }
+            }
+
+            blocksTexture = CreateTexture(size, colors);
+            blockMeshFilter.GetComponent<MeshRenderer>().material.SetTexture("_BiomeTexture", blocksTexture);
+
+            plantsTexture = CreateTexture(size, colors);
+            plantsMeshFilter.GetComponent<MeshRenderer>().material.SetTexture("_BiomeTexture", plantsTexture);
+        }
+
+        private Texture2D CreateTexture(int size, Color[] colors)
+        {
+            Texture2D result = new Texture2D(size, size, TextureFormat.RGB24, true);
+            result.filterMode = FilterMode.Trilinear;
+            result.wrapMode = TextureWrapMode.Clamp;
+            result.SetPixels(colors);
+            result.Compress(false);
+            result.Apply();
+
+            return result;
         }
     }
 }

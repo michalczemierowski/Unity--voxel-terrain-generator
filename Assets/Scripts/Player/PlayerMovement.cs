@@ -189,6 +189,9 @@ namespace VoxelTG.Player
                 float y = m_Rigidbody.velocity.y + (gravity * Time.fixedDeltaTime);
                 m_Rigidbody.velocity = new Vector3(m_Rigidbody.velocity.x, y, m_Rigidbody.velocity.z);
             }
+
+            // ceil x, round y, ceil z
+            CurrentPosition = new Vector3Int(Mathf.CeilToInt(transform.position.x), Mathf.RoundToInt(transform.position.y), Mathf.CeilToInt(transform.position.z));
         }
 
         private void HandleInput()
@@ -232,9 +235,6 @@ namespace VoxelTG.Player
                 m_Rigidbody.AddForce(new Vector3(0, Mathf.Sqrt(-2 * gravity * jumpHeight), 0), ForceMode.VelocityChange);
                 IsJumping = false;
             }
-
-            // ceil x, round y, ceil z
-            CurrentPosition = new Vector3Int(Mathf.CeilToInt(transform.position.x), Mathf.RoundToInt(transform.position.y), Mathf.CeilToInt(transform.position.z));
         }
 
         /// <summary>

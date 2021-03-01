@@ -8,20 +8,32 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Particles
-  m_Shader: {fileID: 4800000, guid: 8d2bb70cbf9db8d4da26e15b26e74248, type: 3}
+  m_Shader: {fileID: -6465566751694194690, guid: 74a3ae42f9983a0429f917227c4c82aa,
+    type: 3}
   m_ShaderKeywords: _ALPHATEST_ON
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 1
   m_DoubleSidedGI: 0
-  m_CustomRenderQueue: 2450
-  stringTagMap:
-    RenderType: TransparentCutout
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
   disabledShaderPasses: []
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
+    - Texture2D_3ec5b2ef4f2a4f64a48ecd23769f33e2:
+        m_Texture: {fileID: 2800000, guid: 34dfa9ec5a379524481a9e03bfa6ab57, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - Texture2D_97f0ec9da08841e0a41b92487b72cb30:
+        m_Texture: {fileID: 2800000, guid: 34dfa9ec5a379524481a9e03bfa6ab57, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _BaseMap:
         m_Texture: {fileID: 2800000, guid: d91af521df3977f41b60123a35357aee, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _BiomeTexture:
+        m_Texture: {fileID: 2800000, guid: 80bd3c4f32dd6d548a11c20af878b945, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _BumpMap:
@@ -81,6 +93,13 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Floats:
+    - Vector1_24834904: 10
+    - Vector1_790DC95F: 1
+    - Vector1_97d2ba679f1a45d1b8ea3db3ce14ecef: 16
+    - Vector1_A27CE783: 1
+    - Vector1_BF19FA29: 0
+    - Vector1_b3bbcdde15e347f8962cf0e760b50326: 16
+    - Vector1_d7c32f38ddc241de9e9f164d4cd53708: 0
     - _AlphaClip: 1
     - _Blend: 0
     - _BumpScale: 1
@@ -112,6 +131,8 @@ Material:
     - _WorkflowMode: 1
     - _ZWrite: 1
     m_Colors:
+    - Color_5998d6fb5059488b8cfe89447b113a04: {r: 1, g: 1, b: 1, a: 1}
+    - Color_AF3B1077: {r: 1, g: 1, b: 1, a: 1}
     - _BaseColor: {r: 0.5660378, g: 0.5660378, b: 0.5660378, a: 1}
     - _Color: {r: 0.6886792, g: 0.6886792, b: 0.6886792, a: 1}
     - _Emission: {r: 0, g: 0, b: 0, a: 0}

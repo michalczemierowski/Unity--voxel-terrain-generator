@@ -22,10 +22,10 @@ namespace VoxelTG
         }
 
         public const int ChunkSizeXZ = 16;
-        public const int ChunkSizeY = 128;
-        public const int WaterLevelY = 0;
-        public const float BaseLandHeightMultipler = 0.4f;
-        public const int FixedChunkSizeX = ChunkSizeXZ + 2;
+        public const int ChunkSizeY = 256;
+        public const int WaterLevelY = 50;
+        public const float BaseLandHeightMultipler = 0.2f;
+        public const int FixedChunkSizeXZ = ChunkSizeXZ + 2;
 
         public const int MaxTreesPerChunk = 10;
         public const float MinDistanceBetweenTrees = 4;
@@ -34,11 +34,9 @@ namespace VoxelTG
 
         public static class Biomes
         {
-            public const int PossibleBiomes = 5;
-            public const float BiomeSize = .5f;
-            public const float BiomeTransition = 0.005f;
+            public const float BiomeSize = 5f;
 
-            public static NativeArray<BiomeConfig> biomeConfigs;
+            public static NativeArray<BiomeConfig> biomeConfigs { get; private set; }
 
             public static void Init()
             {
@@ -62,29 +60,29 @@ namespace VoxelTG
                     {
                         Type = BiomeType.MOUNTAIN_PLAINS,
                         Temperature = 0.35f,
-                        Height = 70,
-                        Moistrue = 30
+                        Height = 1.35f,
+                        Moistrue = 0.2f
                     },
                     new BiomeConfig
                     {
                         Type = BiomeType.MOUNTAINS,
-                        Temperature = 10,
-                        Height = 100,
-                        Moistrue = 15
+                        Temperature = 0.3f,
+                        Height = 1.6f,
+                        Moistrue = 0.2f
                     },
                     new BiomeConfig
                     {
                         Type = BiomeType.DESERT,
-                        Temperature = 65,
-                        Height = 15,
-                        Moistrue = 0
+                        Temperature = 1.6f,
+                        Height = 1f,
+                        Moistrue = 0.1f
                     },
                     new BiomeConfig
                     {
                         Type = BiomeType.COLD_PLAINS,
-                        Temperature = 20,
-                        Height = 15,
-                        Moistrue = 10
+                        Temperature = 0.3f,
+                        Height = 0.95f,
+                        Moistrue = 0.5f
                     }
                 }, Allocator.Persistent);
             }

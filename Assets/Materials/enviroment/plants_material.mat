@@ -41,7 +41,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _BiomeTexture:
-        m_Texture: {fileID: 2800000, guid: 2f1f5f9273700d746afb35d452de4f51, type: 3}
+        m_Texture: {fileID: 2800000, guid: 80bd3c4f32dd6d548a11c20af878b945, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _BumpMap:
@@ -108,7 +108,7 @@ Material:
     - Vector1_24834904: 10
     - Vector1_4379098: 0
     - Vector1_790DC95F: 0.5
-    - Vector1_97d2ba679f1a45d1b8ea3db3ce14ecef: 16
+    - Vector1_97d2ba679f1a45d1b8ea3db3ce14ecef: 18
     - Vector1_A27CE783: 0.5
     - Vector1_BF19FA29: 0
     - _AlphaClip: 1

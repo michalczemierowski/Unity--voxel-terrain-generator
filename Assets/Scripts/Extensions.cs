@@ -14,7 +14,7 @@ namespace VoxelTG.Extensions
     {
         public static int ChunkIndexUp(this int index, int up)
         {
-            return index + up * FixedChunkSizeX;
+            return index + up * FixedChunkSizeXZ;
         }
 
         public static bool IsNullOrEmpty(this InventorySlot slot)

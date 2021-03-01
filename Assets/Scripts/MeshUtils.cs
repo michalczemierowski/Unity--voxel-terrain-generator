@@ -100,5 +100,16 @@ namespace VoxelTG
             mesh.uv = uv;
             mesh.RecalculateNormals();
         }
+
+        public static void ClearMeshOnDestroy(this MeshFilter meshFilter)
+        {
+            if (meshFilter == null)
+                return;
+
+            if (!meshFilter.gameObject.TryGetComponent(out ClearMeshOnDestroy clear))
+                clear = meshFilter.gameObject.AddComponent<ClearMeshOnDestroy>();
+
+            clear.TargetMeshFilter = meshFilter;
+        }
     }
 }
