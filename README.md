@@ -4,12 +4,13 @@ Unity Version: **2020.1.6f1**
 Features:
 * Procedurally generated terrain
 * Daylight cycle
+* Biomes with different grass colors
 * Terrain modification
 * Multithreading  
 * Saving/Loading terrain 
 * Items, tools, weapons
 * Menu, async scene loading
-* Toolbar system
+* Inventory system
 * Living entities (early stage of development)
 
 ## Screenshots:
