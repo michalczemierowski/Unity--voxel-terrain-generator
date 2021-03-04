@@ -6,7 +6,8 @@ Features:
 * Daylight cycle
 * Biomes with different grass colors
 * Terrain modification
-* Multithreading  
+* Multithreading
+* Loading assets using Unity Addressable Asset System
 * Saving/Loading terrain 
 * Items, tools, weapons
 * Menu, async scene loading
