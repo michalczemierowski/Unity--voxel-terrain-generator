@@ -1,3 +1,5 @@
+#if UNITY_EDITOR
+
 using UnityEditor;
 using UnityEditor.AnimatedValues;
 using UnityEngine;
@@ -70,3 +72,5 @@ namespace VoxelTG.CustomEditors
         }
     }
 }
+
+#endif

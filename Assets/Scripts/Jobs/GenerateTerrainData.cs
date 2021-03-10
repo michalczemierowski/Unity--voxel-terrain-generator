@@ -40,6 +40,28 @@ namespace VoxelTG.Jobs
             GenerateTrees();
         }
 
+        private float GetBiomeSimplex(int x, int z, float height)
+        {
+            float processedBiomeHeight = math.pow(height, 3);
+            float result = noise.GetSimplex(x * 4f, z * 4f) * processedBiomeHeight;
+            if (processedBiomeHeight > 2)
+            {
+                result = noise.GetSimplex(x * 4f, z * 4f) * processedBiomeHeight * processedBiomeHeight;
+
+                int sampleSize = 4;
+                for (int xx = -sampleSize / 2; xx < sampleSize / 2; xx++)
+                {
+                    for (int zz = -sampleSize / 2; zz < sampleSize / 2; zz++)
+                    {
+                        result += noise.GetSimplex(xx * 2f, zz * 2f) * processedBiomeHeight * processedBiomeHeight;
+                    }
+                }
+                result /= sampleSize * sampleSize;
+            }
+
+            return result;
+        }
+
         private void GenerateBlockTypes()
         {
             for (int x = 0; x < FixedChunkSizeXZ; x++)
@@ -56,11 +78,11 @@ namespace VoxelTG.Jobs
 
                     float simplex1 = (noise.GetSimplex(bix, biz) + 0.8f) / 2;
                     float simplex2 = (noise.GetSimplex(bix * 0.5f, biz * 0.5f) + 0.8f) / 2;
-                    float simplex3 = noise.GetSimplex(bix * 5f, biz * 5f) * (biomeHeight * biomeHeight);
+                    float simplex3 = GetBiomeSimplex(bix, biz, biomeHeight);
 
                     float heightMap = (simplex1 + simplex2) / 2 + (simplex3 * 0.05f);
                     heightMap += biomeHeight * 0.3f;
-                    int baseLandHeight = (int)math.round((ChunkSizeY * BaseLandHeightMultipler) + ((ChunkSizeY * BaseLandHeightMultipler) * heightMap));
+                    int baseLandHeight = (int)math.round(ChunkSizeY * BaseLandHeightMultipler * heightMap);
 
                     #endregion
 

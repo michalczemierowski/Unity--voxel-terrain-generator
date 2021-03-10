@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6970510941301651733}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: default_material
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -42,7 +42,7 @@ GameObject:
   - component: {fileID: 8247593709730318462}
   - component: {fileID: 6466232646551572687}
   - component: {fileID: 4946718782221655380}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: block_cube
   m_TagString: Untagged
   m_Icon: {fileID: 0}

@@ -32,7 +32,7 @@ namespace VoxelTG
         private void OnEnable()
         {
             World.OnTick += OnTick;
-            timeOffset = ticksInDay / 2;
+            timeOffset = ticksInDay / 4;
         }
 
         private void OnDisable()
@@ -42,9 +42,8 @@ namespace VoxelTG
 
         public void OnTick(int currentTick)
         {
-            // FIXME: time offset needs to be fixed
             // range <0; 1>
-            float time = (float)(currentTick % (ticksInDay + timeOffset)) / (ticksInDay + timeOffset);
+            float time = (currentTick + timeOffset) % (ticksInDay) / ticksInDay;
 
             // apply sun color and intesity
             directionalLight.intensity = sunIntensityCurve.Evaluate(time);

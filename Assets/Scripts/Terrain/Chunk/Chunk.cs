@@ -1009,32 +1009,46 @@ namespace VoxelTG.Terrain
         private Texture2D plantsTexture;
         public void CreateBiomeTexture()
         {
-            int upscaling = 2;
-            int size = FixedChunkSizeXZ * upscaling;
-            Color[] colors = new Color[size * size];
-            for (int x = 0; x < size; x++)
+            Color[] colors = new Color[FixedChunkSizeXZ * FixedChunkSizeXZ];
+            for (int x = 0; x < FixedChunkSizeXZ; x++)
             {
-                for (int y = 0; y < size; y++)
+                for (int y = 0; y < FixedChunkSizeXZ; y++)
                 {
-                    int _x = x / upscaling;
-                    int _y = y / upscaling;
-                    BiomeType biomeType = biomeTypes[Utils.BlockPosition2DtoIndex(_x, _y)];
-                    Color color = World.GetBiomeColor(biomeType);
-                    colors[y * size + x] = color;
+                    int samples = 0;
+                    float r = 0;
+                    float g = 0;
+                    float b = 0;
+                    // smoothing
+                    int smoothDistanceHalf = 2;
+                    for (int xx = x - smoothDistanceHalf; xx < x + smoothDistanceHalf; xx++)
+                    {
+                        for (int yy = y - smoothDistanceHalf; yy < y + smoothDistanceHalf; yy++)
+                        {
+                            if (xx < 0 || xx >= FixedChunkSizeXZ || yy < 0 || yy >= FixedChunkSizeXZ)
+                                continue;
+
+                            Color sampleColor = World.GetBiomeColor(biomeTypes[Utils.BlockPosition2DtoIndex(xx, yy)]);
+                            r += sampleColor.r;
+                            g += sampleColor.g;
+                            b += sampleColor.b;
+                            samples++;
+                        }
+                    }
+
+                    colors[y * FixedChunkSizeXZ + x] = new Color(r / samples, g / samples, b / samples); ;
                 }
             }
 
-            blocksTexture = CreateTexture(size, colors);
+            blocksTexture = CreateTexture(FixedChunkSizeXZ, ref colors);
             blockMeshFilter.GetComponent<MeshRenderer>().material.SetTexture("_BiomeTexture", blocksTexture);
 
-            plantsTexture = CreateTexture(size, colors);
+            plantsTexture = CreateTexture(FixedChunkSizeXZ, ref colors);
             plantsMeshFilter.GetComponent<MeshRenderer>().material.SetTexture("_BiomeTexture", plantsTexture);
         }
-
-        private Texture2D CreateTexture(int size, Color[] colors)
+        private Texture2D CreateTexture(int size, ref Color[] colors)
         {
             Texture2D result = new Texture2D(size, size, TextureFormat.RGB24, true);
-            result.filterMode = FilterMode.Trilinear;
+            result.filterMode = FilterMode.Bilinear;
             result.wrapMode = TextureWrapMode.Clamp;
             result.SetPixels(colors);
             result.Compress(false);

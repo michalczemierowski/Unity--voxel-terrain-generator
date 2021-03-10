@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 922990319733154611}
   - component: {fileID: 865429557006176614}
   - component: {fileID: 4555214727701642055}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: Particle System
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4886,7 +4886,7 @@ GameObject:
   - component: {fileID: 3008365793483220330}
   - component: {fileID: 786895035399378436}
   - component: {fileID: 2706910021976488516}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: default_weapon
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4993,7 +4993,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2355282771985752888}
   - component: {fileID: 3950483977848952048}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: Point Light
   m_TagString: Untagged
   m_Icon: {fileID: 0}

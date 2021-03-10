@@ -23,8 +23,8 @@ namespace VoxelTG
 
         public const int ChunkSizeXZ = 16;
         public const int ChunkSizeY = 256;
-        public const int WaterLevelY = 50;
-        public const float BaseLandHeightMultipler = 0.2f;
+        public const int WaterLevelY = 30;
+        public const float BaseLandHeightMultipler = 0.3f;
         public const int FixedChunkSizeXZ = ChunkSizeXZ + 2;
 
         public const int MaxTreesPerChunk = 10;
