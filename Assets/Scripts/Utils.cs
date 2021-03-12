@@ -141,7 +141,8 @@ namespace VoxelTG
 
         public static float RoundToDecimalPlace(float value, int place)
         {
-            return math.round(value * (math.pow(10, place))) / math.pow(10, place);
+            float pow = math.pow(10, place);
+            return math.round(value * pow) / pow;
         }
     }
 }

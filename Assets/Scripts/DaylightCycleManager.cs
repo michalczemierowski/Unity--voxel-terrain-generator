@@ -56,6 +56,7 @@ namespace VoxelTG
             directionalLight.enabled = isDay;
             directionalMoonLight.enabled = !isDay;
             
+            // TODO: lerp between procedural skybox
             if(isDay)
             {
                 RenderSettings.sun = directionalLight;

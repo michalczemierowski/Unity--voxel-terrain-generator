@@ -82,6 +82,8 @@ namespace VoxelTG.Terrain
         /// </summary>
         private bool isTerrainModified;
 
+        private Texture2D biomeColorsTexture;
+
         #endregion
 
         #endregion
@@ -106,12 +108,20 @@ namespace VoxelTG.Terrain
             plantsVerticles = new NativeList<float3>(4096, Allocator.Persistent);
             plantsTriangles = new NativeList<int>(8192, Allocator.Persistent);
             plantsUVs = new NativeList<float2>(4096, Allocator.Persistent);
-
+            
             chunkDissapearingAnimation = GetComponent<ChunkDissapearingAnimation>();
             chunkAnimation = GetComponent<ChunkAnimation>();
 
             World.TimeToBuild += BuildBlocks;
             StartCoroutine(CheckNeighbours());
+
+            if(biomeColorsTexture == null)
+            {
+                biomeColorsTexture = new Texture2D(FixedChunkSizeXZ, FixedChunkSizeXZ, TextureFormat.RGB24, true);
+                biomeColorsTexture.filterMode = FilterMode.Bilinear;
+                biomeColorsTexture.wrapMode = TextureWrapMode.Clamp;
+                biomeColorsTexture.Apply();
+            }
         }
 
         private void OnDisable()
@@ -155,6 +165,17 @@ namespace VoxelTG.Terrain
             plantsVerticles.Dispose();
             plantsTriangles.Dispose();
             plantsUVs.Dispose();
+
+            blocksToBuild.Clear();
+            parametersToAdd.Clear();
+
+            // clear meshes
+            blockMeshFilter.mesh.Clear();
+            liquidMeshFilter.mesh.Clear();
+            plantsMeshFilter.mesh.Clear();
+
+            // clear texture
+            Destroy(biomeColorsTexture);
         }
 
         private void OnApplicationQuit()
@@ -986,6 +1007,8 @@ namespace VoxelTG.Terrain
         /// </summary>
         private void SaveDataInWorldDictionary()
         {
+            return;
+
             if (isTerrainModified && blocks.IsCreated)
             {
                 // TODO: save parameters
@@ -1005,8 +1028,6 @@ namespace VoxelTG.Terrain
             }
         }
 
-        private Texture2D blocksTexture;
-        private Texture2D plantsTexture;
         public void CreateBiomeTexture()
         {
             Color[] colors = new Color[FixedChunkSizeXZ * FixedChunkSizeXZ];
@@ -1039,22 +1060,11 @@ namespace VoxelTG.Terrain
                 }
             }
 
-            blocksTexture = CreateTexture(FixedChunkSizeXZ, ref colors);
-            blockMeshFilter.GetComponent<MeshRenderer>().material.SetTexture("_BiomeTexture", blocksTexture);
+            biomeColorsTexture.SetPixels(colors);
+            biomeColorsTexture.Apply();
 
-            plantsTexture = CreateTexture(FixedChunkSizeXZ, ref colors);
-            plantsMeshFilter.GetComponent<MeshRenderer>().material.SetTexture("_BiomeTexture", plantsTexture);
-        }
-        private Texture2D CreateTexture(int size, ref Color[] colors)
-        {
-            Texture2D result = new Texture2D(size, size, TextureFormat.RGB24, true);
-            result.filterMode = FilterMode.Bilinear;
-            result.wrapMode = TextureWrapMode.Clamp;
-            result.SetPixels(colors);
-            result.Compress(false);
-            result.Apply();
-
-            return result;
+            blockMeshFilter.GetComponent<MeshRenderer>().material.SetTexture("_BiomeTexture", biomeColorsTexture);
+            plantsMeshFilter.GetComponent<MeshRenderer>().material.SetTexture("_BiomeTexture", biomeColorsTexture);
         }
     }
 }

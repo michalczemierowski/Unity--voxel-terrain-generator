@@ -10,11 +10,12 @@ Material:
   m_Name: plants_material
   m_Shader: {fileID: -6465566751694194690, guid: 71b4ef1c9f2bed745b6a60d76522be8a,
     type: 3}
-  m_ShaderKeywords: _ALPHATEST_ON
-  m_LightmapFlags: 2
+  m_ShaderKeywords: _ALPHATEST_ON _EMISSION _ENVIRONMENTREFLECTIONS_OFF _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
+    _SPECULAR_SETUP
+  m_LightmapFlags: 4
   m_EnableInstancingVariants: 1
-  m_DoubleSidedGI: 1
-  m_CustomRenderQueue: 2000
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
   stringTagMap: {}
   disabledShaderPasses: []
   m_SavedProperties:
@@ -114,8 +115,11 @@ Material:
     - _AlphaClip: 1
     - _Blend: 0
     - _BumpScale: 1
+    - _ClearCoatMask: 0
+    - _ClearCoatSmoothness: 0
     - _Cull: 0
     - _Cutoff: 0.25
+    - _DetailAlbedoMapScale: 1
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
     - _EnvironmentReflections: 0

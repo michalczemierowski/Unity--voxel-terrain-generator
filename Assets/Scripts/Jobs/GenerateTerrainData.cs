@@ -43,22 +43,20 @@ namespace VoxelTG.Jobs
         private float GetBiomeSimplex(int x, int z, float height)
         {
             float processedBiomeHeight = math.pow(height, 3);
-            float result = noise.GetSimplex(x * 4f, z * 4f) * processedBiomeHeight;
-            if (processedBiomeHeight > 2)
-            {
-                result = noise.GetSimplex(x * 4f, z * 4f) * processedBiomeHeight * processedBiomeHeight;
+            float strenght = math.abs(processedBiomeHeight) / 8f;
+            float result = math.abs(noise.GetSimplex(x, z)) * processedBiomeHeight * strenght;
 
-                int sampleSize = 4;
-                for (int xx = -sampleSize / 2; xx < sampleSize / 2; xx++)
+            float avg = 0;
+            for (int xx = -2; xx < 2; xx++)
+            {
+                for (int zz = -2; zz < 2; zz++)
                 {
-                    for (int zz = -sampleSize / 2; zz < sampleSize / 2; zz++)
-                    {
-                        result += noise.GetSimplex(xx * 2f, zz * 2f) * processedBiomeHeight * processedBiomeHeight;
-                    }
+                    avg += (noise.GetValueFractal(xx * 2f, zz * 2f) * processedBiomeHeight * height) * 0.5f;
                 }
-                result /= sampleSize * sampleSize;
             }
 
+            result = ((avg / 16f) + result) / 2f;
+            result += height + noise.GetSimplex(z * 6f, x * 6f) / (1f / height);
             return result;
         }
 
@@ -244,9 +242,9 @@ namespace VoxelTG.Jobs
                 else if (y <= baseLandHeight)
                 {
                     if (y == baseLandHeight && y > WaterLevelY - 1)
-                        blockType = WorldData.CanPlaceGrass(lastBlock) && random.NextFloat() < 0.05f ? BlockType.GRASS : BlockType.AIR;
+                        blockType = WorldData.CanPlaceGrass(lastBlock) && random.NextFloat() < 0.025f ? BlockType.GRASS : BlockType.AIR;
                     else if (y > baseLandHeight * 0.95)
-                        blockType = BlockType.DIRT;
+                        blockType = BlockType.GRASS_BLOCK;
                     else
                         blockType = BlockType.STONE;
                 }
@@ -270,6 +268,7 @@ namespace VoxelTG.Jobs
         {
             float caveMask = noise.GetSimplex(bix * 0.3f, biz * 0.3f) + 0.3f;
 
+            int height = (int)(ChunkSizeY * (0.6f + random.NextFloat(-0.05f, 0.05f)));
             BlockType lastBlock = BlockType.AIR;
             for (int y = 0; y < ChunkSizeY; y++)
             {
@@ -284,10 +283,15 @@ namespace VoxelTG.Jobs
                 {
                     if (y == baseLandHeight && y > WaterLevelY - 1)
                         blockType = WorldData.CanPlaceGrass(lastBlock) && random.NextFloat() < 0.1f ? BlockType.GRASS : BlockType.AIR;
-                    else if (y == baseLandHeight - 1 && y > WaterLevelY - 1)
-                        blockType = BlockType.STONE;
                     else
-                        blockType = BlockType.STONE;
+                    {
+                        if (y == baseLandHeight - 1 && y < height)
+                            blockType = BlockType.GRASS_BLOCK;
+                        else if (y > baseLandHeight - 5 && y < height)
+                            blockType = BlockType.DIRT;
+                        else
+                            blockType = BlockType.STONE;
+                    }
                 }
 
                 if (y >= baseLandHeight && y <= WaterLevelY)
@@ -318,7 +322,7 @@ namespace VoxelTG.Jobs
                     blockType = BlockType.AIR;
                 else if (y < baseLandHeight && caveNoise > math.max(caveMask, 0.2f) * 0.9f)
                     blockType = BlockType.COBBLESTONE;
-                else if (y <= baseLandHeight)
+                else if (y < baseLandHeight)
                 {
                     if (y > baseLandHeight * 0.95)
                         blockType = BlockType.SAND;
