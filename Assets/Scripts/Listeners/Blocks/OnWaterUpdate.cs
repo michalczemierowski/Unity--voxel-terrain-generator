@@ -57,7 +57,7 @@ namespace VoxelTG.Blocks.Listeners
 
                     if (sourceDistance > 0)
                     {
-                        if (type == BlockType.AIR || WorldData.GetBlockState(type) == BlockState.PLANTS)
+                        if (type == BlockType.AIR || WorldData.GetBlockState(type) == BlockState.LIQUID_DESTROYABLE)
                         {
                             chunk.AddParameterToList(param, (short)(sourceDistance - 1));
                             chunk.AddBlockToBuildList(new BlockData(BlockType.WATER, blockUpdateEventData.LocalPosition));
@@ -77,7 +77,7 @@ namespace VoxelTG.Blocks.Listeners
                 }
             }
             // if block below is AIR or WATER or PLANTS, replace block with full WATER block
-            else if (belowBlock == BlockType.AIR || belowBlock == BlockType.WATER || WorldData.GetBlockState(belowBlock) == BlockState.PLANTS)
+            else if (belowBlock == BlockType.AIR || belowBlock == BlockType.WATER || WorldData.GetBlockState(belowBlock) == BlockState.LIQUID_DESTROYABLE)
             {
                 data.chunk.AddParameterToList(new BlockParameter(neighbours[BlockFace.BOTTOM].LocalPosition, ParameterType.WATER_SOURCE_DISTANCE), 8);
                 data.chunk.AddBlockToBuildList(new BlockData(BlockType.WATER, neighbours[BlockFace.BOTTOM].LocalPosition));

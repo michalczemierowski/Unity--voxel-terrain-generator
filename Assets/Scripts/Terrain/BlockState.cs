@@ -9,6 +9,6 @@ namespace VoxelTG.Terrain
         LIQUID,
         SOLID,
         TRANSPARENT,
-        PLANTS
+        LIQUID_DESTROYABLE
     }
 }

@@ -251,7 +251,18 @@ namespace VoxelTG.Terrain
                 random = new Unity.Mathematics.Random((uint)(xPos * 10000 + zPos + 1000))
             };
 
-            JobHandle handle = CreateMeshDataJob().Schedule(generateTerrainData.Schedule());
+            NativeArray<bool> rebuild = new NativeArray<bool>(5, Allocator.TempJob);
+            SimulateWaterJob simulateWater = new SimulateWaterJob()
+            {
+                blocks = blocks,
+                blockParameters = blockParameters,
+                needsRebuild = rebuild,
+                maxStepsPerFrame = 100
+            };
+
+            JobHandle generationHandle = generateTerrainData.Schedule();
+            JobHandle waterHandle = simulateWater.Schedule(generationHandle);
+            JobHandle handle = CreateMeshDataJob().Schedule(waterHandle);
             jobHandles.Enqueue(handle);
         }
 

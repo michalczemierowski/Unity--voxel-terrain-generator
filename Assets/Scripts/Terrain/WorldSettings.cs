@@ -24,6 +24,7 @@ namespace VoxelTG
         public const int ChunkSizeXZ = 16;
         public const int ChunkSizeY = 256;
         public const int WaterLevelY = 30;
+        public const short WaterSourceMax = 8;
         public const float BaseLandHeightMultipler = 0.3f;
         public const int FixedChunkSizeXZ = ChunkSizeXZ + 2;
 

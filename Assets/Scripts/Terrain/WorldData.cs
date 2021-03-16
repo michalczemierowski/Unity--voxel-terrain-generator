@@ -71,7 +71,7 @@ namespace VoxelTG.Terrain
 
         // plants
         public static readonly BlockStructure GRASS
-            = new BlockStructure(BlockType.GRASS, TextureTile.GRASS_0, TextureTile.GRASS_1, TextureTile.GRASS_2, BlockShape.GRASS, BlockState.PLANTS);
+            = new BlockStructure(BlockType.GRASS, TextureTile.GRASS_0, TextureTile.GRASS_1, TextureTile.GRASS_2, BlockShape.GRASS, BlockState.LIQUID_DESTROYABLE);
 
         #endregion
 
@@ -164,7 +164,7 @@ namespace VoxelTG.Terrain
                 case BlockType.JUNGLE_LEAVES:
                     return BlockState.TRANSPARENT;
                 case BlockType.GRASS:
-                    return BlockState.PLANTS;
+                    return BlockState.LIQUID_DESTROYABLE;
                 case BlockType.WATER:
                     return BlockState.LIQUID;
                 default:
