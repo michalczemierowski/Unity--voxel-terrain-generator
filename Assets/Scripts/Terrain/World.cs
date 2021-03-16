@@ -591,6 +591,11 @@ namespace VoxelTG
             return Instance.biomeColors.GetBiomeColor(biomeType);
         }
 
+        public static Color[] GetBiomeColors()
+        {
+            return Instance.biomeColors.GetBiomeColors();
+        }
+
         #endregion
 
         #region // === Ticks === \\

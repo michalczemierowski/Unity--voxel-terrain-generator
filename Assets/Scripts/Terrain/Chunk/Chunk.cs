@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Jobs;
@@ -36,12 +37,17 @@ namespace VoxelTG.Terrain
         public MeshFilter BlockMeshFilter => blockMeshFilter;
         public MeshCollider BlockMeshCollider => blockMeshCollider;
 
-        public Chunk[] neigbourChunks = new Chunk[0]; // +x, -x, +z, -z
+        /// <summary>
+        /// +x, -x, +z, -z
+        /// </summary>
+        public Chunk[] NeighbourChunks { get; private set; } = new Chunk[4];
 
         /// <summary>
         /// Array containing chunk block structure [x,y,z]
         /// </summary>
         public NativeArray<BlockType> blocks;
+
+        public NativeArray<int> lightingData;
 
         /// <summary>
         /// Chunk position in World space
@@ -56,6 +62,8 @@ namespace VoxelTG.Terrain
         /// Array containing information about biomes [x,z]
         /// </summary>
         private NativeArray<BiomeType> biomeTypes;
+
+        private ComputeBuffer lightingBuffer;
 
         private ChunkDissapearingAnimation chunkDissapearingAnimation;
         private ChunkAnimation chunkAnimation;
@@ -94,6 +102,7 @@ namespace VoxelTG.Terrain
         {
             // init native containers
             blocks = new NativeArray<BlockType>(FixedChunkSizeXZ * ChunkSizeY * FixedChunkSizeXZ, Allocator.Persistent);
+            lightingData = new NativeArray<int>(FixedChunkSizeXZ * ChunkSizeY * FixedChunkSizeXZ, Allocator.Persistent);
             biomeTypes = new NativeArray<BiomeType>(FixedChunkSizeXZ * FixedChunkSizeXZ, Allocator.Persistent);
             blockParameters = new NativeHashMap<BlockParameter, short>(2048, Allocator.Persistent);
 
@@ -108,20 +117,29 @@ namespace VoxelTG.Terrain
             plantsVerticles = new NativeList<float3>(4096, Allocator.Persistent);
             plantsTriangles = new NativeList<int>(8192, Allocator.Persistent);
             plantsUVs = new NativeList<float2>(4096, Allocator.Persistent);
-            
+
             chunkDissapearingAnimation = GetComponent<ChunkDissapearingAnimation>();
             chunkAnimation = GetComponent<ChunkAnimation>();
 
             World.TimeToBuild += BuildBlocks;
             StartCoroutine(CheckNeighbours());
 
-            if(biomeColorsTexture == null)
+            if (biomeColorsTexture == null)
             {
                 biomeColorsTexture = new Texture2D(FixedChunkSizeXZ, FixedChunkSizeXZ, TextureFormat.RGB24, true);
                 biomeColorsTexture.filterMode = FilterMode.Bilinear;
                 biomeColorsTexture.wrapMode = TextureWrapMode.Clamp;
                 biomeColorsTexture.Apply();
             }
+
+            lightingBuffer = new ComputeBuffer(FixedChunkSizeXZ * ChunkSizeY * FixedChunkSizeXZ, sizeof(int), ComputeBufferType.Default);
+            var mr = blockMeshFilter.GetComponent<MeshRenderer>();
+            mr.material.SetBuffer("lightData", lightingBuffer);
+        }
+
+        public void UpdateLightBuffer()
+        {
+            lightingBuffer.SetData(lightingData);
         }
 
         private void OnDisable()
@@ -151,6 +169,7 @@ namespace VoxelTG.Terrain
 
             // dispose native containers
             blocks.Dispose();
+            lightingData.Dispose();
             biomeTypes.Dispose();
             blockParameters.Dispose();
 
@@ -189,7 +208,7 @@ namespace VoxelTG.Terrain
         {
             yield return new WaitForEndOfFrame();
 
-            neigbourChunks = new Chunk[]
+            NeighbourChunks = new Chunk[]
             {
                 World.GetChunk(ChunkPosition.x + ChunkSizeXZ, ChunkPosition.y),
                 World.GetChunk(ChunkPosition.x - ChunkSizeXZ, ChunkPosition.y),
@@ -198,14 +217,19 @@ namespace VoxelTG.Terrain
             };
 
 
-            if (neigbourChunks[0] && neigbourChunks[0].neigbourChunks.Length > 0)
-                neigbourChunks[0].neigbourChunks[1] = this;
-            if (neigbourChunks[1] && neigbourChunks[1].neigbourChunks.Length > 0)
-                neigbourChunks[1].neigbourChunks[0] = this;
-            if (neigbourChunks[2] && neigbourChunks[2].neigbourChunks.Length > 0)
-                neigbourChunks[2].neigbourChunks[3] = this;
-            if (neigbourChunks[3] && neigbourChunks[3].neigbourChunks.Length > 0)
-                neigbourChunks[3].neigbourChunks[2] = this;
+            if (NeighbourChunks[0] && NeighbourChunks[0].NeighbourChunks.Length > 0)
+                NeighbourChunks[0].SetNeighbour(1, this);
+            if (NeighbourChunks[1] && NeighbourChunks[1].NeighbourChunks.Length > 0)
+                NeighbourChunks[1].SetNeighbour(0, this);
+            if (NeighbourChunks[2] && NeighbourChunks[2].NeighbourChunks.Length > 0)
+                NeighbourChunks[2].SetNeighbour(3, this);
+            if (NeighbourChunks[3] && NeighbourChunks[3].NeighbourChunks.Length > 0)
+                NeighbourChunks[3].SetNeighbour(2, this);
+        }
+
+        private void SetNeighbour(int index, Chunk neighbour)
+        {
+            NeighbourChunks[index] = neighbour;
         }
 
         #region // === Mesh methods === \\
@@ -227,26 +251,7 @@ namespace VoxelTG.Terrain
                 random = new Unity.Mathematics.Random((uint)(xPos * 10000 + zPos + 1000))
             };
 
-            CreateMeshData createMeshData = new CreateMeshData
-            {
-                blockData = blocks,
-                biomeTypes = biomeTypes,
-                blockParameters = blockParameters,
-
-                blockVerticles = blockVerticles,
-                blockTriangles = blockTriangles,
-                blockUVs = blockUVs,
-
-                liquidVerticles = liquidVerticles,
-                liquidTriangles = liquidTriangles,
-                liquidUVs = liquidUVs,
-
-                plantsVerticles = plantsVerticles,
-                plantsTriangles = plantsTriangles,
-                plantsUVs = plantsUVs
-            };
-
-            JobHandle handle = createMeshData.Schedule(generateTerrainData.Schedule());
+            JobHandle handle = CreateMeshDataJob().Schedule(generateTerrainData.Schedule());
             jobHandles.Enqueue(handle);
         }
 
@@ -255,26 +260,7 @@ namespace VoxelTG.Terrain
         /// </summary>
         public void BuildMesh(NativeQueue<JobHandle> jobHandles)
         {
-            CreateMeshData createMeshData = new CreateMeshData
-            {
-                blockData = blocks,
-                biomeTypes = biomeTypes,
-                blockParameters = blockParameters,
-
-                blockVerticles = blockVerticles,
-                blockTriangles = blockTriangles,
-                blockUVs = blockUVs,
-
-                liquidVerticles = liquidVerticles,
-                liquidTriangles = liquidTriangles,
-                liquidUVs = liquidUVs,
-
-                plantsVerticles = plantsVerticles,
-                plantsTriangles = plantsTriangles,
-                plantsUVs = plantsUVs
-            };
-
-            JobHandle handle = createMeshData.Schedule();
+            JobHandle handle = CreateMeshDataJob().Schedule();
             jobHandles.Enqueue(handle);
         }
 
@@ -283,27 +269,29 @@ namespace VoxelTG.Terrain
         /// </summary>
         public void BuildMesh(List<JobHandle> jobHandles)
         {
+            JobHandle handle = CreateMeshDataJob().Schedule();
+            jobHandles.Add(handle);
+        }
+
+        private CreateMeshData CreateMeshDataJob()
+        {
             CreateMeshData createMeshData = new CreateMeshData
             {
-                blockData = blocks,
+                blocks = blocks,
                 biomeTypes = biomeTypes,
                 blockParameters = blockParameters,
 
                 blockVerticles = blockVerticles,
                 blockTriangles = blockTriangles,
                 blockUVs = blockUVs,
-
                 liquidVerticles = liquidVerticles,
                 liquidTriangles = liquidTriangles,
                 liquidUVs = liquidUVs,
-
                 plantsVerticles = plantsVerticles,
                 plantsTriangles = plantsTriangles,
                 plantsUVs = plantsUVs
             };
-
-            JobHandle handle = createMeshData.Schedule();
-            jobHandles.Add(handle);
+            return createMeshData;
         }
 
         /// <summary>
@@ -428,7 +416,7 @@ namespace VoxelTG.Terrain
             // check neighbours
             if (blockPos.x == 16)
             {
-                Chunk chunk = neigbourChunks[0];
+                Chunk chunk = NeighbourChunks[0];
                 if (chunk)
                 {
                     BlockParameter neighbourParameter = parameter;
@@ -442,7 +430,7 @@ namespace VoxelTG.Terrain
             }
             else if (blockPos.x == 1)
             {
-                Chunk chunk = neigbourChunks[1];
+                Chunk chunk = NeighbourChunks[1];
                 if (chunk)
                 {
                     BlockParameter neighbourParameter = parameter;
@@ -457,7 +445,7 @@ namespace VoxelTG.Terrain
 
             if (blockPos.z == 16)
             {
-                Chunk chunk = neigbourChunks[2];
+                Chunk chunk = NeighbourChunks[2];
                 if (chunk)
                 {
                     BlockParameter neighbourParameter = parameter;
@@ -471,7 +459,7 @@ namespace VoxelTG.Terrain
             }
             else if (blockPos.z == 1)
             {
-                Chunk chunk = neigbourChunks[3];
+                Chunk chunk = NeighbourChunks[3];
                 if (chunk)
                 {
                     BlockParameter neighbourParameter = parameter;
@@ -533,7 +521,7 @@ namespace VoxelTG.Terrain
             // check neighbours
             if (blockPos.x == 16)
             {
-                Chunk chunk = neigbourChunks[0];
+                Chunk chunk = NeighbourChunks[0];
                 if (chunk)
                 {
                     BlockParameter neighbourKey = new BlockParameter(new int3(0, blockPos.y, blockPos.z));
@@ -543,7 +531,7 @@ namespace VoxelTG.Terrain
             }
             else if (blockPos.x == 1)
             {
-                Chunk chunk = neigbourChunks[1];
+                Chunk chunk = NeighbourChunks[1];
                 if (chunk)
                 {
                     BlockParameter neighbourKey = new BlockParameter(new int3(17, blockPos.y, blockPos.z));
@@ -554,7 +542,7 @@ namespace VoxelTG.Terrain
 
             if (blockPos.z == 16)
             {
-                Chunk chunk = neigbourChunks[2];
+                Chunk chunk = NeighbourChunks[2];
                 if (chunk)
                 {
                     BlockParameter neighbourKey = new BlockParameter(new int3(blockPos.x, blockPos.y, 0));
@@ -564,7 +552,7 @@ namespace VoxelTG.Terrain
             }
             else if (blockPos.z == 1)
             {
-                Chunk chunk = neigbourChunks[3];
+                Chunk chunk = NeighbourChunks[3];
                 if (chunk)
                 {
                     BlockParameter neighbourKey = new BlockParameter(new int3(blockPos.x, blockPos.y, 17));
@@ -641,7 +629,6 @@ namespace VoxelTG.Terrain
         private void SetBlockWithoutRebuild(BlockPosition blockPosition, BlockType blockType, SetBlockSettings blockSettings)
         {
             //if (!Utils.IsPositionInChunkBounds(blockPosition)) return;
-
             BlockType currentBlock = GetBlock(blockPosition);
 
             if (blockSettings.callDestroyEvent)
@@ -715,7 +702,7 @@ namespace VoxelTG.Terrain
             // check neighbours
             if (blockPosition.x == 16)
             {
-                Chunk neighbourChunk = neigbourChunks[0];
+                Chunk neighbourChunk = NeighbourChunks[0];
                 if (neighbourChunk)
                 {
                     neighbourChunk.blocks[Utils.BlockPosition3DtoIndex(0, blockPosition.y, blockPosition.z)] = blockType;
@@ -726,7 +713,7 @@ namespace VoxelTG.Terrain
             }
             else if (blockPosition.x == 1)
             {
-                Chunk neighbourChunk = neigbourChunks[1];
+                Chunk neighbourChunk = NeighbourChunks[1];
                 if (neighbourChunk)
                 {
                     neighbourChunk.blocks[Utils.BlockPosition3DtoIndex(17, blockPosition.y, blockPosition.z)] = blockType;
@@ -738,7 +725,7 @@ namespace VoxelTG.Terrain
 
             if (blockPosition.z == 16)
             {
-                Chunk neighbourChunk = neigbourChunks[2];
+                Chunk neighbourChunk = NeighbourChunks[2];
                 if (neighbourChunk)
                 {
                     neighbourChunk.blocks[Utils.BlockPosition3DtoIndex(blockPosition.x, blockPosition.y, 0)] = blockType;
@@ -749,7 +736,7 @@ namespace VoxelTG.Terrain
             }
             else if (blockPosition.z == 1)
             {
-                Chunk neighbourChunk = neigbourChunks[3];
+                Chunk neighbourChunk = NeighbourChunks[3];
                 if (neighbourChunk)
                 {
                     neighbourChunk.blocks[Utils.BlockPosition3DtoIndex(blockPosition.x, blockPosition.y, 17)] = blockType;
@@ -798,7 +785,7 @@ namespace VoxelTG.Terrain
                 // check neighbours
                 if (blockPosition.x == 16)
                 {
-                    Chunk neighbourChunk = neigbourChunks[0];
+                    Chunk neighbourChunk = NeighbourChunks[0];
                     if (neighbourChunk)
                     {
                         neighbourChunk.blocks[Utils.BlockPosition3DtoIndex(0, blockPosition.y, blockPosition.z)] = blockType;
@@ -808,7 +795,7 @@ namespace VoxelTG.Terrain
                 }
                 else if (blockPosition.x == 1)
                 {
-                    Chunk neighbourChunk = neigbourChunks[1];
+                    Chunk neighbourChunk = NeighbourChunks[1];
                     if (neighbourChunk)
                     {
                         neighbourChunk.blocks[Utils.BlockPosition3DtoIndex(17, blockPosition.y, blockPosition.z)] = blockType;
@@ -819,7 +806,7 @@ namespace VoxelTG.Terrain
 
                 if (blockPosition.z == 16)
                 {
-                    Chunk neighbourChunk = neigbourChunks[2];
+                    Chunk neighbourChunk = NeighbourChunks[2];
                     if (neighbourChunk)
                     {
                         neighbourChunk.blocks[Utils.BlockPosition3DtoIndex(blockPosition.x, blockPosition.y, 0)] = blockType;
@@ -829,7 +816,7 @@ namespace VoxelTG.Terrain
                 }
                 else if (blockPosition.z == 1)
                 {
-                    Chunk neighbourChunk = neigbourChunks[3];
+                    Chunk neighbourChunk = NeighbourChunks[3];
                     if (neighbourChunk)
                     {
                         neighbourChunk.blocks[Utils.BlockPosition3DtoIndex(blockPosition.x, blockPosition.y, 17)] = blockType;
@@ -849,7 +836,7 @@ namespace VoxelTG.Terrain
             {
                 if (neighboursToBuild[j])
                 {
-                    Chunk tc = neigbourChunks[j];
+                    Chunk tc = NeighbourChunks[j];
                     tc.BuildMesh(jobHandles);
                     chunksToBuild.Add(tc);
                 }
@@ -900,7 +887,7 @@ namespace VoxelTG.Terrain
             };
             for (int i = 0; i < 6; i++)
             {
-                Chunk chunk = neighbours[i] < 0 ? this : neigbourChunks[neighbours[i]];
+                Chunk chunk = neighbours[i] < 0 ? this : NeighbourChunks[neighbours[i]];
                 World.ScheduleUpdate(chunk, positions[i], ticks);
             }
         }
@@ -937,7 +924,7 @@ namespace VoxelTG.Terrain
 
             for (int i = 0; i < 4; i++)
             {
-                Chunk chunk = neighbours[i] < 0 ? this : neigbourChunks[neighbours[i]] == null ? this : neigbourChunks[neighbours[i]];
+                Chunk chunk = neighbours[i] < 0 ? this : NeighbourChunks[neighbours[i]] == null ? this : NeighbourChunks[neighbours[i]];
                 BlockPosition blockPos = sideBlocks[i];
                 neighbourBlocks.Add((BlockFace)i + 2, new BlockEventData(chunk, blockPos, chunk.GetBlock(blockPos)));
             }
@@ -1030,41 +1017,31 @@ namespace VoxelTG.Terrain
 
         public void CreateBiomeTexture()
         {
-            Color[] colors = new Color[FixedChunkSizeXZ * FixedChunkSizeXZ];
-            for (int x = 0; x < FixedChunkSizeXZ; x++)
+            StartCoroutine(nameof(ColorDataCoroutine));
+        }
+
+        private IEnumerator ColorDataCoroutine()
+        {
+            NativeArray<Color> biomeColors = new NativeArray<Color>(World.GetBiomeColors(), Allocator.TempJob);
+            NativeArray<Color> colors = new NativeArray<Color>(FixedChunkSizeXZ * FixedChunkSizeXZ, Allocator.TempJob);
+            CreateBiomeColorData job = new CreateBiomeColorData()
             {
-                for (int y = 0; y < FixedChunkSizeXZ; y++)
-                {
-                    int samples = 0;
-                    float r = 0;
-                    float g = 0;
-                    float b = 0;
-                    // smoothing
-                    int smoothDistanceHalf = 2;
-                    for (int xx = x - smoothDistanceHalf; xx < x + smoothDistanceHalf; xx++)
-                    {
-                        for (int yy = y - smoothDistanceHalf; yy < y + smoothDistanceHalf; yy++)
-                        {
-                            if (xx < 0 || xx >= FixedChunkSizeXZ || yy < 0 || yy >= FixedChunkSizeXZ)
-                                continue;
+                biomeColors = biomeColors,
+                biomes = biomeTypes,
+                colors = colors
+            };
 
-                            Color sampleColor = World.GetBiomeColor(biomeTypes[Utils.BlockPosition2DtoIndex(xx, yy)]);
-                            r += sampleColor.r;
-                            g += sampleColor.g;
-                            b += sampleColor.b;
-                            samples++;
-                        }
-                    }
+            JobHandle handle = job.Schedule();
+            yield return new WaitUntil(() => handle.IsCompleted);
+            handle.Complete();
 
-                    colors[y * FixedChunkSizeXZ + x] = new Color(r / samples, g / samples, b / samples); ;
-                }
-            }
-
-            biomeColorsTexture.SetPixels(colors);
+            biomeColorsTexture.SetPixels(colors.ToArray());
             biomeColorsTexture.Apply();
-
             blockMeshFilter.GetComponent<MeshRenderer>().material.SetTexture("_BiomeTexture", biomeColorsTexture);
             plantsMeshFilter.GetComponent<MeshRenderer>().material.SetTexture("_BiomeTexture", biomeColorsTexture);
+
+            biomeColors.Dispose();
+            colors.Dispose();
         }
     }
 }

@@ -537,6 +537,7 @@ namespace VoxelTG.Jobs
             index = Utils.BlockPosition3DtoIndex(x, y, z);
             return blockData[index] == type;
         }
+
         #endregion
     }
 }

@@ -21,5 +21,10 @@ namespace VoxelTG.Config
 
             return Color.magenta;
         }
+
+        public Color[] GetBiomeColors()
+        {
+            return biomeColors;
+        }
     }
 }

@@ -23,7 +23,7 @@ namespace VoxelTG
         
         [SerializeField] private int maxChunksToBuildAtOnce = 1000;
 
-        void Awake()
+        private void Awake()
         {
             // Singleton
             if (Instance)
