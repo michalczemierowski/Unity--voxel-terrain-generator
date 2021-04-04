@@ -121,16 +121,16 @@ namespace VoxelTG.Player
             int z = _currentPosition.z;
 
             if (!currentChunk ||
-                x - currentChunk.ChunkPosition.x > WorldSettings.ChunkSizeXZ ||
-                x - currentChunk.ChunkPosition.x < 1 ||
-                z - currentChunk.ChunkPosition.y > WorldSettings.ChunkSizeXZ ||
-                z - currentChunk.ChunkPosition.y < 1)
+                Mathf.Abs(x - currentChunk.ChunkPosition.x) > WorldSettings.ChunkSizeXZ ||
+                Mathf.Abs(x - currentChunk.ChunkPosition.x) < 1 ||
+                Mathf.Abs(z - currentChunk.ChunkPosition.y) > WorldSettings.ChunkSizeXZ ||
+                Mathf.Abs(z - currentChunk.ChunkPosition.y) < 1)
             {
                 currentChunk = World.GetChunk(x, z);
             }
 
-            int bix = x - currentChunk.ChunkPosition.x;
-            int biz = z - currentChunk.ChunkPosition.y;
+            int bix = Mathf.Abs(x - currentChunk.ChunkPosition.x);
+            int biz = Mathf.Abs(z - currentChunk.ChunkPosition.y);
 
             string positionString = $"[ x:{x}, y:{y}, z:{z} ]";
 

@@ -926,7 +926,7 @@ MonoBehaviour:
   droppedItemsManager: {fileID: 540358585}
   particleManager: {fileID: 1219614192}
   ticksPerSecond: 20
-  buildChecksPerSecond: 10
+  buildChecksPerSecond: 30
   chunkPrefab: {fileID: 6546764858940181633, guid: 5ce7861e514decf459c0596a9a9e7c6c,
     type: 3}
   biomeColors: {fileID: 11400000, guid: dfd098691be87d14aa944892aa09f92e, type: 2}
@@ -3790,7 +3790,6 @@ GameObject:
   - component: {fileID: 893433598}
   - component: {fileID: 893433597}
   - component: {fileID: 893433596}
-  - component: {fileID: 893433595}
   m_Layer: 0
   m_Name: '- update'
   m_TagString: Untagged
@@ -3812,18 +3811,6 @@ Transform:
   m_Father: {fileID: 158837451}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &893433595
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 893433593}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cfcd9fdf03262d543be6826047fb676f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &893433596
 MonoBehaviour:
   m_ObjectHideFlags: 0

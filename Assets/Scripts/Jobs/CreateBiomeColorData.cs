@@ -24,7 +24,7 @@ namespace VoxelTG.Jobs
         public void Execute()
         {
             // smoothing
-            const int smoothDistanceHalf = 2;
+            const int smoothDistanceHalf = 1;
 
             for (int x = 0; x < FixedChunkSizeXZ; x++)
             {

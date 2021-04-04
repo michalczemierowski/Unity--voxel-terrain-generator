@@ -12,25 +12,25 @@ using VoxelTG.Terrain.Blocks;
 namespace VoxelTG.Jobs
 {
     [BurstCompile]
-    public struct CreateMeshData : IJob
+    public struct CreateMeshDataJob : IJob
     {
         #region /= Variables
 
         [ReadOnly] public NativeArray<BlockType> blocks;
         [ReadOnly] public NativeArray<BiomeType> biomeTypes;
-        public NativeHashMap<BlockParameter, short> blockParameters;
+        [ReadOnly] public NativeHashMap<BlockParameter, short> blockParameters;
 
-        public NativeList<float3> blockVerticles;
-        public NativeList<int> blockTriangles;
-        public NativeList<float2> blockUVs;
+        [WriteOnly] public NativeList<float3> blockVerticles;
+        [WriteOnly] public NativeList<int> blockTriangles;
+        [WriteOnly] public NativeList<float2> blockUVs;
 
-        public NativeList<float3> liquidVerticles;
-        public NativeList<int> liquidTriangles;
-        public NativeList<float2> liquidUVs;
+        [WriteOnly] public NativeList<float3> liquidVerticles;
+        [WriteOnly] public NativeList<int> liquidTriangles;
+        [WriteOnly] public NativeList<float2> liquidUVs;
 
-        public NativeList<float3> plantsVerticles;
-        public NativeList<int> plantsTriangles;
-        public NativeList<float2> plantsUVs;
+        [WriteOnly] public NativeList<float3> plantsVerticles;
+        [WriteOnly] public NativeList<int> plantsTriangles;
+        [WriteOnly] public NativeList<float2> plantsUVs;
 
         #endregion
 
@@ -51,7 +51,7 @@ namespace VoxelTG.Jobs
                 {
                     for (int y = 0; y < WorldSettings.ChunkSizeY; y++)
                     {
-                        BlockType blockType = blocks[Utils.BlockPosition3DtoIndex(x, y, z)];
+                        BlockType blockType = blocks[BlockPosition3DtoIndex(x, y, z)];
 
                         if (blockType != BlockType.AIR)
                         {
@@ -76,7 +76,7 @@ namespace VoxelTG.Jobs
                                     tris = liquidTriangles;
 
                                     // set to full by default to not save full blocks in game saves
-                                    if (!blockParameters.TryGetValue(new BlockParameter(new int3(x, y, z), ParameterType.WATER_SOURCE_DISTANCE), out param))
+                                    if (!blockParameters.TryGetValue(new BlockParameter(new int3(x, y, z), ParameterType.LIQUID_SOURCE_DISTANCE), out param))
                                         param = 8;
 
                                     BlockstateLiquid(drawFace, x, y, z);
@@ -109,10 +109,10 @@ namespace VoxelTG.Jobs
                                     {
                                         short value;
                                         // R L F B
-                                        nearbyLiquidSourceDistance[0] = blockParameters.TryGetValue(new BlockParameter(new int3(x + 1, y, z), ParameterType.WATER_SOURCE_DISTANCE), out value) ? value : (short)0;
-                                        nearbyLiquidSourceDistance[1] = blockParameters.TryGetValue(new BlockParameter(new int3(x - 1, y, z), ParameterType.WATER_SOURCE_DISTANCE), out value) ? value : (short)0;
-                                        nearbyLiquidSourceDistance[2] = blockParameters.TryGetValue(new BlockParameter(new int3(x, y, z + 1), ParameterType.WATER_SOURCE_DISTANCE), out value) ? value : (short)0;
-                                        nearbyLiquidSourceDistance[3] = blockParameters.TryGetValue(new BlockParameter(new int3(x, y, z - 1), ParameterType.WATER_SOURCE_DISTANCE), out value) ? value : (short)0;
+                                        nearbyLiquidSourceDistance[0] = blockParameters.TryGetValue(new BlockParameter(new int3(x + 1, y, z), ParameterType.LIQUID_SOURCE_DISTANCE), out value) ? value : (short)0;
+                                        nearbyLiquidSourceDistance[1] = blockParameters.TryGetValue(new BlockParameter(new int3(x - 1, y, z), ParameterType.LIQUID_SOURCE_DISTANCE), out value) ? value : (short)0;
+                                        nearbyLiquidSourceDistance[2] = blockParameters.TryGetValue(new BlockParameter(new int3(x, y, z + 1), ParameterType.LIQUID_SOURCE_DISTANCE), out value) ? value : (short)0;
+                                        nearbyLiquidSourceDistance[3] = blockParameters.TryGetValue(new BlockParameter(new int3(x, y, z - 1), ParameterType.LIQUID_SOURCE_DISTANCE), out value) ? value : (short)0;
 
                                         bool reverse = block.GetWaterShape((BlockFace)i, blockPos, verts, uv, param, nearbyLiquidSourceDistance);
                                         verticles.AddRange(verts);
@@ -179,28 +179,28 @@ namespace VoxelTG.Jobs
         private void BlockstateSolid(NativeArray<bool> sides, int x, int y, int z)
         {
             sides[0] = y == WorldSettings.ChunkSizeY - 1 ||
-                WorldData.GetBlockState(blocks[Utils.BlockPosition3DtoIndex(x, y + 1, z)],
+                WorldData.GetBlockState(blocks[BlockPosition3DtoIndex(x, y + 1, z)],
                 BlockFace.BOTTOM
             ) != BlockState.SOLID;
 
             sides[1] = y > 0 &&
-                WorldData.GetBlockState(blocks[Utils.BlockPosition3DtoIndex(x, y - 1, z)],
+                WorldData.GetBlockState(blocks[BlockPosition3DtoIndex(x, y - 1, z)],
                 BlockFace.TOP
             ) != BlockState.SOLID;
 
-            sides[2] = WorldData.GetBlockState(blocks[Utils.BlockPosition3DtoIndex(x, y, z - 1)],
+            sides[2] = WorldData.GetBlockState(blocks[BlockPosition3DtoIndex(x, y, z - 1)],
                 BlockFace.BACK
             ) != BlockState.SOLID;
 
-            sides[5] = WorldData.GetBlockState(blocks[Utils.BlockPosition3DtoIndex(x + 1, y, z)],
+            sides[5] = WorldData.GetBlockState(blocks[BlockPosition3DtoIndex(x + 1, y, z)],
                 BlockFace.LEFT
             ) != BlockState.SOLID;
 
-            sides[3] = WorldData.GetBlockState(blocks[Utils.BlockPosition3DtoIndex(x, y, z + 1)],
+            sides[3] = WorldData.GetBlockState(blocks[BlockPosition3DtoIndex(x, y, z + 1)],
                 BlockFace.FRONT
             ) != BlockState.SOLID;
 
-            sides[4] = WorldData.GetBlockState(blocks[Utils.BlockPosition3DtoIndex(x - 1, y, z)],
+            sides[4] = WorldData.GetBlockState(blocks[BlockPosition3DtoIndex(x - 1, y, z)],
                 BlockFace.RIGHT
             ) != BlockState.SOLID;
         }
@@ -208,29 +208,29 @@ namespace VoxelTG.Jobs
         private void BlockstateLiquid(NativeArray<bool> sides, int x, int y, int z)
         {
             short waterSourceDistance;
-            if(!blockParameters.TryGetValue(new BlockParameter(new int3(x, y, z), ParameterType.WATER_SOURCE_DISTANCE), out waterSourceDistance))
+            if(!blockParameters.TryGetValue(new BlockParameter(new int3(x, y, z), ParameterType.LIQUID_SOURCE_DISTANCE), out waterSourceDistance))
                 waterSourceDistance = 8;
                 
             NativeArray<int> nearbyWaterSources = new NativeArray<int>(4, Allocator.Temp);
 
             short value;
-            nearbyWaterSources[0] = blockParameters.TryGetValue(new BlockParameter(new int3(x, y, z - 1), ParameterType.WATER_SOURCE_DISTANCE), out value) ? value : waterSourceDistance;
-            nearbyWaterSources[1] = blockParameters.TryGetValue(new BlockParameter(new int3(x, y, z + 1), ParameterType.WATER_SOURCE_DISTANCE), out value) ? value : waterSourceDistance;
-            nearbyWaterSources[2] = blockParameters.TryGetValue(new BlockParameter(new int3(x - 1, y, z), ParameterType.WATER_SOURCE_DISTANCE), out value) ? value : waterSourceDistance;
-            nearbyWaterSources[3] = blockParameters.TryGetValue(new BlockParameter(new int3(x + 1, y, z), ParameterType.WATER_SOURCE_DISTANCE), out value) ? value : waterSourceDistance;
+            nearbyWaterSources[0] = blockParameters.TryGetValue(new BlockParameter(new int3(x, y, z - 1), ParameterType.LIQUID_SOURCE_DISTANCE), out value) ? value : waterSourceDistance;
+            nearbyWaterSources[1] = blockParameters.TryGetValue(new BlockParameter(new int3(x, y, z + 1), ParameterType.LIQUID_SOURCE_DISTANCE), out value) ? value : waterSourceDistance;
+            nearbyWaterSources[2] = blockParameters.TryGetValue(new BlockParameter(new int3(x - 1, y, z), ParameterType.LIQUID_SOURCE_DISTANCE), out value) ? value : waterSourceDistance;
+            nearbyWaterSources[3] = blockParameters.TryGetValue(new BlockParameter(new int3(x + 1, y, z), ParameterType.LIQUID_SOURCE_DISTANCE), out value) ? value : waterSourceDistance;
 
             sides[0] = y < WorldSettings.ChunkSizeY - 1 &&
-                WorldData.GetBlockState(blocks[Utils.BlockPosition3DtoIndex(x, y + 1, z)]) == BlockState.TRANSPARENT;
+                WorldData.GetBlockState(blocks[BlockPosition3DtoIndex(x, y + 1, z)]) == BlockState.TRANSPARENT;
             sides[1] = y > 0 &&
-                WorldData.GetBlockState(blocks[Utils.BlockPosition3DtoIndex(x, y - 1, z)]) == BlockState.TRANSPARENT;
+                WorldData.GetBlockState(blocks[BlockPosition3DtoIndex(x, y - 1, z)]) == BlockState.TRANSPARENT;
             sides[2] = nearbyWaterSources[0] < waterSourceDistance ||
-                WorldData.GetBlockState(blocks[Utils.BlockPosition3DtoIndex(x, y, z - 1)]) == BlockState.TRANSPARENT;
+                WorldData.GetBlockState(blocks[BlockPosition3DtoIndex(x, y, z - 1)]) == BlockState.TRANSPARENT;
             sides[3] = nearbyWaterSources[1] < waterSourceDistance ||
-                WorldData.GetBlockState(blocks[Utils.BlockPosition3DtoIndex(x, y, z + 1)]) == BlockState.TRANSPARENT;
+                WorldData.GetBlockState(blocks[BlockPosition3DtoIndex(x, y, z + 1)]) == BlockState.TRANSPARENT;
             sides[4] = nearbyWaterSources[2] < waterSourceDistance ||
-                WorldData.GetBlockState(blocks[Utils.BlockPosition3DtoIndex(x - 1, y, z)]) == BlockState.TRANSPARENT;
+                WorldData.GetBlockState(blocks[BlockPosition3DtoIndex(x - 1, y, z)]) == BlockState.TRANSPARENT;
             sides[5] = nearbyWaterSources[3] < waterSourceDistance ||
-                WorldData.GetBlockState(blocks[Utils.BlockPosition3DtoIndex(x + 1, y, z)]) == BlockState.TRANSPARENT;
+                WorldData.GetBlockState(blocks[BlockPosition3DtoIndex(x + 1, y, z)]) == BlockState.TRANSPARENT;
         }
 
         private void BlockstateSolidHalf(NativeArray<bool> sides, int x, int y, int z, int3 rotation)
@@ -243,13 +243,13 @@ namespace VoxelTG.Jobs
             int leftIndex = 4 + eulerY > 5 ? 5 + eulerY - 4 : 4 + eulerY;
 
             sides[0] = y < WorldSettings.ChunkSizeY - 1 &&
-                WorldData.GetBlockState(blocks[Utils.BlockPosition3DtoIndex(x, y + 1, z)]) != BlockState.SOLID;
+                WorldData.GetBlockState(blocks[BlockPosition3DtoIndex(x, y + 1, z)]) != BlockState.SOLID;
             sides[1] = y > 0 &&
-                WorldData.GetBlockState(blocks[Utils.BlockPosition3DtoIndex(x, y - 1, z)]) != BlockState.SOLID;
-            sides[frontIndex] = WorldData.GetBlockState(blocks[Utils.BlockPosition3DtoIndex(x, y, z - 1)]) != BlockState.SOLID;
-            sides[rightIndex] = WorldData.GetBlockState(blocks[Utils.BlockPosition3DtoIndex(x + 1, y, z)]) != BlockState.SOLID;
-            sides[backIndex] = WorldData.GetBlockState(blocks[Utils.BlockPosition3DtoIndex(x, y, z + 1)]) != BlockState.SOLID;
-            sides[leftIndex] = WorldData.GetBlockState(blocks[Utils.BlockPosition3DtoIndex(x - 1, y, z)]) != BlockState.SOLID;
+                WorldData.GetBlockState(blocks[BlockPosition3DtoIndex(x, y - 1, z)]) != BlockState.SOLID;
+            sides[frontIndex] = WorldData.GetBlockState(blocks[BlockPosition3DtoIndex(x, y, z - 1)]) != BlockState.SOLID;
+            sides[rightIndex] = WorldData.GetBlockState(blocks[BlockPosition3DtoIndex(x + 1, y, z)]) != BlockState.SOLID;
+            sides[backIndex] = WorldData.GetBlockState(blocks[BlockPosition3DtoIndex(x, y, z + 1)]) != BlockState.SOLID;
+            sides[leftIndex] = WorldData.GetBlockState(blocks[BlockPosition3DtoIndex(x - 1, y, z)]) != BlockState.SOLID;
         }
 
         private void BlockstateGrass(NativeArray<bool> sides, int x, int y, int z)
@@ -266,16 +266,22 @@ namespace VoxelTG.Jobs
 
         #region Utils
 
+        private int BlockPosition3DtoIndex(int x, int y, int z)
+        {
+            return (z * WorldSettings.FixedChunkSizeXZ * WorldSettings.ChunkSizeY) + (y * WorldSettings.FixedChunkSizeXZ) + x;
+        }
+
         private bool AreTypesEqual(BlockType type, int x, int y, int z)
         {
-            return blocks[Utils.BlockPosition3DtoIndex(x, y, z)] == type;
+            return blocks[BlockPosition3DtoIndex(x, y, z)] == type;
         }
 
         private bool AreTypesEqual(BlockType type, int x, int y, int z, out int index)
         {
-            index = Utils.BlockPosition3DtoIndex(x, y, z);
+            index = BlockPosition3DtoIndex(x, y, z);
             return blocks[index] == type;
         }
+
         #endregion
     }
 }

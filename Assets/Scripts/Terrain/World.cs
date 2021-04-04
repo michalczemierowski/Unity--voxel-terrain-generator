@@ -41,6 +41,7 @@ namespace VoxelTG
         public static int Seed { get; private set; }
         public static int RenderDistance { get; private set; }
         public static int CurrentTick { get; private set; }
+        public static int CurrentBuildTick { get; private set; }
 
         public static FastNoise FastNoise { get; private set; }
         public static WorldSave WorldSave { get; private set; } = new WorldSave();
@@ -68,7 +69,14 @@ namespace VoxelTG
 
         [Header("Settings")]
         [SerializeField] private float ticksPerSecond = 20;
+        public float TicksPerSecond => ticksPerSecond;
+
         [SerializeField] private float buildChecksPerSecond = 10;
+        public float BuildChecksPerSecond => buildChecksPerSecond;
+
+        [SerializeField] private int buildTicksPerWaterUpdate = 3;
+        public int BuildTicksPerWaterUpdate => buildTicksPerWaterUpdate;
+
         [SerializeField] private GameObject chunkPrefab;
         [SerializeField] private BiomeColorsObject biomeColors;
 
@@ -76,11 +84,8 @@ namespace VoxelTG
 
         #region private
 
-        private NativeQueue<JobHandle> pendingJobs;
-        private static NativeQueue<JobHandle> meshBakingJobs;
-
-        private Queue<Chunk> terrainChunks = new Queue<Chunk>();
-        private static Queue<Chunk> terrainCollisionMeshes = new Queue<Chunk>();
+        private Queue<ChunkBuildStruct> chunkBuildingQueue;
+        private static Queue<PhysicsBakeStruct> physicsBakingQueue;
 
         // TODO: try to reduce GC alloc
         private static List<WorldEventQueueData> tickQueue = new List<WorldEventQueueData>();
@@ -97,7 +102,7 @@ namespace VoxelTG
 
         #region events
 
-        public static event Action TimeToBuild;
+        public static event Action<int> OnBuildTick;
         public static event Action<int> OnTick;
 
         #endregion
@@ -123,7 +128,7 @@ namespace VoxelTG
 
             Debug.Log($"SAVED {WorldSave.savedChunks.Count} CHUNKS");
         }
-        
+
         // TODO: there must be a better way to handle this
         /// <summary>
         /// Load world data from disk if exists
@@ -174,7 +179,7 @@ namespace VoxelTG
 
             TotalChunks = 4 * RenderDistance * RenderDistance;
 
-            PathFinding.Init();
+            //PathFinding.Init();
 
             // TODO: enable this later
             //LoadChunkData();
@@ -188,21 +193,16 @@ namespace VoxelTG
             //Seed = 420;
             FastNoise = new FastNoise(Seed, 0.005f);
 
-            // init native conainters
-            pendingJobs = new NativeQueue<JobHandle>(Allocator.Persistent);
-            meshBakingJobs = new NativeQueue<JobHandle>(Allocator.Persistent);
+            chunkBuildingQueue = new Queue<ChunkBuildStruct>();
+            physicsBakingQueue = new Queue<PhysicsBakeStruct>();
         }
 
         private void OnDestroy()
         {
             SaveChunkData();
-            
+
             PathFinding.Dispose();
             WorldSettings.Dispose();
-
-            // dispose native containers
-            pendingJobs.Dispose();
-            meshBakingJobs.Dispose();
         }
 
 
@@ -344,46 +344,45 @@ namespace VoxelTG
         /// <param name="positionZ">z position of chunk</param>
         /// <param name="jobHandles">list of job handles</param>
         /// <param name="chunk">reference to target chunk</param>
-        private void BuildChunk(int positionX, int positionZ, NativeQueue<JobHandle> jobHandles, ref Chunk chunk)
+        private void BuildChunk(int positionX, int positionZ, Queue<ChunkBuildStruct> chunkBuildingQueue)
         {
+            Chunk chunk;
             // if pool contains chunk
             if (pooledChunks.Count > 0)
             {
                 // get chunk from pool
                 chunk = pooledChunks[pooledChunks.Count - 1];
+                // move chunk to target position
+                chunk.transform.position = new Vector3(positionX, 0, positionZ);
                 // enable chunk
                 chunk.gameObject.SetActive(true);
+                chunk.Init();
                 // remove it from pool
                 pooledChunks.RemoveAt(pooledChunks.Count - 1);
-
-                // move chunk to target position
-                chunk.ChunkPosition = new Vector2Int(positionX, positionZ);
-                chunk.transform.position = new Vector3(positionX, 0, positionZ);
             }
             else
             {
                 // instantiate new chunk
                 GameObject chunkGO = Instantiate(chunkPrefab, new Vector3(positionX, 0, positionZ), Quaternion.identity);
-                // move chunk to target position
                 chunk = chunkGO.GetComponent<Chunk>();
-                chunk.ChunkPosition = new Vector2Int(positionX, positionZ);
+                chunk.Init();
             }
 
             // schedule build job
-            SerializableVector2Int serializableChunkPos = SerializableVector2Int.FromVector2Int(chunk.ChunkPosition);
-            if (WorldSave.savedChunks.ContainsKey(serializableChunkPos))
-            {
-                ChunkSaveData data = WorldSave.savedChunks[serializableChunkPos];
-                // convert byte[] to BlockType[]
-                chunk.blocks.CopyFrom(Array.ConvertAll(data.blocks, value => (BlockType)value)); //data.blocks);
-                chunk.BuildMesh(jobHandles);
-            }
-            else
-                chunk.GenerateTerrainDataAndBuildMesh(jobHandles, positionX, positionZ);
+            //SerializableVector2Int serializableChunkPos = SerializableVector2Int.FromVector2Int(chunk.ChunkPosition);
+            //if (WorldSave.savedChunks.ContainsKey(serializableChunkPos))
+            //{
+            //    ChunkSaveData data = WorldSave.savedChunks[serializableChunkPos];
+            //    // convert byte[] to BlockType[]
+            //    chunk.Blocks.CopyFrom(Array.ConvertAll(data.blocks, value => (BlockType)value)); //data.blocks);
+            //    jobHandles.Enqueue(chunk.BuildMesh());
+            //}
+            //else
+            var handle = chunk.GenerateTerrainDataAndBuildMesh(positionX, positionZ);
+            chunkBuildingQueue.Enqueue(new ChunkBuildStruct(chunk, handle));
 
             // disable mesh renderers
             chunk.SetMeshRenderersActive(false);
-
             // add chunk to chunk dict
             chunks.Add(new Vector2Int(positionX, positionZ), chunk);
         }
@@ -409,18 +408,14 @@ namespace VoxelTG
                 int maxX = curChunkPosX + ChunkSizeXZ * RenderDistance;
                 int maxZ = curChunkPosZ + ChunkSizeXZ * RenderDistance;
 
-                for (int x = startX ; x <= maxX; x += ChunkSizeXZ)
+                for (int x = startX; x <= maxX; x += ChunkSizeXZ)
                 {
                     for (int z = startZ; z <= maxZ; z += ChunkSizeXZ)
                     {
                         Vector2Int cp = new Vector2Int(x, z);
 
                         if (!chunks.ContainsKey(cp))
-                        {
-                            Chunk chunk = null;
-                            BuildChunk(x, z, pendingJobs, ref chunk);
-                            terrainChunks.Enqueue(chunk);
-                        }
+                            BuildChunk(x, z, chunkBuildingQueue);
                     }
                 }
 
@@ -454,17 +449,32 @@ namespace VoxelTG
         /// Schedule mesh collider PhysicsX bake job
         /// </summary>
         /// <param name="chunk">target chunk</param>
-        public static void SchedulePhysicsBake(Chunk chunk)
+        public static void SchedulePhysicsBake(Mesh mesh, MeshCollider meshCollider)
         {
-            int meshID = chunk.BlockMeshFilter.mesh.GetInstanceID();
-
-            BakePhysicsXMesh bakePhysics = new BakePhysicsXMesh()
+            int meshID = mesh.GetInstanceID();
+            PhysicsBakeStruct physicsBake = new PhysicsBakeStruct()
             {
-                meshID = meshID
+                jobHandle = new BakePhysicsXMesh()
+                {
+                    meshID = meshID
+                }.Schedule(),
+
+                mesh = mesh,
+                meshCollider = meshCollider
             };
 
-            meshBakingJobs.Enqueue(bakePhysics.Schedule());
-            terrainCollisionMeshes.Enqueue(chunk);
+            physicsBakingQueue.Enqueue(physicsBake);
+        }
+
+        public static bool IsPhysicsBakeEnqueued(Mesh mesh)
+        {
+            foreach (var element in physicsBakingQueue)
+            {
+                if (element.mesh == mesh)
+                    return true;
+            }
+
+            return false;
         }
 
         #endregion
@@ -497,7 +507,7 @@ namespace VoxelTG
             {
                 blockPosition.y = y;
                 int index = Utils.BlockPosition3DtoIndex(blockPosition);
-                if (WorldData.GetBlockState(chunk.blocks[index]) == BlockState.SOLID)
+                if (WorldData.GetBlockState(chunk.Blocks[index]) == BlockState.SOLID)
                 {
                     return blockPosition;
                 }
@@ -519,7 +529,7 @@ namespace VoxelTG
             {
                 blockPosition.y = y;
                 int index = Utils.BlockPosition3DtoIndex(blockPosition);
-                if (chunk.blocks[index] != BlockType.AIR)
+                if (chunk.Blocks[index] != BlockType.AIR)
                 {
                     return blockPosition;
                 }
@@ -540,7 +550,7 @@ namespace VoxelTG
             {
                 blockPosition.y = y;
                 int index = Utils.BlockPosition3DtoIndex(blockPosition);
-                if (chunk.blocks[index] != BlockType.AIR)
+                if (chunk.Blocks[index] != BlockType.AIR)
                 {
                     return blockPosition;
                 }
@@ -552,9 +562,19 @@ namespace VoxelTG
         /// <summary>
         /// Get chunk at provided position
         /// </summary>
+        /// <param name="position">chunk position</param>
+        /// <returns>chunk or null if not found</returns>
+        public static Chunk GetChunk(Vector2 position)
+        {
+            return GetChunk(position.x, position.y);
+        }
+
+        /// <summary>
+        /// Get chunk at provided position
+        /// </summary>
         /// <param name="x">chunk position x</param>
         /// <param name="z">chunk position y</param>
-        /// <returns>chunk</returns>
+        /// <returns>chunk or null if not found</returns>
         public static Chunk GetChunk(float x, float z)
         {
             int chunkPosX = Mathf.FloorToInt(x / ChunkSizeXZ) * ChunkSizeXZ;
@@ -605,24 +625,34 @@ namespace VoxelTG
         /// </summary>
         private void ChunkLoading()
         {
-            if (pendingJobs.Count > 0)
+            if (chunkBuildingQueue.Count > 0)
             {
                 for (int i = 0; i < maxChunksToBuildAtOnce; i++)
                 {
-                    if (pendingJobs.Peek().IsCompleted)
+                    if (chunkBuildingQueue.Peek().jobHandle.IsCompleted)
                     {
-                        pendingJobs.Dequeue().Complete();
+                        var job = chunkBuildingQueue.Dequeue();
+                        job.jobHandle.Complete();
 
-                        Chunk tc = terrainChunks.Dequeue();
+                        if (job.blocksBuffer.IsCreated)
+                        {
+                            job.blocksBuffer.CopyTo(job.chunk.Blocks);
+                            job.blocksBuffer.Dispose();
+                        }
+                        else
+                            LoadedChunks++;
 
-                        tc.gameObject.SetActive(true);
-                        tc.CreateBiomeTexture();
-                        tc.Animation();
-                        tc.ApplyMesh();
+                        // TODO: sync chunk borders
 
-                        LoadedChunks++;
+                        job.chunk.gameObject.SetActive(true);
+                        if (job.createBiomeTexture)
+                            job.chunk.CreateBiomeTexture();
+                        if(job.playAnimation)
+                            job.chunk.Animation();
 
-                        if (pendingJobs.Count == 0)
+                        job.chunk.ApplyMesh(job.rebuildPhysics);
+
+                        if (chunkBuildingQueue.Count == 0)
                             break;
                         // TODO: check if player is close
                         // ChunkLoading();
@@ -632,18 +662,45 @@ namespace VoxelTG
                 }
             }
 
-            while (meshBakingJobs.Count > 0)
+            while (physicsBakingQueue.Count > 0)
             {
-                if (meshBakingJobs.Peek().IsCompleted)
+                if (physicsBakingQueue.Peek().jobHandle.IsCompleted)
                 {
-                    meshBakingJobs.Dequeue().Complete();
+                    var job = physicsBakingQueue.Dequeue();
+                    job.jobHandle.Complete();
 
-                    Chunk chunk = terrainCollisionMeshes.Dequeue();
-                    chunk.BlockMeshCollider.sharedMesh = chunk.BlockMeshFilter.mesh;
+                    job.meshCollider.sharedMesh = job.mesh;
                 }
             }
 
-            TimeToBuild.Invoke();
+            OnBuildTick?.Invoke(CurrentBuildTick++);
+        }
+
+        public void ScheduleMeshRebuild(Chunk chunk, JobHandle buildHandle, NativeArray<BlockType> blocksBuffer, bool rebuildPhysics = true)
+        {
+            if (chunk == null)
+                return;
+
+            ChunkBuildStruct chunkBuild = new ChunkBuildStruct
+            {
+                chunk = chunk,
+                jobHandle = buildHandle,
+                rebuildPhysics = rebuildPhysics,
+                blocksBuffer = blocksBuffer
+            };
+
+            chunkBuildingQueue.Enqueue(chunkBuild);
+        }
+
+        public bool IsInRebuildQueue(Chunk chunk)
+        {
+            foreach(var data in chunkBuildingQueue)
+            {
+                if (data.chunk == chunk)
+                    return true;
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -701,8 +758,8 @@ namespace VoxelTG
                     tick.chunk?.OnBlockUpdate(tick.blockPosition, tick.args);
                 }
             }
-            CurrentTick++;
-            OnTick?.Invoke(CurrentTick);
+
+            OnTick?.Invoke(CurrentTick++);
         }
 
         #endregion

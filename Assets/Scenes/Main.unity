@@ -677,7 +677,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f07106d97c9a59a4097c1f33d34ef39f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  limitFPS: 1
+  limitFPS: 0
   targetFPS: 60
   renderDistance: 8
   maxChunksToBuildAtOnce: 32

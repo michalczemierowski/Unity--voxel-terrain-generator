@@ -94,7 +94,7 @@ MeshCollider:
   m_Enabled: 1
   serializedVersion: 4
   m_Convex: 0
-  m_CookingOptions: -1
+  m_CookingOptions: 30
   m_Mesh: {fileID: 0}
 --- !u!1 &6546764858940181633
 GameObject:
@@ -148,8 +148,6 @@ MonoBehaviour:
   liquidMeshFilter: {fileID: 2469628709058414621}
   plantsMeshFilter: {fileID: 1000597921120095070}
   blockMeshCollider: {fileID: 1423145590833403560}
-  neigbourChunks: []
-  ChunkPosition: {x: 0, y: 0}
 --- !u!114 &8552906591877171409
 MonoBehaviour:
   m_ObjectHideFlags: 0

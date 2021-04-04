@@ -36,8 +36,7 @@ namespace VoxelTG
 
             DontDestroyOnLoad(this);
 
-            if (limitFPS)
-                Application.targetFrameRate = targetFPS;
+            Application.targetFrameRate = limitFPS ? targetFPS : 0;
 
             SaveDefaultSettings();
 

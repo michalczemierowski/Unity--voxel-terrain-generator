@@ -155,7 +155,7 @@ namespace VoxelTG
                 if (World.TryGetChunk((float)position.x, (float)position.z, out Chunk chunk))
                 {
                     int3 releativePosition = new BlockPosition(position).ToInt3();//new int3(position.x - chunk.ChunkPosition.x, position.y, position.z - chunk.ChunkPosition.y);
-                    if (IsInRange(ref releativePosition) && CanWalkOn(ref chunk.blocks, ref releativePosition))
+                    if (IsInRange(ref releativePosition) && CanWalkOn(ref chunk.Blocks, ref releativePosition))
                     {
                         PathTile pathTile = new PathTile()
                         {

@@ -37,22 +37,38 @@ namespace VoxelTG.Terrain
         public MeshFilter BlockMeshFilter => blockMeshFilter;
         public MeshCollider BlockMeshCollider => blockMeshCollider;
 
+        public NeighbourChunks NeighbourChunks { get; private set; }
+
         /// <summary>
-        /// +x, -x, +z, -z
+        /// Has terrain changed since load
         /// </summary>
-        public Chunk[] NeighbourChunks { get; private set; } = new Chunk[4];
+        public bool IsTerrainModified { get; private set; }
+
+        public bool ShouldUpdateLiquid
+        {
+            get => liquidRebuildArray.AsReadOnly()[4];
+            set
+            {
+                if (!World.Instance.IsInRebuildQueue(this))
+                    liquidRebuildArray[4] = value;
+            }
+        }
+
+        public bool NeedsRebuild { get; private set; }
+
+        public bool IsMeshRebuildingInProgress => World.Instance.IsInRebuildQueue(this);
+
+        public Dictionary<BlockParameter, short> blockParametersBuffer;
 
         /// <summary>
         /// Array containing chunk block structure [x,y,z]
         /// </summary>
-        public NativeArray<BlockType> blocks;
-
-        public NativeArray<int> lightingData;
+        public NativeArray<BlockType> Blocks;
 
         /// <summary>
         /// Chunk position in World space
         /// </summary>
-        [System.NonSerialized] public Vector2Int ChunkPosition;
+        public Vector2Int ChunkPosition { get; private set; }
 
         #endregion
 
@@ -63,12 +79,11 @@ namespace VoxelTG.Terrain
         /// </summary>
         private NativeArray<BiomeType> biomeTypes;
 
-        private ComputeBuffer lightingBuffer;
-
         private ChunkDissapearingAnimation chunkDissapearingAnimation;
         private ChunkAnimation chunkAnimation;
 
         private NativeHashMap<BlockParameter, short> blockParameters;
+        private NativeArray<bool> liquidRebuildArray;
 
         private NativeList<float3> blockVerticles;
         private NativeList<int> blockTriangles;
@@ -82,14 +97,6 @@ namespace VoxelTG.Terrain
         private NativeList<int> plantsTriangles;
         private NativeList<float2> plantsUVs;
 
-        private List<BlockData> blocksToBuild = new List<BlockData>();
-        private Dictionary<BlockParameter, short> parametersToAdd = new Dictionary<BlockParameter, short>();
-
-        /// <summary>
-        /// Has terrain changed since load
-        /// </summary>
-        private bool isTerrainModified;
-
         private Texture2D biomeColorsTexture;
 
         #endregion
@@ -101,10 +108,12 @@ namespace VoxelTG.Terrain
         private void OnEnable()
         {
             // init native containers
-            blocks = new NativeArray<BlockType>(FixedChunkSizeXZ * ChunkSizeY * FixedChunkSizeXZ, Allocator.Persistent);
-            lightingData = new NativeArray<int>(FixedChunkSizeXZ * ChunkSizeY * FixedChunkSizeXZ, Allocator.Persistent);
-            biomeTypes = new NativeArray<BiomeType>(FixedChunkSizeXZ * FixedChunkSizeXZ, Allocator.Persistent);
-            blockParameters = new NativeHashMap<BlockParameter, short>(2048, Allocator.Persistent);
+            Blocks = new NativeArray<BlockType>(FixedChunkSizeXZ * ChunkSizeY * FixedChunkSizeXZ, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            biomeTypes = new NativeArray<BiomeType>(FixedChunkSizeXZ * FixedChunkSizeXZ, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            blockParameters = new NativeHashMap<BlockParameter, short>(512, Allocator.Persistent);
+            blockParametersBuffer = new Dictionary<BlockParameter, short>();
+
+            liquidRebuildArray = new NativeArray<bool>(5, Allocator.Persistent);
 
             blockVerticles = new NativeList<float3>(16384, Allocator.Persistent);
             blockTriangles = new NativeList<int>(32768, Allocator.Persistent);
@@ -118,11 +127,10 @@ namespace VoxelTG.Terrain
             plantsTriangles = new NativeList<int>(8192, Allocator.Persistent);
             plantsUVs = new NativeList<float2>(4096, Allocator.Persistent);
 
-            chunkDissapearingAnimation = GetComponent<ChunkDissapearingAnimation>();
-            chunkAnimation = GetComponent<ChunkAnimation>();
-
-            World.TimeToBuild += BuildBlocks;
-            StartCoroutine(CheckNeighbours());
+            if (chunkDissapearingAnimation == null)
+                chunkDissapearingAnimation = GetComponent<ChunkDissapearingAnimation>();
+            if (chunkAnimation == null)
+                chunkAnimation = GetComponent<ChunkAnimation>();
 
             if (biomeColorsTexture == null)
             {
@@ -132,21 +140,15 @@ namespace VoxelTG.Terrain
                 biomeColorsTexture.Apply();
             }
 
-            lightingBuffer = new ComputeBuffer(FixedChunkSizeXZ * ChunkSizeY * FixedChunkSizeXZ, sizeof(int), ComputeBufferType.Default);
-            var mr = blockMeshFilter.GetComponent<MeshRenderer>();
-            mr.material.SetBuffer("lightData", lightingBuffer);
-        }
-
-        public void UpdateLightBuffer()
-        {
-            lightingBuffer.SetData(lightingData);
+            World.OnBuildTick += OnBuildTick;
+            StartCoroutine(CheckNeighbours());
         }
 
         private void OnDisable()
         {
-            World.TimeToBuild -= BuildBlocks;
+            World.OnBuildTick -= OnBuildTick;
 
-            if (!blocks.IsCreated)
+            if (!Blocks.IsCreated)
                 return;
 
             DisposeAndSaveData();
@@ -154,7 +156,7 @@ namespace VoxelTG.Terrain
 
         private void OnDestroy()
         {
-            if (!blocks.IsCreated)
+            if (!Blocks.IsCreated)
                 return;
 
             SaveDataInWorldDictionary();
@@ -162,16 +164,17 @@ namespace VoxelTG.Terrain
 
         public void DisposeAndSaveData()
         {
-            if (!blocks.IsCreated)
+            if (!Blocks.IsCreated)
                 return;
             // save game before quitting
             SaveDataInWorldDictionary();
 
             // dispose native containers
-            blocks.Dispose();
-            lightingData.Dispose();
+            Blocks.Dispose();
             biomeTypes.Dispose();
             blockParameters.Dispose();
+
+            liquidRebuildArray.Dispose();
 
             blockVerticles.Dispose();
             blockTriangles.Dispose();
@@ -184,9 +187,6 @@ namespace VoxelTG.Terrain
             plantsVerticles.Dispose();
             plantsTriangles.Dispose();
             plantsUVs.Dispose();
-
-            blocksToBuild.Clear();
-            parametersToAdd.Clear();
 
             // clear meshes
             blockMeshFilter.mesh.Clear();
@@ -204,32 +204,18 @@ namespace VoxelTG.Terrain
 
         #endregion
 
-        private IEnumerator CheckNeighbours()
+        public void Init()
         {
-            yield return new WaitForEndOfFrame();
-
-            NeighbourChunks = new Chunk[]
-            {
-                World.GetChunk(ChunkPosition.x + ChunkSizeXZ, ChunkPosition.y),
-                World.GetChunk(ChunkPosition.x - ChunkSizeXZ, ChunkPosition.y),
-                World.GetChunk(ChunkPosition.x, ChunkPosition.y + ChunkSizeXZ),
-                World.GetChunk(ChunkPosition.x, ChunkPosition.y - ChunkSizeXZ)
-            };
-
-
-            if (NeighbourChunks[0] && NeighbourChunks[0].NeighbourChunks.Length > 0)
-                NeighbourChunks[0].SetNeighbour(1, this);
-            if (NeighbourChunks[1] && NeighbourChunks[1].NeighbourChunks.Length > 0)
-                NeighbourChunks[1].SetNeighbour(0, this);
-            if (NeighbourChunks[2] && NeighbourChunks[2].NeighbourChunks.Length > 0)
-                NeighbourChunks[2].SetNeighbour(3, this);
-            if (NeighbourChunks[3] && NeighbourChunks[3].NeighbourChunks.Length > 0)
-                NeighbourChunks[3].SetNeighbour(2, this);
+            ChunkPosition = new Vector2Int(Mathf.RoundToInt(transform.position.x), Mathf.RoundToInt(transform.position.z));
         }
 
-        private void SetNeighbour(int index, Chunk neighbour)
+        private IEnumerator CheckNeighbours()
         {
-            NeighbourChunks[index] = neighbour;
+            yield return null;
+            NeighbourChunks = new NeighbourChunks(this);
+
+            yield return new WaitForSeconds(0.2f);
+            ShouldUpdateLiquid = true;
         }
 
         #region // === Mesh methods === \\
@@ -237,13 +223,13 @@ namespace VoxelTG.Terrain
         /// <summary>
         /// Generate terrain data and build mesh
         /// </summary>
-        public void GenerateTerrainDataAndBuildMesh(NativeQueue<JobHandle> jobHandles, int xPos, int zPos)
+        public JobHandle GenerateTerrainDataAndBuildMesh(int xPos, int zPos)
         {
             GenerateTerrainData generateTerrainData = new GenerateTerrainData()
             {
                 chunkPosX = xPos,
                 chunkPosZ = zPos,
-                blockData = blocks,
+                blockData = Blocks,
                 biomeTypes = biomeTypes,
                 blockParameters = blockParameters,
                 noise = World.FastNoise,
@@ -251,42 +237,32 @@ namespace VoxelTG.Terrain
                 random = new Unity.Mathematics.Random((uint)(xPos * 10000 + zPos + 1000))
             };
 
-            NativeArray<bool> rebuild = new NativeArray<bool>(5, Allocator.TempJob);
-            SimulateWaterJob simulateWater = new SimulateWaterJob()
-            {
-                blocks = blocks,
-                blockParameters = blockParameters,
-                needsRebuild = rebuild,
-                maxStepsPerFrame = 100
-            };
-
             JobHandle generationHandle = generateTerrainData.Schedule();
-            JobHandle waterHandle = simulateWater.Schedule(generationHandle);
-            JobHandle handle = CreateMeshDataJob().Schedule(waterHandle);
-            jobHandles.Enqueue(handle);
+            JobHandle handle = InitCreateMeshDataJob(Blocks).Schedule(generationHandle);
+            return handle;
         }
 
         /// <summary>
-        /// Build mesh without generating terrain data
+        /// Create and schedule mesh rebuilding job
         /// </summary>
-        public void BuildMesh(NativeQueue<JobHandle> jobHandles)
+        /// <returns>job handle</returns>
+        public JobHandle BuildMesh(JobHandle dependency = default)
         {
-            JobHandle handle = CreateMeshDataJob().Schedule();
-            jobHandles.Enqueue(handle);
+            return InitCreateMeshDataJob(Blocks).Schedule(dependency);
         }
 
         /// <summary>
-        /// Build mesh without generating terrain data
+        /// Rebuild mesh (single threaded)
         /// </summary>
-        public void BuildMesh(List<JobHandle> jobHandles)
+        public void BuildMeshInstant()
         {
-            JobHandle handle = CreateMeshDataJob().Schedule();
-            jobHandles.Add(handle);
+            InitCreateMeshDataJob(Blocks).Run();
+            ApplyMesh();
         }
 
-        private CreateMeshData CreateMeshDataJob()
+        private CreateMeshDataJob InitCreateMeshDataJob(NativeArray<BlockType> blocks)
         {
-            CreateMeshData createMeshData = new CreateMeshData
+            CreateMeshDataJob createMeshData = new CreateMeshDataJob
             {
                 blocks = blocks,
                 biomeTypes = biomeTypes,
@@ -305,10 +281,22 @@ namespace VoxelTG.Terrain
             return createMeshData;
         }
 
+        private SimulateLiquidJob InitSimulateLiquidJob(NativeArray<BlockType> blocks)
+        {
+            SimulateLiquidJob simulateLiquid = new SimulateLiquidJob()
+            {
+                blocks = blocks,
+                blockParameters = blockParameters,
+                needsRebuild = liquidRebuildArray,
+                maxStepsPerFrame = 1
+            };
+            return simulateLiquid;
+        }
+
         /// <summary>
         /// Apply values from native containers (jobs) to meshes
         /// </summary>
-        public void ApplyMesh()
+        public void ApplyMesh(bool rebuildPhysics = true)
         {
             Mesh blockMesh = blockMeshFilter.mesh;
             blockMesh.Clear();
@@ -334,20 +322,22 @@ namespace VoxelTG.Terrain
             plantsMesh.SetTriangles(plantsTriangles.ToArray(), 0, false);
             plantsMesh.SetUVs<float2>(0, plantsUVs);
 
-            blockMesh.RecalculateNormals();
             blockMeshFilter.mesh = blockMesh;
 
             // bake mesh immediately if player is near
-            Vector2 playerPosition = new Vector2(PlayerController.PlayerTransform.position.x, PlayerController.PlayerTransform.position.z);
-            if (Vector2.Distance(new Vector2(ChunkPosition.x, ChunkPosition.y), playerPosition) < FixedChunkSizeXZ * 2)
-                blockMeshCollider.sharedMesh = blockMesh;
-            else
-                World.SchedulePhysicsBake(this);
+            if (rebuildPhysics && !World.IsPhysicsBakeEnqueued(blockMesh))
+            {
+                Vector2 playerPosition = new Vector2(PlayerController.PlayerTransform.position.x, PlayerController.PlayerTransform.position.z);
+                if (Vector2.Distance(new Vector2(ChunkPosition.x, ChunkPosition.y), playerPosition) < FixedChunkSizeXZ * 2)
+                    blockMeshCollider.sharedMesh = blockMesh;
+                else
+                    World.SchedulePhysicsBake(blockMesh, blockMeshCollider);
+            }
 
-            liquidMesh.RecalculateNormals();
+            //liquidMesh.RecalculateNormals();
             liquidMeshFilter.mesh = liquidMesh;
 
-            plantsMesh.RecalculateNormals();
+            //plantsMesh.RecalculateNormals();
             plantsMeshFilter.mesh = plantsMesh;
 
             // clear blocks
@@ -421,96 +411,24 @@ namespace VoxelTG.Terrain
         /// </summary>
         /// <param name="parameter">parameter type</param>
         /// <param name="value">parameter value</param>
-        public void SetParameters(BlockParameter parameter, short value)
+        public void SetBlockParameter(BlockParameter parameter, short value)
         {
-            int3 blockPos = parameter.blockPos;
-            // check neighbours
-            if (blockPos.x == 16)
-            {
-                Chunk chunk = NeighbourChunks[0];
-                if (chunk)
-                {
-                    BlockParameter neighbourParameter = parameter;
-                    neighbourParameter.blockPos = new int3(0, blockPos.y, blockPos.z);
-
-                    if (chunk.blockParameters.ContainsKey(neighbourParameter))
-                        chunk.blockParameters[neighbourParameter] = value;
-                    else
-                        chunk.blockParameters.Add(neighbourParameter, value);
-                }
-            }
-            else if (blockPos.x == 1)
-            {
-                Chunk chunk = NeighbourChunks[1];
-                if (chunk)
-                {
-                    BlockParameter neighbourParameter = parameter;
-                    neighbourParameter.blockPos = new int3(17, blockPos.y, blockPos.z);
-
-                    if (chunk.blockParameters.ContainsKey(neighbourParameter))
-                        chunk.blockParameters[neighbourParameter] = value;
-                    else
-                        chunk.blockParameters.Add(neighbourParameter, value);
-                }
-            }
-
-            if (blockPos.z == 16)
-            {
-                Chunk chunk = NeighbourChunks[2];
-                if (chunk)
-                {
-                    BlockParameter neighbourParameter = parameter;
-                    neighbourParameter.blockPos = new int3(blockPos.x, blockPos.y, 0);
-
-                    if (chunk.blockParameters.ContainsKey(neighbourParameter))
-                        chunk.blockParameters[neighbourParameter] = value;
-                    else
-                        chunk.blockParameters.Add(neighbourParameter, value);
-                }
-            }
-            else if (blockPos.z == 1)
-            {
-                Chunk chunk = NeighbourChunks[3];
-                if (chunk)
-                {
-                    BlockParameter neighbourParameter = parameter;
-                    neighbourParameter.blockPos = new int3(blockPos.x, blockPos.y, 17);
-
-                    if (chunk.blockParameters.ContainsKey(neighbourParameter))
-                        chunk.blockParameters[neighbourParameter] = value;
-                    else
-                        chunk.blockParameters.Add(neighbourParameter, value);
-                }
-            }
-
-            if (blockParameters.ContainsKey(parameter))
-                blockParameters[parameter] = value;
-            else
-                blockParameters.Add(parameter, value);
+            NeighbourChunks.SyncNeighbourParameters(parameter, value);
+            blockParametersBuffer[parameter] = value;
         }
 
-        /// <summary>
-        /// Get parameter value
-        /// </summary>
-        /// <param name="parameter">parameter</param>
-        /// <returns>value of parameter</returns>
-        public short GetParameterValue(BlockParameter parameter)
+        public void SetBlockParameterWithoutSync(BlockParameter parameter, short value)
         {
-            if (blockParameters.ContainsKey(parameter))
-            {
-                return blockParameters[parameter]; ;
-            }
-
-            return 0;
+            blockParametersBuffer[parameter] = value;
         }
 
         /// <summary>
         /// Remove all parameters from block
         /// </summary>
         /// <param name="blockPosition">position of block</param>
-        public void ClearParameters(BlockPosition blockPosition)
+        public void RemoveParameterAt(BlockPosition blockPosition)
         {
-            ClearParameters(blockPosition.ToInt3());
+            RemoveParameterAt(blockPosition.ToInt3());
         }
         /// <summary>
         /// Remove all parameters from block
@@ -518,60 +436,27 @@ namespace VoxelTG.Terrain
         /// <param name="x">x position of block</param>
         /// <param name="y">y position of block</param>
         /// <param name="z">z position of block</param>
-        public void ClearParameters(int x, int y, int z)
+        public void RemoveParameterAt(int x, int y, int z)
         {
-            ClearParameters(new int3(x, y, z));
+            RemoveParameterAt(new int3(x, y, z));
         }
         /// <summary>
         /// Remove all parameters from block
         /// </summary>
         /// <param name="blockPos">position of block</param>
-        public void ClearParameters(int3 blockPos)
+        public void RemoveParameterAt(int3 blockPos)
+        {
+            // TODO: use blockParametersBuffer
+            BlockParameter key = new BlockParameter(blockPos);
+            NeighbourChunks.SyncNeighbourParametersRemove(key);
+
+            while (blockParameters.ContainsKey(key))
+                blockParameters.Remove(key);
+        }
+
+        public void RemoveParameterAtWithoutSync(int3 blockPos)
         {
             BlockParameter key = new BlockParameter(blockPos);
-            // check neighbours
-            if (blockPos.x == 16)
-            {
-                Chunk chunk = NeighbourChunks[0];
-                if (chunk)
-                {
-                    BlockParameter neighbourKey = new BlockParameter(new int3(0, blockPos.y, blockPos.z));
-                    while (chunk.blockParameters.ContainsKey(neighbourKey))
-                        chunk.blockParameters.Remove(neighbourKey);
-                }
-            }
-            else if (blockPos.x == 1)
-            {
-                Chunk chunk = NeighbourChunks[1];
-                if (chunk)
-                {
-                    BlockParameter neighbourKey = new BlockParameter(new int3(17, blockPos.y, blockPos.z));
-                    while (chunk.blockParameters.ContainsKey(neighbourKey))
-                        chunk.blockParameters.Remove(neighbourKey);
-                }
-            }
-
-            if (blockPos.z == 16)
-            {
-                Chunk chunk = NeighbourChunks[2];
-                if (chunk)
-                {
-                    BlockParameter neighbourKey = new BlockParameter(new int3(blockPos.x, blockPos.y, 0));
-                    while (chunk.blockParameters.ContainsKey(neighbourKey))
-                        chunk.blockParameters.Remove(neighbourKey);
-                }
-            }
-            else if (blockPos.z == 1)
-            {
-                Chunk chunk = NeighbourChunks[3];
-                if (chunk)
-                {
-                    BlockParameter neighbourKey = new BlockParameter(new int3(blockPos.x, blockPos.y, 17));
-                    while (chunk.blockParameters.ContainsKey(neighbourKey))
-                        chunk.blockParameters.Remove(neighbourKey);
-                }
-            }
-
             while (blockParameters.ContainsKey(key))
                 blockParameters.Remove(key);
         }
@@ -587,7 +472,7 @@ namespace VoxelTG.Terrain
         /// <returns>type of block</returns>
         public BlockType GetBlock(int3 blockPos)
         {
-            return blocks[Utils.BlockPosition3DtoIndex(blockPos.x, blockPos.y, blockPos.z)];
+            return Blocks[Utils.BlockPosition3DtoIndex(blockPos.x, blockPos.y, blockPos.z)];
         }
         /// <summary>
         /// Get block at position [don't check if not out of range]
@@ -598,7 +483,7 @@ namespace VoxelTG.Terrain
         /// <returns>type of block</returns>
         public BlockType GetBlock(int x, int y, int z)
         {
-            return blocks[Utils.BlockPosition3DtoIndex(x, y, z)];
+            return Blocks[Utils.BlockPosition3DtoIndex(x, y, z)];
         }
         /// <summary>
         /// Get block at position [don't check if not out of range]
@@ -607,7 +492,7 @@ namespace VoxelTG.Terrain
         /// <returns>type of block</returns>
         public BlockType GetBlock(BlockPosition blockPos)
         {
-            return blocks[Utils.BlockPosition3DtoIndex(blockPos.x, blockPos.y, blockPos.z)];
+            return Blocks[Utils.BlockPosition3DtoIndex(blockPos.x, blockPos.y, blockPos.z)];
         }
 
         // TODO: add x,y,z and int3
@@ -621,7 +506,7 @@ namespace VoxelTG.Terrain
         {
             if (Utils.IsPositionInChunkBounds(blockPos.x, blockPos.y, blockPos.z))
             {
-                blockType = blocks[Utils.BlockPosition3DtoIndex(blockPos.x, blockPos.y, blockPos.z)];
+                blockType = Blocks[Utils.BlockPosition3DtoIndex(blockPos.x, blockPos.y, blockPos.z)];
                 return true;
             }
 
@@ -630,24 +515,42 @@ namespace VoxelTG.Terrain
         }
 
         /// <summary>
-        /// Set block at position but don't rebuild mesh
+        /// Set block at position and rebuild mesh - use when you want to place one block, else take a look at
+        /// </summary>
+        /// <param name="position">position of block</param>
+        /// <param name="blockType">type of block you want to place</param>
+        /// <param name="blockSettings">settings</param>
+        public void SetBlock(int3 position, BlockType blockType, SetBlockSettings blockSettings)
+        {
+            SetBlock(new BlockPosition(position.x, position.y, position.z), blockType, blockSettings);
+        }
+        /// <summary>
+        /// Set block at position and rebuild mesh - use when you want to place one block, else take a look at
+        /// </summary>
+        /// <param name="position">position of block</param>
+        /// <param name="blockType">type of block you want to place</param>
+        /// <param name="blockSettings">settings</param>
+        public void SetBlock(int x, int y, int z, BlockType blockType, SetBlockSettings blockSettings)
+        {
+            SetBlock(new BlockPosition(x, y, z, false), blockType, blockSettings);
+        }
+        /// <summary>
+        /// Set block at position and rebuild mesh - use when you want to place one block, else take a look at
         /// </summary>
         /// <param name="x">x position of block</param>
         /// <param name="y">y position of block</param>
         /// <param name="z">z position of block</param>
         /// <param name="blockType">type of block you want to place</param>
-        /// <param name="destroy">spawn destroy particle</param>
-        private void SetBlockWithoutRebuild(BlockPosition blockPosition, BlockType blockType, SetBlockSettings blockSettings)
+        /// <param name="blockSettings">setttings</param>
+        public void SetBlock(BlockPosition blockPosition, BlockType blockType, SetBlockSettings blockSettings)
         {
-            //if (!Utils.IsPositionInChunkBounds(blockPosition)) return;
-            BlockType currentBlock = GetBlock(blockPosition);
-
             if (blockSettings.callDestroyEvent)
-                World.InvokeBlockDestroyEvent(new BlockEventData(this, blockPosition, currentBlock));
+                World.InvokeBlockDestroyEvent(new BlockEventData(this, blockPosition, GetBlock(blockPosition)));
             if (blockSettings.callPlaceEvent)
                 World.InvokeBlockPlaceEvent(new BlockEventData(this, blockPosition, blockType));
             if (blockSettings.dropItemPickup)
             {
+                BlockType currentBlock = GetBlock(blockPosition);
                 Vector3 worldPosition = Utils.LocalToWorldPositionVector3Int(ChunkPosition, blockPosition) + new Vector3(0.5f, 0.5f, 0.5f);
 
                 ItemType dropItemType = ItemType.MATERIAL;
@@ -664,112 +567,22 @@ namespace VoxelTG.Terrain
                     DroppedItemsManager.Instance.DropItem(dropItemType, worldPosition, amount: count, velocity: blockSettings.droppedItemVelocity);
             }
 
-            blocks[Utils.BlockPosition3DtoIndex(blockPosition)] = blockType;
-            isTerrainModified = true;
-        }
+            if (blockType == BlockType.WATER)
+                SetBlockParameter(new BlockParameter(blockPosition, ParameterType.LIQUID_SOURCE_DISTANCE), WaterSourceMax);
 
-        /// <summary>
-        /// Set block at position and rebuild mesh - use when you want to place one block, else take a look at
-        /// <see cref="SetBlockWithoutRebuild(int, int, int, BlockType, bool)"/> or <see cref="SetBlocks(BlockData[], bool)"/>
-        /// </summary>
-        /// <param name="position">position of block</param>
-        /// <param name="blockType">type of block you want to place</param>
-        /// <param name="destroy">spawn destroy particle</param>
-        public void SetBlock(int3 position, BlockType blockType, SetBlockSettings blockSettings)
-        {
-            SetBlock(new BlockPosition(position.x, position.y, position.z), blockType, blockSettings);
-        }
-        /// <summary>
-        /// Set block at position and rebuild mesh - use when you want to place one block, else take a look at
-        /// <see cref="SetBlockWithoutRebuild(int, int, int, BlockType, bool)"/> or <see cref="SetBlocks(BlockData[], bool)"/>
-        /// </summary>
-        /// <param name="position">position of block</param>
-        /// <param name="blockType">type of block you want to place</param>
-        /// <param name="destroy">spawn destroy particle</param>
-        public void SetBlock(int x, int y, int z, BlockType blockType, SetBlockSettings blockSettings)
-        {
-            SetBlock(new BlockPosition(x, y, z), blockType, blockSettings);
-        }
-        /// <summary>
-        /// Set block at position and rebuild mesh - use when you want to place one block, else take a look at
-        /// <see cref="SetBlockWithoutRebuild(int, int, int, BlockType, bool)"/> or <see cref="SetBlocks(BlockData[], bool)"/>
-        /// </summary>
-        /// <param name="x">x position of block</param>
-        /// <param name="y">y position of block</param>
-        /// <param name="z">z position of block</param>
-        /// <param name="blockType">type of block you want to place</param>
-        /// <param name="destroy">spawn destroy particle</param>
-        public void SetBlock(BlockPosition blockPosition, BlockType blockType, SetBlockSettings blockSettings)
-        {
-            List<JobHandle> jobHandles = new List<JobHandle>();
+            Blocks[Utils.BlockPosition3DtoIndex(blockPosition)] = blockType;
+            IsTerrainModified = true;
+            ShouldUpdateLiquid = true;
+            NeedsRebuild = true;
+
             List<Chunk> chunksToBuild = new List<Chunk>();
-
-            SetBlockWithoutRebuild(blockPosition, blockType, blockSettings);
-
-            // add current chunk
-            BuildMesh(jobHandles);
             chunksToBuild.Add(this);
+            NeighbourChunks.SyncNeighbourBlocks(chunksToBuild, blockPosition, blockType);
 
-            // check neighbours
-            if (blockPosition.x == 16)
+            foreach (Chunk chunk in chunksToBuild)
             {
-                Chunk neighbourChunk = NeighbourChunks[0];
-                if (neighbourChunk)
-                {
-                    neighbourChunk.blocks[Utils.BlockPosition3DtoIndex(0, blockPosition.y, blockPosition.z)] = blockType;
-                    neighbourChunk.isTerrainModified = true;
-                    neighbourChunk.BuildMesh(jobHandles);
-                    chunksToBuild.Add(neighbourChunk);
-                }
+                chunk.NeedsRebuild = true;
             }
-            else if (blockPosition.x == 1)
-            {
-                Chunk neighbourChunk = NeighbourChunks[1];
-                if (neighbourChunk)
-                {
-                    neighbourChunk.blocks[Utils.BlockPosition3DtoIndex(17, blockPosition.y, blockPosition.z)] = blockType;
-                    neighbourChunk.isTerrainModified = true;
-                    neighbourChunk.BuildMesh(jobHandles);
-                    chunksToBuild.Add(neighbourChunk);
-                }
-            }
-
-            if (blockPosition.z == 16)
-            {
-                Chunk neighbourChunk = NeighbourChunks[2];
-                if (neighbourChunk)
-                {
-                    neighbourChunk.blocks[Utils.BlockPosition3DtoIndex(blockPosition.x, blockPosition.y, 0)] = blockType;
-                    neighbourChunk.isTerrainModified = true;
-                    neighbourChunk.BuildMesh(jobHandles);
-                    chunksToBuild.Add(neighbourChunk);
-                }
-            }
-            else if (blockPosition.z == 1)
-            {
-                Chunk neighbourChunk = NeighbourChunks[3];
-                if (neighbourChunk)
-                {
-                    neighbourChunk.blocks[Utils.BlockPosition3DtoIndex(blockPosition.x, blockPosition.y, 17)] = blockType;
-                    neighbourChunk.isTerrainModified = true;
-                    neighbourChunk.BuildMesh(jobHandles);
-                    chunksToBuild.Add(neighbourChunk);
-                }
-            }
-
-            NativeArray<JobHandle> njobHandles = new NativeArray<JobHandle>(jobHandles.ToArray(), Allocator.TempJob);
-            JobHandle.CompleteAll(njobHandles);
-
-            // build meshes
-            foreach (Chunk tc in chunksToBuild)
-            {
-                tc.ApplyMesh();
-            }
-
-            // clear & dispose
-            jobHandles.Clear();
-            chunksToBuild.Clear();
-            njobHandles.Dispose();
 
             UpdateNeighbourBlocks(blockPosition, 10);
         }
@@ -777,96 +590,15 @@ namespace VoxelTG.Terrain
         /// <summary>
         /// Set array of blocks
         /// </summary>
-        /// <param name="blockDatas">array containing data of each block you want to place</param>
+        /// <param name="blockData">array containing data of each block you want to place</param>
         /// <param name="destroy">spawn destroy particle</param>
-        public void SetBlocks(BlockData[] blockDatas, SetBlockSettings blockSettings)
+        public void SetBlocks(BlockData[] blockData, SetBlockSettings blockSettings)
         {
-            List<JobHandle> jobHandles = new List<JobHandle>();
-            List<Chunk> chunksToBuild = new List<Chunk>();
+            if (blockData == null || blockData.Length == 0)
+                return;
 
-            bool[] neighboursToBuild = new bool[4];
-
-            for (int i = 0; i < blockDatas.Length; i++)
-            {
-                BlockPosition blockPosition = blockDatas[i].position;
-                BlockType blockType = blockDatas[i].blockType;
-
-                SetBlockWithoutRebuild(blockPosition, blockType, blockSettings);
-
-                // check neighbours
-                if (blockPosition.x == 16)
-                {
-                    Chunk neighbourChunk = NeighbourChunks[0];
-                    if (neighbourChunk)
-                    {
-                        neighbourChunk.blocks[Utils.BlockPosition3DtoIndex(0, blockPosition.y, blockPosition.z)] = blockType;
-                        neighbourChunk.isTerrainModified = true;
-                        neighboursToBuild[0] = true;
-                    }
-                }
-                else if (blockPosition.x == 1)
-                {
-                    Chunk neighbourChunk = NeighbourChunks[1];
-                    if (neighbourChunk)
-                    {
-                        neighbourChunk.blocks[Utils.BlockPosition3DtoIndex(17, blockPosition.y, blockPosition.z)] = blockType;
-                        neighbourChunk.isTerrainModified = true;
-                        neighboursToBuild[1] = true;
-                    }
-                }
-
-                if (blockPosition.z == 16)
-                {
-                    Chunk neighbourChunk = NeighbourChunks[2];
-                    if (neighbourChunk)
-                    {
-                        neighbourChunk.blocks[Utils.BlockPosition3DtoIndex(blockPosition.x, blockPosition.y, 0)] = blockType;
-                        neighbourChunk.isTerrainModified = true;
-                        neighboursToBuild[2] = true;
-                    }
-                }
-                else if (blockPosition.z == 1)
-                {
-                    Chunk neighbourChunk = NeighbourChunks[3];
-                    if (neighbourChunk)
-                    {
-                        neighbourChunk.blocks[Utils.BlockPosition3DtoIndex(blockPosition.x, blockPosition.y, 17)] = blockType;
-                        neighbourChunk.isTerrainModified = true;
-                        neighboursToBuild[3] = true;
-                    }
-                }
-
-                UpdateNeighbourBlocks(blockDatas[i].position, 10);
-            }
-
-            // add current chunk
-            BuildMesh(jobHandles);
-            chunksToBuild.Add(this);
-
-            for (int j = 0; j < 4; j++)
-            {
-                if (neighboursToBuild[j])
-                {
-                    Chunk tc = NeighbourChunks[j];
-                    tc.BuildMesh(jobHandles);
-                    chunksToBuild.Add(tc);
-                }
-            }
-
-            NativeArray<JobHandle> njobHandles = new NativeArray<JobHandle>(jobHandles.ToArray(), Allocator.Temp);
-            JobHandle.CompleteAll(njobHandles);
-
-            // build meshes
-            foreach (Chunk tc in chunksToBuild)
-            {
-                tc.ApplyMesh();
-            }
-
-            // clear & dispose
-            jobHandles.Clear();
-            chunksToBuild.Clear();
-
-            njobHandles.Dispose();
+            foreach (var data in blockData)
+                SetBlock(data.Position, data.BlockType, blockSettings);
         }
 
         #endregion
@@ -908,7 +640,7 @@ namespace VoxelTG.Terrain
         /// </summary>
         public void OnBlockUpdate(BlockPosition position, params int[] args)
         {
-            BlockType blockType = blocks[Utils.BlockPosition3DtoIndex(position.x, position.y, position.z)];
+            BlockType blockType = Blocks[Utils.BlockPosition3DtoIndex(position.x, position.y, position.z)];
 
             int x = position.x;
             int y = position.y;
@@ -944,57 +676,31 @@ namespace VoxelTG.Terrain
         }
 
         /// <summary>
-        /// Add block to build queue and build it in next mesh update
-        /// </summary>
-        /// <param name="blockPos">position of block</param>
-        /// <param name="blockType">type of block you want to place</param>
-        public void AddBlockToBuildList(BlockPosition blockPos, BlockType blockType)
-        {
-            AddBlockToBuildList(new BlockData(blockType, blockPos));
-        }
-        /// <summary>
-        /// Add block to build queue and build it in next mesh update
-        /// </summary>
-        /// <param name="data">data of block you want to place</param>
-        public void AddBlockToBuildList(BlockData data)
-        {
-            if (!blocksToBuild.Contains(data))
-                blocksToBuild.Add(data);
-        }
-
-        /// <summary>
-        /// Add parameter to parameter queue and add it in next mesh update
-        /// </summary>
-        /// <param name="param">parameter you want to set</param>
-        /// <param name="value">value of parameter</param>
-        /// <param name="overrideIfExists">override value if queue contains parameter of same type</param>
-        public void AddParameterToList(BlockParameter param, short value, bool overrideIfExists = true)
-        {
-            if (!parametersToAdd.ContainsKey(param))
-                parametersToAdd.Add(param, value);
-            else if (overrideIfExists)
-                parametersToAdd[param] = value;
-        }
-
-        /// <summary>
         /// Listener for World build update timer
         /// </summary>
-        private void BuildBlocks()
+        private void OnBuildTick(int tick)
         {
-            // set parameters
-            foreach (var param in parametersToAdd)
+            if (!IsMeshRebuildingInProgress)
             {
-                SetParameters(param.Key, param.Value);
-            }
+                if (NeedsRebuild || (ShouldUpdateLiquid && tick % World.Instance.BuildTicksPerWaterUpdate == 0))
+                {
+                    // copy block parameters
+                    if(blockParametersBuffer.Count > 0)
+                    {
+                        foreach(var pair in blockParametersBuffer)
+                        {
+                            blockParameters[pair.Key] = pair.Value;
+                        }
+                        blockParametersBuffer.Clear();
+                    }
 
-            parametersToAdd.Clear();
+                    NativeArray<BlockType> blocksBuffer = new NativeArray<BlockType>(Blocks, Allocator.Persistent);
+                    var liquidHandle = ShouldUpdateLiquid ? InitSimulateLiquidJob(blocksBuffer).Schedule() : default;
+                    var meshHandle = InitCreateMeshDataJob(blocksBuffer).Schedule(liquidHandle);
 
-            // update blocks
-            if (blocksToBuild.Count > 0)
-            {
-                BlockData[] datas = blocksToBuild.ToArray();
-                blocksToBuild.Clear();
-                SetBlocks(datas, SetBlockSettings.VANISH);
+                    World.Instance.ScheduleMeshRebuild(this, meshHandle, blocksBuffer, NeedsRebuild);
+                    NeedsRebuild = false;
+                }
             }
         }
 
@@ -1007,12 +713,12 @@ namespace VoxelTG.Terrain
         {
             return;
 
-            if (isTerrainModified && blocks.IsCreated)
+            if (IsTerrainModified && Blocks.IsCreated)
             {
                 // TODO: save parameters
                 //NativeArray<BlockParameter> blockParameterKeys = blockParameters.GetKeyArray(Allocator.Temp);
                 //NativeArray<short> blockParameterValues = blockParameters.GetValueArray(Allocator.Temp);
-                ChunkSaveData data = new ChunkSaveData(blocks.ToArray());
+                ChunkSaveData data = new ChunkSaveData(Blocks.ToArray());
 
                 SerializableVector2Int serializableChunkPos = SerializableVector2Int.FromVector2Int(ChunkPosition);
                 // add new key or update existing data

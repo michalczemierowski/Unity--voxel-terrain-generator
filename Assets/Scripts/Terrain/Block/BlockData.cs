@@ -6,15 +6,15 @@ namespace VoxelTG.Terrain.Blocks
 {
     public struct BlockData
     {
-        public BlockType blockType;
-        public BlockPosition position;
-        public bool callUpdate;
+        public BlockType BlockType { get; private set; }
+        public BlockPosition Position { get; private set; }
+        public SetBlockSettings SetBlockSettings { get; private set; }
 
-        public BlockData(BlockType blockType, BlockPosition position, bool callUpdate = true)
+        public BlockData(BlockType blockType, BlockPosition position, SetBlockSettings setBlockSettings)
         {
-            this.blockType = blockType;
-            this.position = position;
-            this.callUpdate = callUpdate;
+            BlockType = blockType;
+            Position = position;
+            SetBlockSettings = setBlockSettings;
         }
     }
 }

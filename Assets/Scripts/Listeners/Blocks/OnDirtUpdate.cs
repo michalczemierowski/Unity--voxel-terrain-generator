@@ -30,7 +30,7 @@ namespace VoxelTG.Blocks.Listeners
             {
                 // if args[0] == 1 build grass block
                 if (args.Length > 0 && args[0] == 1)
-                    data.chunk.AddBlockToBuildList(data.LocalPosition, BlockType.GRASS_BLOCK);
+                    data.chunk.SetBlock(data.LocalPosition, BlockType.GRASS_BLOCK, SetBlockSettings.PLACE);
                 else
                     // schedule grass build and pass args[0] = 1
                     World.ScheduleUpdate(data.chunk, data.LocalPosition, Random.Range(100, 200), 1);

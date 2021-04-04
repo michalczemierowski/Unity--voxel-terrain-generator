@@ -50,7 +50,7 @@ namespace VoxelTG.Terrain.Blocks
     {
         NONE,
         ROTATION,
-        WATER_SOURCE_DISTANCE,
+        LIQUID_SOURCE_DISTANCE,
         BLOCK_TYPE
     }
 }

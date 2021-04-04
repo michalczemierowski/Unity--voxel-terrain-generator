@@ -231,10 +231,8 @@ namespace VoxelTG.Player.Interactions
                 InventoryItemMaterial inventoryItemMaterial = (InventoryItemMaterial)PlayerController.InventorySystem.HandSlot.Item;
                 BlockStructure block = WorldData.GetBlockData(inventoryItemMaterial.BlockType);
 
-                if (block.shape == BlockShape.HALF_BLOCK)
-                    chunk.SetParameters(new BlockParameter(blockPosition, ParameterType.ROTATION), (short)(Mathf.RoundToInt(cameraTransform.eulerAngles.y / 90) * 90));
-                if (block.type == BlockType.WATER)
-                    chunk.SetParameters(new BlockParameter(blockPosition, ParameterType.WATER_SOURCE_DISTANCE), 8);
+                //if (block.shape == BlockShape.HALF_BLOCK)
+                //    chunk.SetBlockParameter(new BlockParameter(blockPosition, ParameterType.ROTATION), (short)(Mathf.RoundToInt(cameraTransform.eulerAngles.y / 90) * 90));
 
                 BlockType activeBlockType = inventoryItemMaterial.BlockType;
 
@@ -299,7 +297,7 @@ namespace VoxelTG.Player.Interactions
         private void OnBlockDestroyed(Chunk chunk, BlockPosition blockPosition)
         {
             // remove parameters from destroyed block
-            chunk.ClearParameters(blockPosition);
+            chunk.RemoveParameterAt(blockPosition);
             // replace block with air and drop item (drop item because SetBlockSettings = SetBlockSettings.MINE)
             chunk.SetBlock(blockPosition, BlockType.AIR, SetBlockSettings.MINE);
             // reset active mining block position

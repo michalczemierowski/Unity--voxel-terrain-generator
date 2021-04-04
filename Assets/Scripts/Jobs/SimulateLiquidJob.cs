@@ -1,5 +1,4 @@
-using System.Collections;
-using System.Collections.Generic;
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
@@ -13,7 +12,8 @@ using static VoxelTG.WorldSettings;
 */
 namespace VoxelTG.Jobs
 {
-    public struct SimulateWaterJob : IJob
+    [BurstCompile]
+    public struct SimulateLiquidJob : IJob
     {
         public NativeArray<BlockType> blocks;
         public NativeArray<bool> needsRebuild;
@@ -22,6 +22,12 @@ namespace VoxelTG.Jobs
 
         public void Execute()
         {
+            for (int i = 0; i < needsRebuild.Length; i++)
+            {
+                needsRebuild[i] = false;
+            }
+
+            NativeArray<BlockType> newblocks = new NativeArray<BlockType>(blocks, Allocator.Temp);
             for (int x = 0; x < FixedChunkSizeXZ; x++)
             {
                 for (int z = 0; z < FixedChunkSizeXZ; z++)
@@ -31,18 +37,20 @@ namespace VoxelTG.Jobs
                         if (blocks[Utils.BlockPosition3DtoIndex(x, y, z)] == BlockType.WATER)
                         {
                             short source = WaterSourceMax;
-                            var param = new BlockParameter(new int3(x, y, z), ParameterType.WATER_SOURCE_DISTANCE);
+                            var param = new BlockParameter(new int3(x, y, z), ParameterType.LIQUID_SOURCE_DISTANCE);
                             if (blockParameters.TryGetValue(param, out short value))
                                 source = value;
 
-                            ProcessWater(x, y, z, source, 0);
+                            ProcessWater(x, y, z, source, 0, ref newblocks);
                         }
                     }
                 }
             }
+            newblocks.CopyTo(blocks);
+            newblocks.Dispose();
         }
 
-        private void ProcessWater(int x, int y, int z, short source, int step)
+        private void ProcessWater(int x, int y, int z, short source, int step, ref NativeArray<BlockType> newblocks)
         {
             if (++step > maxStepsPerFrame || y == 0 || source < 2)
                 return;
@@ -53,8 +61,8 @@ namespace VoxelTG.Jobs
             int belowIndex = Utils.BlockPosition3DtoIndex(belowPos);
             if (CanReplace(belowIndex, belowPos, WaterSourceMax))
             {
-                SetWater(belowIndex, belowPos, WaterSourceMax);
-                ProcessWater(belowPos.x, belowPos.y, belowPos.z, WaterSourceMax, step);
+                SetWater(belowIndex, belowPos, WaterSourceMax, ref newblocks);
+                ProcessWater(belowPos.x, belowPos.y, belowPos.z, WaterSourceMax, step, ref newblocks);
             }
             else if (WorldData.GetBlockState(blocks[belowIndex]) == BlockState.SOLID)
             {
@@ -64,8 +72,8 @@ namespace VoxelTG.Jobs
                     int leftIndex = Utils.BlockPosition3DtoIndex(leftPos);
                     if (CanReplace(leftIndex, leftPos, source))
                     {
-                        SetWater(leftIndex, leftPos, source);
-                        ProcessWater(leftPos.x, leftPos.y, leftPos.z, source, step);
+                        SetWater(leftIndex, leftPos, source, ref newblocks);
+                        ProcessWater(leftPos.x, leftPos.y, leftPos.z, source, step, ref newblocks);
                     }
                 }
 
@@ -75,8 +83,8 @@ namespace VoxelTG.Jobs
                     int rightIndex = Utils.BlockPosition3DtoIndex(rightPos);
                     if (CanReplace(rightIndex, rightPos, source))
                     {
-                        SetWater(rightIndex, rightPos, source);
-                        ProcessWater(rightPos.x, rightPos.y, rightPos.z, source, step);
+                        SetWater(rightIndex, rightPos, source, ref newblocks);
+                        ProcessWater(rightPos.x, rightPos.y, rightPos.z, source, step, ref newblocks);
                     }
                 }
 
@@ -86,8 +94,8 @@ namespace VoxelTG.Jobs
                     int backIndex = Utils.BlockPosition3DtoIndex(backPos);
                     if (CanReplace(backIndex, backPos, source))
                     {
-                        SetWater(backIndex, backPos, source);
-                        ProcessWater(backPos.x, backPos.y, backPos.z, source, step);
+                        SetWater(backIndex, backPos, source, ref newblocks);
+                        ProcessWater(backPos.x, backPos.y, backPos.z, source, step, ref newblocks);
                     }
                 }
 
@@ -97,17 +105,17 @@ namespace VoxelTG.Jobs
                     int frontIndex = Utils.BlockPosition3DtoIndex(frontPos);
                     if (CanReplace(frontIndex, frontPos, source))
                     {
-                        SetWater(frontIndex, frontPos, source);
-                        ProcessWater(frontPos.x, frontPos.y, frontPos.z, source, step);
+                        SetWater(frontIndex, frontPos, source, ref newblocks);
+                        ProcessWater(frontPos.x, frontPos.y, frontPos.z, source, step, ref newblocks);
                     }
                 }
             }
         }
 
-        private void SetWater(int index, int3 pos, short source)
+        private void SetWater(int index, int3 pos, short source, ref NativeArray<BlockType> newblocks)
         {
-            blocks[index] = BlockType.WATER;
-            var param = new BlockParameter(pos, ParameterType.WATER_SOURCE_DISTANCE);
+            newblocks[index] = BlockType.WATER;
+            var param = new BlockParameter(pos, ParameterType.LIQUID_SOURCE_DISTANCE);
             if (blockParameters.ContainsKey(param))
                 blockParameters[param] = source;
             else
@@ -120,7 +128,7 @@ namespace VoxelTG.Jobs
         {
             if (blocks[index] == BlockType.WATER)
             {
-                var param = new BlockParameter(pos, ParameterType.WATER_SOURCE_DISTANCE);
+                var param = new BlockParameter(pos, ParameterType.LIQUID_SOURCE_DISTANCE);
                 if (blockParameters.TryGetValue(param, out short value))
                     return source > value;
                 else
