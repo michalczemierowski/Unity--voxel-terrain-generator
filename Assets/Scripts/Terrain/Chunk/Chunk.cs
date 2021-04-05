@@ -59,6 +59,7 @@ namespace VoxelTG.Terrain
         public bool IsMeshRebuildingInProgress => World.Instance.IsInRebuildQueue(this);
 
         public Dictionary<BlockParameter, short> blockParametersBuffer;
+        public NativeArray<bool> liquidRebuildArray;
 
         /// <summary>
         /// Array containing chunk block structure [x,y,z]
@@ -83,7 +84,6 @@ namespace VoxelTG.Terrain
         private ChunkAnimation chunkAnimation;
 
         private NativeHashMap<BlockParameter, short> blockParameters;
-        private NativeArray<bool> liquidRebuildArray;
 
         private NativeList<float3> blockVerticles;
         private NativeList<int> blockTriangles;
@@ -166,6 +166,11 @@ namespace VoxelTG.Terrain
         {
             if (!Blocks.IsCreated)
                 return;
+
+            // remove from neighbour list
+            NeighbourChunks.Remove();
+            NeighbourChunks = null;
+
             // save game before quitting
             SaveDataInWorldDictionary();
 

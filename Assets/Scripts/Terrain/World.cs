@@ -638,6 +638,8 @@ namespace VoxelTG
                         {
                             job.blocksBuffer.CopyTo(job.chunk.Blocks);
                             job.blocksBuffer.Dispose();
+
+                            job.chunk.NeighbourChunks.SyncBorders();
                         }
                         else
                             LoadedChunks++;

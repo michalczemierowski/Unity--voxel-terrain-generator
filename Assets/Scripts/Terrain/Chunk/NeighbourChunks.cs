@@ -9,8 +9,11 @@ namespace VoxelTG.Terrain.Chunks
     public class NeighbourChunks
     {
         private Chunk[] neighbours;
+        private Chunk chunk;
+
         public NeighbourChunks(Chunk chunk)
         {
+            this.chunk = chunk;
             neighbours = new Chunk[9];
 
             World world = World.Instance;
@@ -25,6 +28,16 @@ namespace VoxelTG.Terrain.Chunks
                 this[dir] = neighbour;
                 if (neighbour != null && neighbour.NeighbourChunks != null)
                     neighbour.NeighbourChunks[dir.GetOpposite()] = chunk;
+            }
+        }
+
+        public void Remove()
+        {
+            Direction[] allDirections = (Direction[])System.Enum.GetValues(typeof(Direction));
+            foreach (var dir in allDirections)
+            {
+                if (this[dir] != null)
+                    this[dir].NeighbourChunks[dir.GetOpposite()] = null;
             }
         }
 
@@ -135,7 +148,60 @@ namespace VoxelTG.Terrain.Chunks
 
         public void SyncBorders()
         {
+            // +x, -x, +z, -z
+            if (chunk.liquidRebuildArray[0] && this[Direction.E] != null)
+            {
+                var neighbour = this[Direction.E];
+                for (int y = 0; y < ChunkSizeY; y++)
+                {
+                    for (int z = 0; z < FixedChunkSizeXZ; z++)
+                    {
+                        neighbour.Blocks[Utils.BlockPosition3DtoIndex(0, y, z)] = chunk.Blocks[Utils.BlockPosition3DtoIndex(FixedChunkSizeXZ - 1, y, z)];
+                    }
+                }
+                neighbour.ShouldUpdateLiquid = true;
+            }
+            if (chunk.liquidRebuildArray[1] && this[Direction.W] != null)
+            {
+                var neighbour = this[Direction.W];
+                for (int y = 0; y < ChunkSizeY; y++)
+                {
+                    for (int z = 0; z < FixedChunkSizeXZ; z++)
+                    {
+                        neighbour.Blocks[Utils.BlockPosition3DtoIndex(FixedChunkSizeXZ - 1, y, z)] = chunk.Blocks[Utils.BlockPosition3DtoIndex(0, y, z)];
+                    }
+                }
+                neighbour.ShouldUpdateLiquid = true;
+            }
+            if (chunk.liquidRebuildArray[2] && this[Direction.N] != null)
+            {
+                var neighbour = this[Direction.N];
+                for (int y = 0; y < ChunkSizeY; y++)
+                {
+                    for (int x = 0; x < FixedChunkSizeXZ; x++)
+                    {
+                        neighbour.Blocks[Utils.BlockPosition3DtoIndex(x, y, 0)] = chunk.Blocks[Utils.BlockPosition3DtoIndex(x, y, FixedChunkSizeXZ - 1)];
+                    }
+                }
+                neighbour.ShouldUpdateLiquid = true;
+            }
+            if (chunk.liquidRebuildArray[3] && this[Direction.S] != null)
+            {
+                var neighbour = this[Direction.S];
+                for (int y = 0; y < ChunkSizeY; y++)
+                {
+                    for (int x = 0; x < FixedChunkSizeXZ; x++)
+                    {
+                        neighbour.Blocks[Utils.BlockPosition3DtoIndex(x, y, FixedChunkSizeXZ - 1)] = chunk.Blocks[Utils.BlockPosition3DtoIndex(x, y, 0)];
+                    }
+                }
+                neighbour.ShouldUpdateLiquid = true;
+            }
 
+            for (int i = 0; i < 4; i++)
+            {
+                chunk.liquidRebuildArray[i] = false;
+            }
         }
     }
 }

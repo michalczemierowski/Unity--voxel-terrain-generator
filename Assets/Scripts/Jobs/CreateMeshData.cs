@@ -20,17 +20,17 @@ namespace VoxelTG.Jobs
         [ReadOnly] public NativeArray<BiomeType> biomeTypes;
         [ReadOnly] public NativeHashMap<BlockParameter, short> blockParameters;
 
-        [WriteOnly] public NativeList<float3> blockVerticles;
-        [WriteOnly] public NativeList<int> blockTriangles;
-        [WriteOnly] public NativeList<float2> blockUVs;
+        public NativeList<float3> blockVerticles;
+        public NativeList<int> blockTriangles;
+        public NativeList<float2> blockUVs;
 
-        [WriteOnly] public NativeList<float3> liquidVerticles;
-        [WriteOnly] public NativeList<int> liquidTriangles;
-        [WriteOnly] public NativeList<float2> liquidUVs;
+        public NativeList<float3> liquidVerticles;
+        public NativeList<int> liquidTriangles;
+        public NativeList<float2> liquidUVs;
 
-        [WriteOnly] public NativeList<float3> plantsVerticles;
-        [WriteOnly] public NativeList<int> plantsTriangles;
-        [WriteOnly] public NativeList<float2> plantsUVs;
+        public NativeList<float3> plantsVerticles;
+        public NativeList<int> plantsTriangles;
+        public NativeList<float2> plantsUVs;
 
         #endregion
 
