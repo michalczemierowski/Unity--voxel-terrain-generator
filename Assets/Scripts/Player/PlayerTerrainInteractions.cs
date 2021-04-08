@@ -297,7 +297,7 @@ namespace VoxelTG.Player.Interactions
         private void OnBlockDestroyed(Chunk chunk, BlockPosition blockPosition)
         {
             // remove parameters from destroyed block
-            chunk.RemoveParameterAt(blockPosition);
+            chunk.RemoveAllParametersAt(blockPosition);
             // replace block with air and drop item (drop item because SetBlockSettings = SetBlockSettings.MINE)
             chunk.SetBlock(blockPosition, BlockType.AIR, SetBlockSettings.MINE);
             // reset active mining block position

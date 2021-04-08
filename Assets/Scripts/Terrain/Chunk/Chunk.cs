@@ -58,7 +58,8 @@ namespace VoxelTG.Terrain
 
         public bool IsMeshRebuildingInProgress => World.Instance.IsInRebuildQueue(this);
 
-        public Dictionary<BlockParameter, short> blockParametersBuffer;
+        public NativeHashMap<int, BlockParameter> blockParameters;
+        public Dictionary<int, BlockParameter> blockParametersBuffer;
         public NativeArray<bool> liquidRebuildArray;
 
         /// <summary>
@@ -82,8 +83,6 @@ namespace VoxelTG.Terrain
 
         private ChunkDissapearingAnimation chunkDissapearingAnimation;
         private ChunkAnimation chunkAnimation;
-
-        private NativeHashMap<BlockParameter, short> blockParameters;
 
         private NativeList<float3> blockVerticles;
         private NativeList<int> blockTriangles;
@@ -110,8 +109,8 @@ namespace VoxelTG.Terrain
             // init native containers
             Blocks = new NativeArray<BlockType>(FixedChunkSizeXZ * ChunkSizeY * FixedChunkSizeXZ, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
             biomeTypes = new NativeArray<BiomeType>(FixedChunkSizeXZ * FixedChunkSizeXZ, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
-            blockParameters = new NativeHashMap<BlockParameter, short>(512, Allocator.Persistent);
-            blockParametersBuffer = new Dictionary<BlockParameter, short>();
+            blockParameters = new NativeHashMap<int, BlockParameter>(512, Allocator.Persistent);
+            blockParametersBuffer = new Dictionary<int, BlockParameter>();
 
             liquidRebuildArray = new NativeArray<bool>(5, Allocator.Persistent);
 
@@ -416,24 +415,24 @@ namespace VoxelTG.Terrain
         /// </summary>
         /// <param name="parameter">parameter type</param>
         /// <param name="value">parameter value</param>
-        public void SetBlockParameter(BlockParameter parameter, short value)
+        public void SetBlockParameter(int3 position, ParameterType parameterType, byte value)
         {
-            NeighbourChunks.SyncNeighbourParameters(parameter, value);
-            blockParametersBuffer[parameter] = value;
+            NeighbourChunks.SyncNeighbourParameters(position, parameterType, value);
+            SetBlockParameterWithoutSync(position, parameterType, value);
         }
 
-        public void SetBlockParameterWithoutSync(BlockParameter parameter, short value)
+        public void SetBlockParameterWithoutSync(int3 position, ParameterType parameterType, byte value)
         {
-            blockParametersBuffer[parameter] = value;
+            blockParametersBuffer[Utils.GetParameterIndex(position, parameterType)] = new BlockParameter(ParameterType.LIQUID_SOURCE_DISTANCE, value);
         }
 
         /// <summary>
         /// Remove all parameters from block
         /// </summary>
         /// <param name="blockPosition">position of block</param>
-        public void RemoveParameterAt(BlockPosition blockPosition)
+        public void RemoveAllParametersAt(BlockPosition blockPosition)
         {
-            RemoveParameterAt(blockPosition.ToInt3());
+            RemoveAllParametersAt(blockPosition.ToInt3());
         }
         /// <summary>
         /// Remove all parameters from block
@@ -441,29 +440,39 @@ namespace VoxelTG.Terrain
         /// <param name="x">x position of block</param>
         /// <param name="y">y position of block</param>
         /// <param name="z">z position of block</param>
-        public void RemoveParameterAt(int x, int y, int z)
+        public void RemoveAllParametersAt(int x, int y, int z)
         {
-            RemoveParameterAt(new int3(x, y, z));
+            RemoveAllParametersAt(new int3(x, y, z));
         }
         /// <summary>
         /// Remove all parameters from block
         /// </summary>
-        /// <param name="blockPos">position of block</param>
-        public void RemoveParameterAt(int3 blockPos)
+        /// <param name="position">position of block</param>
+        public void RemoveAllParametersAt(int3 position)
         {
-            // TODO: use blockParametersBuffer
-            BlockParameter key = new BlockParameter(blockPos);
-            NeighbourChunks.SyncNeighbourParametersRemove(key);
-
-            while (blockParameters.ContainsKey(key))
-                blockParameters.Remove(key);
+            int index = Utils.GetParameterIndex(position, ParameterType.NONE);
+            for (int i = 0; i < (byte)ParameterType.LAST; i++)
+            {
+                int key = index + i;
+                if (blockParametersBuffer.ContainsKey(key))
+                {
+                    blockParametersBuffer.Remove(key);
+                    NeighbourChunks.SyncNeighbourParametersRemove(key);
+                }
+            }
         }
 
-        public void RemoveParameterAtWithoutSync(int3 blockPos)
+        public void RemoveParameterAtWithoutSync(int3 position)
         {
-            BlockParameter key = new BlockParameter(blockPos);
-            while (blockParameters.ContainsKey(key))
-                blockParameters.Remove(key);
+            int index = Utils.GetParameterIndex(position, ParameterType.NONE);
+            for (int i = 0; i < (byte)ParameterType.LAST; i++)
+            {
+                int key = index + i;
+                if (blockParametersBuffer.ContainsKey(key))
+                {
+                    blockParametersBuffer.Remove(key);
+                }
+            }
         }
 
         #endregion
@@ -573,7 +582,7 @@ namespace VoxelTG.Terrain
             }
 
             if (blockType == BlockType.WATER)
-                SetBlockParameter(new BlockParameter(blockPosition, ParameterType.LIQUID_SOURCE_DISTANCE), WaterSourceMax);
+                SetBlockParameter(blockPosition.ToInt3(), ParameterType.LIQUID_SOURCE_DISTANCE, WaterSourceMax);
 
             Blocks[Utils.BlockPosition3DtoIndex(blockPosition)] = blockType;
             IsTerrainModified = true;
@@ -690,9 +699,9 @@ namespace VoxelTG.Terrain
                 if (NeedsRebuild || (ShouldUpdateLiquid && tick % World.Instance.BuildTicksPerWaterUpdate == 0))
                 {
                     // copy block parameters
-                    if(blockParametersBuffer.Count > 0)
+                    if (blockParametersBuffer.Count > 0)
                     {
-                        foreach(var pair in blockParametersBuffer)
+                        foreach (var pair in blockParametersBuffer)
                         {
                             blockParameters[pair.Key] = pair.Value;
                         }

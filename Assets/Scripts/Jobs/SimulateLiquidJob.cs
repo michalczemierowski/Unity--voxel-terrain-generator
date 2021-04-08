@@ -2,12 +2,13 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
+using VoxelTG.Extensions;
 using VoxelTG.Terrain;
 using VoxelTG.Terrain.Blocks;
 using static VoxelTG.WorldSettings;
 
 /*
- * Micha³ Czemierowski
+ * Michaï¿½ Czemierowski
  * https://github.com/michalczemierowski
 */
 namespace VoxelTG.Jobs
@@ -17,7 +18,7 @@ namespace VoxelTG.Jobs
     {
         public NativeArray<BlockType> blocks;
         public NativeArray<bool> needsRebuild;
-        public NativeHashMap<BlockParameter, short> blockParameters;
+        public NativeHashMap<int, BlockParameter> blockParameters;
         public int maxStepsPerFrame;
 
         public void Execute()
@@ -36,9 +37,8 @@ namespace VoxelTG.Jobs
                     {
                         if (blocks[Utils.BlockPosition3DtoIndex(x, y, z)] == BlockType.WATER)
                         {
-                            short source = WaterSourceMax;
-                            var param = new BlockParameter(new int3(x, y, z), ParameterType.LIQUID_SOURCE_DISTANCE);
-                            if (blockParameters.TryGetValue(param, out short value))
+                            byte source = WaterSourceMax;
+                            if (blockParameters.TryGetParameterValue(new int3(x, y, z), ParameterType.LIQUID_SOURCE_DISTANCE, out byte value))
                                 source = value;
 
                             ProcessWater(x, y, z, source, 0, ref newblocks);
@@ -50,7 +50,7 @@ namespace VoxelTG.Jobs
             newblocks.Dispose();
         }
 
-        private void ProcessWater(int x, int y, int z, short source, int step, ref NativeArray<BlockType> newblocks)
+        private void ProcessWater(int x, int y, int z, byte source, int step, ref NativeArray<BlockType> newblocks)
         {
             if (++step > maxStepsPerFrame || y == 0 || source < 2)
                 return;
@@ -112,24 +112,18 @@ namespace VoxelTG.Jobs
             }
         }
 
-        private void SetWater(int index, int3 pos, short source, ref NativeArray<BlockType> newblocks)
+        private void SetWater(int index, int3 pos, byte source, ref NativeArray<BlockType> newblocks)
         {
             newblocks[index] = BlockType.WATER;
-            var param = new BlockParameter(pos, ParameterType.LIQUID_SOURCE_DISTANCE);
-            if (blockParameters.ContainsKey(param))
-                blockParameters[param] = source;
-            else
-                blockParameters.Add(param, source);
-
+            blockParameters.SetParameterValue(pos, ParameterType.LIQUID_SOURCE_DISTANCE, source);
             NeedsRebuild(pos);
         }
 
-        private bool CanReplace(int index, int3 pos, short source)
+        private bool CanReplace(int index, int3 pos, byte source)
         {
             if (blocks[index] == BlockType.WATER)
             {
-                var param = new BlockParameter(pos, ParameterType.LIQUID_SOURCE_DISTANCE);
-                if (blockParameters.TryGetValue(param, out short value))
+                if (blockParameters.TryGetParameterValue(pos, ParameterType.LIQUID_SOURCE_DISTANCE, out byte value))
                     return source > value;
                 else
                     return false;

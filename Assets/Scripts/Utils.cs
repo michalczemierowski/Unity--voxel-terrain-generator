@@ -144,6 +144,12 @@ namespace VoxelTG
             float pow = math.pow(10, place);
             return math.round(value * pow) / pow;
         }
+
+        public static int GetParameterIndex(int3 position, ParameterType parameterType)
+        {
+            int index = BlockPosition3DtoIndex(position) * byte.MaxValue + (byte)parameterType;
+            return index;
+        }
     }
 }
 

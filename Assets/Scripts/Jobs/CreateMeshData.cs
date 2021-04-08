@@ -2,6 +2,7 @@
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
+using VoxelTG.Extensions;
 using VoxelTG.Terrain;
 using VoxelTG.Terrain.Blocks;
 
@@ -18,7 +19,7 @@ namespace VoxelTG.Jobs
 
         [ReadOnly] public NativeArray<BlockType> blocks;
         [ReadOnly] public NativeArray<BiomeType> biomeTypes;
-        [ReadOnly] public NativeHashMap<BlockParameter, short> blockParameters;
+        [ReadOnly] public NativeHashMap<int, BlockParameter> blockParameters;
 
         public NativeList<float3> blockVerticles;
         public NativeList<int> blockTriangles;
@@ -60,7 +61,7 @@ namespace VoxelTG.Jobs
 
                             BlockStructure block = WorldData.GetBlockData(blockType);
 
-                            short param = 0;
+                            byte param = 0;
 
                             // assign default values
                             var verticles = blockVerticles;
@@ -76,13 +77,13 @@ namespace VoxelTG.Jobs
                                     tris = liquidTriangles;
 
                                     // set to full by default to not save full blocks in game saves
-                                    if (!blockParameters.TryGetValue(new BlockParameter(new int3(x, y, z), ParameterType.LIQUID_SOURCE_DISTANCE), out param))
+                                    if (!blockParameters.TryGetParameterValue(new int3(x, y, z), ParameterType.LIQUID_SOURCE_DISTANCE, out param))
                                         param = 8;
 
                                     BlockstateLiquid(drawFace, x, y, z);
                                     break;
                                 case BlockShape.HALF_BLOCK:
-                                    blockParameters.TryGetValue(new BlockParameter(new int3(x, y, z), ParameterType.ROTATION), out param);
+                                    blockParameters.TryGetParameterValue(new int3(x, y, z), ParameterType.ROTATION, out param);
 
                                     BlockstateSolidHalf(drawFace, x, y, z, param);
                                     break;
@@ -91,7 +92,7 @@ namespace VoxelTG.Jobs
                                     uvs = plantsUVs;
                                     tris = plantsTriangles;
 
-                                    blockParameters.TryGetValue(new BlockParameter(new int3(x, y, z), ParameterType.BLOCK_TYPE), out param);
+                                    blockParameters.TryGetParameterValue(new int3(x, y, z), ParameterType.BLOCK_TYPE, out param);
 
                                     BlockstateGrass(drawFace, x, y, z);
                                     break;
@@ -109,10 +110,10 @@ namespace VoxelTG.Jobs
                                     {
                                         short value;
                                         // R L F B
-                                        nearbyLiquidSourceDistance[0] = blockParameters.TryGetValue(new BlockParameter(new int3(x + 1, y, z), ParameterType.LIQUID_SOURCE_DISTANCE), out value) ? value : (short)0;
-                                        nearbyLiquidSourceDistance[1] = blockParameters.TryGetValue(new BlockParameter(new int3(x - 1, y, z), ParameterType.LIQUID_SOURCE_DISTANCE), out value) ? value : (short)0;
-                                        nearbyLiquidSourceDistance[2] = blockParameters.TryGetValue(new BlockParameter(new int3(x, y, z + 1), ParameterType.LIQUID_SOURCE_DISTANCE), out value) ? value : (short)0;
-                                        nearbyLiquidSourceDistance[3] = blockParameters.TryGetValue(new BlockParameter(new int3(x, y, z - 1), ParameterType.LIQUID_SOURCE_DISTANCE), out value) ? value : (short)0;
+                                        nearbyLiquidSourceDistance[0] = blockParameters.GetParameterValue(new int3(x + 1, y, z), ParameterType.LIQUID_SOURCE_DISTANCE);
+                                        nearbyLiquidSourceDistance[1] = blockParameters.GetParameterValue(new int3(x - 1, y, z), ParameterType.LIQUID_SOURCE_DISTANCE);
+                                        nearbyLiquidSourceDistance[2] = blockParameters.GetParameterValue(new int3(x, y, z + 1), ParameterType.LIQUID_SOURCE_DISTANCE);
+                                        nearbyLiquidSourceDistance[3] = blockParameters.GetParameterValue(new int3(x, y, z - 1), ParameterType.LIQUID_SOURCE_DISTANCE);
 
                                         bool reverse = block.GetWaterShape((BlockFace)i, blockPos, verts, uv, param, nearbyLiquidSourceDistance);
                                         verticles.AddRange(verts);
@@ -207,17 +208,16 @@ namespace VoxelTG.Jobs
 
         private void BlockstateLiquid(NativeArray<bool> sides, int x, int y, int z)
         {
-            short waterSourceDistance;
-            if(!blockParameters.TryGetValue(new BlockParameter(new int3(x, y, z), ParameterType.LIQUID_SOURCE_DISTANCE), out waterSourceDistance))
+            byte waterSourceDistance;
+            if (!blockParameters.TryGetParameterValue(new int3(x, y, z), ParameterType.LIQUID_SOURCE_DISTANCE, out waterSourceDistance))
                 waterSourceDistance = 8;
-                
+
             NativeArray<int> nearbyWaterSources = new NativeArray<int>(4, Allocator.Temp);
 
-            short value;
-            nearbyWaterSources[0] = blockParameters.TryGetValue(new BlockParameter(new int3(x, y, z - 1), ParameterType.LIQUID_SOURCE_DISTANCE), out value) ? value : waterSourceDistance;
-            nearbyWaterSources[1] = blockParameters.TryGetValue(new BlockParameter(new int3(x, y, z + 1), ParameterType.LIQUID_SOURCE_DISTANCE), out value) ? value : waterSourceDistance;
-            nearbyWaterSources[2] = blockParameters.TryGetValue(new BlockParameter(new int3(x - 1, y, z), ParameterType.LIQUID_SOURCE_DISTANCE), out value) ? value : waterSourceDistance;
-            nearbyWaterSources[3] = blockParameters.TryGetValue(new BlockParameter(new int3(x + 1, y, z), ParameterType.LIQUID_SOURCE_DISTANCE), out value) ? value : waterSourceDistance;
+            nearbyWaterSources[0] = blockParameters.GetParameterValue(new int3(x, y, z - 1), ParameterType.LIQUID_SOURCE_DISTANCE);
+            nearbyWaterSources[1] = blockParameters.GetParameterValue(new int3(x, y, z + 1), ParameterType.LIQUID_SOURCE_DISTANCE);
+            nearbyWaterSources[2] = blockParameters.GetParameterValue(new int3(x - 1, y, z), ParameterType.LIQUID_SOURCE_DISTANCE);
+            nearbyWaterSources[3] = blockParameters.GetParameterValue(new int3(x + 1, y, z), ParameterType.LIQUID_SOURCE_DISTANCE);
 
             sides[0] = y < WorldSettings.ChunkSizeY - 1 &&
                 WorldData.GetBlockState(blocks[BlockPosition3DtoIndex(x, y + 1, z)]) == BlockState.TRANSPARENT;
@@ -231,6 +231,8 @@ namespace VoxelTG.Jobs
                 WorldData.GetBlockState(blocks[BlockPosition3DtoIndex(x - 1, y, z)]) == BlockState.TRANSPARENT;
             sides[5] = nearbyWaterSources[3] < waterSourceDistance ||
                 WorldData.GetBlockState(blocks[BlockPosition3DtoIndex(x + 1, y, z)]) == BlockState.TRANSPARENT;
+
+            nearbyWaterSources.Dispose();
         }
 
         private void BlockstateSolidHalf(NativeArray<bool> sides, int x, int y, int z, int3 rotation)

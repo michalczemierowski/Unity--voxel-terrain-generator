@@ -10,39 +10,18 @@ namespace VoxelTG.Terrain.Blocks
     [System.Serializable]
     public struct BlockParameter : IEquatable<BlockParameter>
     {
-        public int3 blockPos;
-        public ParameterType type;
+        public ParameterType Type { get; private set; }
+        public byte Value { get; private set; }
 
-        public BlockParameter(int3 blockPos, ParameterType type)
+        public BlockParameter(ParameterType type, byte value)
         {
-            this.blockPos = blockPos;
-            this.type = type;
-        }
-
-        public BlockParameter(BlockPosition blockPos, ParameterType type)
-        {
-            this.blockPos = new int3(blockPos.x, blockPos.y, blockPos.z);
-            this.type = type;
-        }
-
-        public BlockParameter(int3 blockPos)
-        {
-            this.blockPos = blockPos;
-            this.type = ParameterType.NONE;
+            Type = type;
+            Value = value;
         }
 
         public bool Equals(BlockParameter other)
         {
-            if (type == ParameterType.NONE)
-                return blockPos.Equals(other.blockPos);
-
-            return blockPos.Equals(other.blockPos) && type == other.type;
-        }
-
-        public override int GetHashCode()
-        {
-            return blockPos.GetHashCode() + (int)type;
-            //return TerrainChunk.Index3Dto1D(blockPos) + (int)type;
+            return Value == other.Value && Type == other.Type;
         }
     }
 
@@ -51,6 +30,9 @@ namespace VoxelTG.Terrain.Blocks
         NONE,
         ROTATION,
         LIQUID_SOURCE_DISTANCE,
-        BLOCK_TYPE
+        BLOCK_TYPE,
+
+        // it should always be at the end
+        LAST
     }
 }

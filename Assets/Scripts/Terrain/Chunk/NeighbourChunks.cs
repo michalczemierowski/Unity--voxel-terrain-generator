@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Unity.Mathematics;
 using UnityEngine;
+using VoxelTG.Extensions;
 using VoxelTG.Terrain.Blocks;
 using static VoxelTG.WorldSettings;
 
@@ -33,10 +34,13 @@ namespace VoxelTG.Terrain.Chunks
 
         public void Remove()
         {
+            if (this == null)
+                return;
+
             Direction[] allDirections = (Direction[])System.Enum.GetValues(typeof(Direction));
             foreach (var dir in allDirections)
             {
-                if (this[dir] != null)
+                if (this[dir] != null && this[dir].NeighbourChunks != null)
                     this[dir].NeighbourChunks[dir.GetOpposite()] = null;
             }
         }
@@ -62,58 +66,32 @@ namespace VoxelTG.Terrain.Chunks
             return false;
         }
 
-        public void SyncNeighbourParameters(BlockParameter parameter, short value)
+        public void SyncNeighbourParameters(int3 position, ParameterType parameterType, byte value)
         {
-            int3 blockPos = parameter.blockPos;
             // check neighbours
-            if (blockPos.x == ChunkSizeXZ && this[Direction.E])
-            {
-                BlockParameter neighbourParameter = parameter;
-                neighbourParameter.blockPos = new int3(0, blockPos.y, blockPos.z);
-                this[Direction.E].SetBlockParameterWithoutSync(neighbourParameter, value);
-            }
-            else if (blockPos.x == 1 && this[Direction.W])
-            {
-                BlockParameter neighbourParameter = parameter;
-                neighbourParameter.blockPos = new int3(FixedChunkSizeXZ - 1, blockPos.y, blockPos.z);
-                this[Direction.W].SetBlockParameterWithoutSync(neighbourParameter, value);
-            }
+            if (position.x == ChunkSizeXZ && this[Direction.E])
+                this[Direction.E].SetBlockParameterWithoutSync(new int3(0, position.y, position.z), parameterType, value);
+            else if (position.x == 1 && this[Direction.W])
+                this[Direction.W].SetBlockParameterWithoutSync(new int3(ChunkSizeXZ + 1, position.y, position.z), parameterType, value);
 
-            if (blockPos.z == 16 && this[Direction.N])
-            {
-                BlockParameter neighbourParameter = parameter;
-                neighbourParameter.blockPos = new int3(blockPos.x, blockPos.y, 0);
-                this[Direction.N].SetBlockParameterWithoutSync(neighbourParameter, value);
-            }
-            else if (blockPos.z == 1 && this[Direction.S])
-            {
-                BlockParameter neighbourParameter = parameter;
-                neighbourParameter.blockPos = new int3(blockPos.x, blockPos.y, FixedChunkSizeXZ - 1);
-                this[Direction.S].SetBlockParameterWithoutSync(neighbourParameter, value);
-            }
+            if (position.z == 16 && this[Direction.N])
+                this[Direction.N].SetBlockParameterWithoutSync(new int3(position.x, position.y, 0), parameterType, value);
+            else if (position.z == 1 && this[Direction.S])
+                this[Direction.S].SetBlockParameterWithoutSync(new int3(position.x, position.y, ChunkSizeXZ + 1), parameterType, value);
         }
 
-        public void SyncNeighbourParametersRemove(BlockParameter parameter)
+        public void SyncNeighbourParametersRemove(int3 position)
         {
-            int3 blockPosition = parameter.blockPos;
             // check neighbours
-            if (blockPosition.x == ChunkSizeXZ && this[Direction.E])
-            {
-                this[Direction.E].RemoveParameterAtWithoutSync(new int3(0, blockPosition.y, blockPosition.z));
-            }
-            else if (blockPosition.x == 1 && this[Direction.W])
-            {
-                this[Direction.W].RemoveParameterAtWithoutSync(new int3(FixedChunkSizeXZ - 1, blockPosition.y, blockPosition.z));
-            }
+            if (position.x == ChunkSizeXZ && this[Direction.E])
+                this[Direction.E].RemoveParameterAtWithoutSync(new int3(0, position.y, position.z));
+            else if (position.x == 1 && this[Direction.W])
+                this[Direction.W].RemoveParameterAtWithoutSync(new int3(ChunkSizeXZ, position.y, position.z));
 
-            if (blockPosition.z == 16 && this[Direction.N])
-            {
-                this[Direction.N].RemoveParameterAtWithoutSync(new int3(blockPosition.x, blockPosition.y, 0));
-            }
-            else if (blockPosition.z == 1 && this[Direction.S])
-            {
-                this[Direction.S].RemoveParameterAtWithoutSync(new int3(blockPosition.x, blockPosition.y, FixedChunkSizeXZ - 1));
-            }
+            if (position.z == 16 && this[Direction.N])
+                this[Direction.N].RemoveParameterAtWithoutSync(new int3(position.x, position.y, 0));
+            else if (position.z == 1 && this[Direction.S])
+                this[Direction.S].RemoveParameterAtWithoutSync(new int3(position.x, position.y, ChunkSizeXZ));
         }
 
         public void SyncNeighbourBlocks(List<Chunk> chunksToBuild, BlockPosition blockPosition, BlockType blockType)
@@ -128,7 +106,7 @@ namespace VoxelTG.Terrain.Chunks
             else if (blockPosition.x == 1 && this[Direction.W])
             {
                 var chunk = this[Direction.W];
-                chunk.SetBlock(FixedChunkSizeXZ - 1, blockPosition.y, blockPosition.z, blockType, SetBlockSettings.VANISH);
+                chunk.SetBlock(ChunkSizeXZ + 1, blockPosition.y, blockPosition.z, blockType, SetBlockSettings.VANISH);
                 chunksToBuild.Add(chunk);
             }
 
@@ -141,7 +119,7 @@ namespace VoxelTG.Terrain.Chunks
             else if (blockPosition.z == 1 && this[Direction.S])
             {
                 var chunk = this[Direction.S];
-                chunk.SetBlock(blockPosition.x, blockPosition.y, FixedChunkSizeXZ - 1, blockType, SetBlockSettings.VANISH);
+                chunk.SetBlock(blockPosition.x, blockPosition.y, ChunkSizeXZ + 1, blockType, SetBlockSettings.VANISH);
                 chunksToBuild.Add(chunk);
             }
         }
@@ -156,7 +134,8 @@ namespace VoxelTG.Terrain.Chunks
                 {
                     for (int z = 0; z < FixedChunkSizeXZ; z++)
                     {
-                        neighbour.Blocks[Utils.BlockPosition3DtoIndex(0, y, z)] = chunk.Blocks[Utils.BlockPosition3DtoIndex(FixedChunkSizeXZ - 1, y, z)];
+                        neighbour.Blocks[Utils.BlockPosition3DtoIndex(0, y, z)] = chunk.Blocks[Utils.BlockPosition3DtoIndex(ChunkSizeXZ, y, z)];
+                        SyncParameters(neighbour, new int3(ChunkSizeXZ, y, z), new int3(0, y, z));
                     }
                 }
                 neighbour.ShouldUpdateLiquid = true;
@@ -168,7 +147,8 @@ namespace VoxelTG.Terrain.Chunks
                 {
                     for (int z = 0; z < FixedChunkSizeXZ; z++)
                     {
-                        neighbour.Blocks[Utils.BlockPosition3DtoIndex(FixedChunkSizeXZ - 1, y, z)] = chunk.Blocks[Utils.BlockPosition3DtoIndex(0, y, z)];
+                        neighbour.Blocks[Utils.BlockPosition3DtoIndex(ChunkSizeXZ + 1, y, z)] = chunk.Blocks[Utils.BlockPosition3DtoIndex(1, y, z)];
+                        SyncParameters(neighbour, new int3(1, y, z), new int3(ChunkSizeXZ + 1, y, z));
                     }
                 }
                 neighbour.ShouldUpdateLiquid = true;
@@ -180,7 +160,8 @@ namespace VoxelTG.Terrain.Chunks
                 {
                     for (int x = 0; x < FixedChunkSizeXZ; x++)
                     {
-                        neighbour.Blocks[Utils.BlockPosition3DtoIndex(x, y, 0)] = chunk.Blocks[Utils.BlockPosition3DtoIndex(x, y, FixedChunkSizeXZ - 1)];
+                        neighbour.Blocks[Utils.BlockPosition3DtoIndex(x, y, 0)] = chunk.Blocks[Utils.BlockPosition3DtoIndex(x, y, ChunkSizeXZ)];
+                        SyncParameters(neighbour, new int3(x, y, ChunkSizeXZ), new int3(x, y, 0));
                     }
                 }
                 neighbour.ShouldUpdateLiquid = true;
@@ -192,7 +173,8 @@ namespace VoxelTG.Terrain.Chunks
                 {
                     for (int x = 0; x < FixedChunkSizeXZ; x++)
                     {
-                        neighbour.Blocks[Utils.BlockPosition3DtoIndex(x, y, FixedChunkSizeXZ - 1)] = chunk.Blocks[Utils.BlockPosition3DtoIndex(x, y, 0)];
+                        neighbour.Blocks[Utils.BlockPosition3DtoIndex(x, y, ChunkSizeXZ + 1)] = chunk.Blocks[Utils.BlockPosition3DtoIndex(x, y, 1)];
+                        SyncParameters(neighbour, new int3(x, y, 1), new int3(x, y, ChunkSizeXZ + 1));
                     }
                 }
                 neighbour.ShouldUpdateLiquid = true;
@@ -201,6 +183,19 @@ namespace VoxelTG.Terrain.Chunks
             for (int i = 0; i < 4; i++)
             {
                 chunk.liquidRebuildArray[i] = false;
+            }
+
+            void SyncParameters(Chunk neighbour, int3 localPos, int3 otherPos)
+            {
+                int index = Utils.GetParameterIndex(localPos, ParameterType.NONE);
+                for (int i = 1; i < (byte)ParameterType.LAST; i++)
+                {
+                    int key = index + i;
+                    if (chunk.blockParameters.TryGetValue(key, out var param))
+                    {
+                        neighbour.SetBlockParameterWithoutSync(otherPos, param.Type, param.Value);
+                    }
+                }
             }
         }
     }

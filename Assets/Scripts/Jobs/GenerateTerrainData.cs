@@ -2,6 +2,7 @@
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
+using VoxelTG.Extensions;
 using VoxelTG.Terrain;
 using VoxelTG.Terrain.Blocks;
 // use WorldSettings variables
@@ -26,7 +27,7 @@ namespace VoxelTG.Jobs
 
         public NativeArray<BlockType> blockData;
         public NativeArray<BiomeType> biomeTypes;
-        [WriteOnly] public NativeHashMap<BlockParameter, short> blockParameters;
+        [WriteOnly] public NativeHashMap<int, BlockParameter> blockParameters;
 
         public Random random;
 
@@ -174,9 +175,9 @@ namespace VoxelTG.Jobs
                 lastBlock = blockData[Utils.BlockPosition3DtoIndex(x, y, z)] = blockType;
 
                 if (lastBlock == BlockType.GRASS)       // assing random block type to grass
-                    blockParameters.TryAdd(new BlockParameter(new int3(x, y, z), ParameterType.BLOCK_TYPE), (short)random.NextInt(0, 3));
+                    blockParameters.SetParameterValue(new int3(x, y, z), ParameterType.BLOCK_TYPE, (byte)random.NextInt(0, 3));
                 else if (lastBlock == BlockType.WATER)  // set source distance to 8 (full water block)
-                    blockParameters.TryAdd(new BlockParameter(new int3(x, y, z), ParameterType.LIQUID_SOURCE_DISTANCE), 8);
+                    blockParameters.SetParameterValue(new int3(x, y, z), ParameterType.LIQUID_SOURCE_DISTANCE, 8);
             }
         }
 
@@ -217,9 +218,9 @@ namespace VoxelTG.Jobs
                 lastBlock = blockData[Utils.BlockPosition3DtoIndex(x, y, z)] = blockType;
 
                 if (lastBlock == BlockType.GRASS)       // assing random block type to grass
-                    blockParameters.TryAdd(new BlockParameter(new int3(x, y, z), ParameterType.BLOCK_TYPE), (short)random.NextInt(0, 3));
+                    blockParameters.SetParameterValue(new int3(x, y, z), ParameterType.BLOCK_TYPE, (byte)random.NextInt(0, 3));
                 else if (lastBlock == BlockType.WATER)  // set source distance to 8 (full water block)
-                    blockParameters.TryAdd(new BlockParameter(new int3(x, y, z), ParameterType.LIQUID_SOURCE_DISTANCE), 8);
+                    blockParameters.SetParameterValue(new int3(x, y, z), ParameterType.LIQUID_SOURCE_DISTANCE, 8);
             }
         }
 
@@ -256,9 +257,9 @@ namespace VoxelTG.Jobs
                 lastBlock = blockData[Utils.BlockPosition3DtoIndex(x, y, z)] = blockType;
 
                 if (lastBlock == BlockType.GRASS)       // assing random block type to grass
-                    blockParameters.TryAdd(new BlockParameter(new int3(x, y, z), ParameterType.BLOCK_TYPE), (short)random.NextInt(0, 3));
+                    blockParameters.SetParameterValue(new int3(x, y, z), ParameterType.BLOCK_TYPE, (byte)random.NextInt(0, 3));
                 else if (lastBlock == BlockType.WATER)  // set source distance to 8 (full water block)
-                    blockParameters.TryAdd(new BlockParameter(new int3(x, y, z), ParameterType.LIQUID_SOURCE_DISTANCE), 8);
+                    blockParameters.SetParameterValue(new int3(x, y, z), ParameterType.LIQUID_SOURCE_DISTANCE, 8);
             }
         }
 
@@ -301,9 +302,9 @@ namespace VoxelTG.Jobs
                 lastBlock = blockData[Utils.BlockPosition3DtoIndex(x, y, z)] = blockType;
 
                 if (lastBlock == BlockType.GRASS)       // assing random block type to grass
-                    blockParameters.TryAdd(new BlockParameter(new int3(x, y, z), ParameterType.BLOCK_TYPE), (short)random.NextInt(0, 3));
+                    blockParameters.SetParameterValue(new int3(x, y, z), ParameterType.BLOCK_TYPE, (byte)random.NextInt(0, 3));
                 else if (lastBlock == BlockType.WATER)  // set source distance to 8 (full water block)
-                    blockParameters.TryAdd(new BlockParameter(new int3(x, y, z), ParameterType.LIQUID_SOURCE_DISTANCE), 8);
+                    blockParameters.SetParameterValue(new int3(x, y, z), ParameterType.LIQUID_SOURCE_DISTANCE, 8);
             }
         }
 
