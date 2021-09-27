@@ -63,17 +63,17 @@ namespace VoxelTG.Jobs
                             short param = 0;
 
                             // assign default values
-                            var verticles = blockVerticles;
-                            var uvs = blockUVs;
-                            var tris = blockTriangles;
+                            ref var verticles = ref blockVerticles;
+                            ref var uvs = ref blockUVs;
+                            ref var tris = ref blockTriangles;
 
                             // check for visible faces
                             switch (block.shape)
                             {
                                 case BlockShape.LIQUID:
-                                    verticles = liquidVerticles;
-                                    uvs = liquidUVs;
-                                    tris = liquidTriangles;
+                                    verticles = ref liquidVerticles;
+                                    uvs = ref liquidUVs;
+                                    tris = ref liquidTriangles;
 
                                     // set to full by default to not save full blocks in game saves
                                     if (!blockParameters.TryGetValue(new BlockParameter(new int3(x, y, z), ParameterType.WATER_SOURCE_DISTANCE), out param))
@@ -87,9 +87,9 @@ namespace VoxelTG.Jobs
                                     BlockstateSolidHalf(drawFace, x, y, z, param);
                                     break;
                                 case BlockShape.GRASS:
-                                    verticles = plantsVerticles;
-                                    uvs = plantsUVs;
-                                    tris = plantsTriangles;
+                                    verticles = ref plantsVerticles;
+                                    uvs = ref plantsUVs;
+                                    tris = ref plantsTriangles;
 
                                     blockParameters.TryGetValue(new BlockParameter(new int3(x, y, z), ParameterType.BLOCK_TYPE), out param);
 

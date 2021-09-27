@@ -30,7 +30,7 @@ namespace VoxelTG
         /// </summary>
         /// <param name="settingsType">type of setting</param>
         /// <param name="value">value you want to save</param>
-        public static void SetSetting(SettingsType settingsType, dynamic value)
+        public static void SetSetting(SettingsType settingsType, object value)
         {
             if (settingTypes.TryGetValue(settingsType, out SettingsValueType valueType))
             {
@@ -67,7 +67,7 @@ namespace VoxelTG
         /// <param name="settingsType">type of setting</param>
         /// <param name="resultValueType">setting value type</param>
         /// <returns>dynamic variable containing setting value</returns>
-        public static dynamic GetSetting(SettingsType settingsType, out Type resultValueType)
+        public static object GetSetting(SettingsType settingsType, out Type resultValueType)
         {
             if (settingTypes.TryGetValue(settingsType, out SettingsValueType valueType))
             {
@@ -94,7 +94,7 @@ namespace VoxelTG
         /// </summary>
         /// <param name="settingsType">type of setting</param>
         /// <returns>dynamic variable containing setting value</returns>
-        public static dynamic GetSetting(SettingsType settingsType)
+        public static object GetSetting(SettingsType settingsType)
         {
             if (settingTypes.TryGetValue(settingsType, out SettingsValueType valueType))
             {

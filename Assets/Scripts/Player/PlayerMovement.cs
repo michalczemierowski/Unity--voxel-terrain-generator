@@ -129,6 +129,9 @@ namespace VoxelTG.Player
                 currentChunk = World.GetChunk(x, z);
             }
 
+            if(currentChunk == null)
+                return;
+
             int bix = x - currentChunk.ChunkPosition.x;
             int biz = z - currentChunk.ChunkPosition.y;
 

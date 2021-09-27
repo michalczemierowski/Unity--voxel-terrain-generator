@@ -5,6 +5,7 @@ using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
+using UnityEngine.Rendering;
 using VoxelTG.Entities.Items;
 using VoxelTG.Jobs;
 using VoxelTG.Player;
@@ -96,33 +97,54 @@ namespace VoxelTG.Terrain
 
         #endregion
 
+        public event Action<Chunk> OnEnabled;
+
         #region // === Monobehaviour === \\
 
-        private void OnEnable()
+        public void Init()
         {
-            // init native containers
-            blocks = new NativeArray<BlockType>(FixedChunkSizeXZ * ChunkSizeY * FixedChunkSizeXZ, Allocator.Persistent);
-            lightingData = new NativeArray<int>(FixedChunkSizeXZ * ChunkSizeY * FixedChunkSizeXZ, Allocator.Persistent);
-            biomeTypes = new NativeArray<BiomeType>(FixedChunkSizeXZ * FixedChunkSizeXZ, Allocator.Persistent);
-            blockParameters = new NativeHashMap<BlockParameter, short>(2048, Allocator.Persistent);
+            StopAllCoroutines();
+            StartCoroutine(InitCoroutine());
+        }
 
-            blockVerticles = new NativeList<float3>(16384, Allocator.Persistent);
-            blockTriangles = new NativeList<int>(32768, Allocator.Persistent);
-            blockUVs = new NativeList<float2>(16384, Allocator.Persistent);
+        private IEnumerator InitCoroutine()
+        {
+            if (!blocks.IsCreated)
+            {
+                // init native containers
+                blocks = new NativeArray<BlockType>(FixedChunkSizeXZ * ChunkSizeY * FixedChunkSizeXZ, Allocator.Persistent);
+                yield return null;
+                lightingData = new NativeArray<int>(FixedChunkSizeXZ * ChunkSizeY * FixedChunkSizeXZ, Allocator.Persistent);
+                yield return null;
+                biomeTypes = new NativeArray<BiomeType>(FixedChunkSizeXZ * FixedChunkSizeXZ, Allocator.Persistent);
+                yield return null;
+                blockParameters = new NativeHashMap<BlockParameter, short>(2048, Allocator.Persistent);
 
-            liquidVerticles = new NativeList<float3>(8192, Allocator.Persistent);
-            liquidTriangles = new NativeList<int>(16384, Allocator.Persistent);
-            liquidUVs = new NativeList<float2>(8192, Allocator.Persistent);
+                yield return null;
+                blockVerticles = new NativeList<float3>(16384, Allocator.Persistent);
+                yield return null;
+                blockTriangles = new NativeList<int>(32768, Allocator.Persistent);
+                yield return null;
+                blockUVs = new NativeList<float2>(16384, Allocator.Persistent);
 
-            plantsVerticles = new NativeList<float3>(4096, Allocator.Persistent);
-            plantsTriangles = new NativeList<int>(8192, Allocator.Persistent);
-            plantsUVs = new NativeList<float2>(4096, Allocator.Persistent);
+                yield return null;
+                liquidVerticles = new NativeList<float3>(8192, Allocator.Persistent);
+                yield return null;
+                liquidTriangles = new NativeList<int>(16384, Allocator.Persistent);
+                yield return null;
+                liquidUVs = new NativeList<float2>(8192, Allocator.Persistent);
 
-            chunkDissapearingAnimation = GetComponent<ChunkDissapearingAnimation>();
-            chunkAnimation = GetComponent<ChunkAnimation>();
+                yield return null;
+                plantsVerticles = new NativeList<float3>(4096, Allocator.Persistent);
+                yield return null;
+                plantsTriangles = new NativeList<int>(8192, Allocator.Persistent);
+                yield return null;
+                plantsUVs = new NativeList<float2>(4096, Allocator.Persistent);
 
-            World.TimeToBuild += BuildBlocks;
-            StartCoroutine(CheckNeighbours());
+                yield return null;
+                chunkDissapearingAnimation = GetComponent<ChunkDissapearingAnimation>();
+                chunkAnimation = GetComponent<ChunkAnimation>();
+            }
 
             if (biomeColorsTexture == null)
             {
@@ -132,9 +154,17 @@ namespace VoxelTG.Terrain
                 biomeColorsTexture.Apply();
             }
 
-            lightingBuffer = new ComputeBuffer(FixedChunkSizeXZ * ChunkSizeY * FixedChunkSizeXZ, sizeof(int), ComputeBufferType.Default);
-            var mr = blockMeshFilter.GetComponent<MeshRenderer>();
-            mr.material.SetBuffer("lightData", lightingBuffer);
+            yield return null;
+            if (lightingBuffer == null || !lightingBuffer.IsValid())
+            {
+                lightingBuffer = new ComputeBuffer(FixedChunkSizeXZ * ChunkSizeY * FixedChunkSizeXZ, sizeof(int), ComputeBufferType.Default);
+                var mr = blockMeshFilter.GetComponent<MeshRenderer>();
+                mr.material.SetBuffer("lightData", lightingBuffer);
+            }
+
+            OnEnabled?.Invoke(this);
+            World.TimeToBuild += BuildBlocks;
+            StartCoroutine(CheckNeighbours());
         }
 
         public void UpdateLightBuffer()
@@ -162,6 +192,7 @@ namespace VoxelTG.Terrain
 
         public void DisposeAndSaveData()
         {
+            StopAllCoroutines();
             if (!blocks.IsCreated)
                 return;
             // save game before quitting
@@ -195,6 +226,8 @@ namespace VoxelTG.Terrain
 
             // clear texture
             Destroy(biomeColorsTexture);
+
+            lightingBuffer.Dispose();
         }
 
         private void OnApplicationQuit()
@@ -323,7 +356,7 @@ namespace VoxelTG.Terrain
             plantsMesh.SetTriangles(plantsTriangles.ToArray(), 0, false);
             plantsMesh.SetUVs<float2>(0, plantsUVs);
 
-            blockMesh.RecalculateNormals();
+            blockMesh.RecalculateNormals((MeshUpdateFlags)int.MaxValue);
             blockMeshFilter.mesh = blockMesh;
 
             // bake mesh immediately if player is near
@@ -333,10 +366,10 @@ namespace VoxelTG.Terrain
             else
                 World.SchedulePhysicsBake(this);
 
-            liquidMesh.RecalculateNormals();
+            liquidMesh.RecalculateNormals((MeshUpdateFlags)int.MaxValue);
             liquidMeshFilter.mesh = liquidMesh;
 
-            plantsMesh.RecalculateNormals();
+            plantsMesh.RecalculateNormals((MeshUpdateFlags)int.MaxValue);
             plantsMeshFilter.mesh = plantsMesh;
 
             // clear blocks
@@ -700,6 +733,7 @@ namespace VoxelTG.Terrain
             chunksToBuild.Add(this);
 
             // check neighbours
+            // TODO: add check neighbours method taking position as param and returning neighbour chunk and it's index
             if (blockPosition.x == 16)
             {
                 Chunk neighbourChunk = NeighbourChunks[0];

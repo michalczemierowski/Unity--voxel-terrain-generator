@@ -17,6 +17,8 @@ using VoxelTG.Effects.VFX;
 using VoxelTG.Terrain;
 using static VoxelTG.WorldSettings;
 using VoxelTG.Config;
+using System.Collections;
+using System.Linq;
 
 /*
  * Michał Czemierowski
@@ -69,6 +71,7 @@ namespace VoxelTG
         [Header("Settings")]
         [SerializeField] private float ticksPerSecond = 20;
         [SerializeField] private float buildChecksPerSecond = 10;
+        [SerializeField] private float newChunkBuildDelay = 0.25f;
         [SerializeField] private GameObject chunkPrefab;
         [SerializeField] private BiomeColorsObject biomeColors;
 
@@ -76,7 +79,7 @@ namespace VoxelTG
 
         #region private
 
-        private NativeQueue<JobHandle> pendingJobs;
+        private NativeQueue<JobHandle> chunkBuildingJobs;
         private static NativeQueue<JobHandle> meshBakingJobs;
 
         private Queue<Chunk> terrainChunks = new Queue<Chunk>();
@@ -123,7 +126,7 @@ namespace VoxelTG
 
             Debug.Log($"SAVED {WorldSave.savedChunks.Count} CHUNKS");
         }
-        
+
         // TODO: there must be a better way to handle this
         /// <summary>
         /// Load world data from disk if exists
@@ -169,8 +172,8 @@ namespace VoxelTG
             GameObject playerObject = Instantiate(Instance.playerPrefab);
             playerObject.SetActive(false);
 
-            RenderDistance = Settings.GetSetting(SettingsType.RENDER_DISTANCE);
-            maxChunksToBuildAtOnce = Settings.GetSetting(SettingsType.MAX_CHUNKS_TO_BUILD_AT_ONCE);
+            RenderDistance = (int)Settings.GetSetting(SettingsType.RENDER_DISTANCE);
+            maxChunksToBuildAtOnce = (int)Settings.GetSetting(SettingsType.MAX_CHUNKS_TO_BUILD_AT_ONCE);
 
             TotalChunks = 4 * RenderDistance * RenderDistance;
 
@@ -189,19 +192,19 @@ namespace VoxelTG
             FastNoise = new FastNoise(Seed, 0.005f);
 
             // init native conainters
-            pendingJobs = new NativeQueue<JobHandle>(Allocator.Persistent);
+            chunkBuildingJobs = new NativeQueue<JobHandle>(Allocator.Persistent);
             meshBakingJobs = new NativeQueue<JobHandle>(Allocator.Persistent);
         }
 
         private void OnDestroy()
         {
             SaveChunkData();
-            
+
             PathFinding.Dispose();
             WorldSettings.Dispose();
 
             // dispose native containers
-            pendingJobs.Dispose();
+            chunkBuildingJobs.Dispose();
             meshBakingJobs.Dispose();
         }
 
@@ -209,7 +212,7 @@ namespace VoxelTG
         private void Start()
         {
             // load chunks
-            LoadChunks();
+            LoadChunks(true);
 
             // start invoking chunk loading task
             InvokeRepeating(nameof(ChunkLoading), 1f / buildChecksPerSecond, 1f / buildChecksPerSecond);
@@ -369,84 +372,130 @@ namespace VoxelTG
                 chunk.ChunkPosition = new Vector2Int(positionX, positionZ);
             }
 
+            chunk.OnEnabled += ScheduleBuild;
+
             // schedule build job
-            SerializableVector2Int serializableChunkPos = SerializableVector2Int.FromVector2Int(chunk.ChunkPosition);
-            if (WorldSave.savedChunks.ContainsKey(serializableChunkPos))
+            // SerializableVector2Int serializableChunkPos = SerializableVector2Int.FromVector2Int(chunk.ChunkPosition);
+            // if (WorldSave.savedChunks.ContainsKey(serializableChunkPos))
+            // {
+            //     ChunkSaveData data = WorldSave.savedChunks[serializableChunkPos];
+            //     // convert byte[] to BlockType[]
+            //     chunk.blocks.CopyFrom(Array.ConvertAll(data.blocks, value => (BlockType)value)); //data.blocks);
+            //     chunk.BuildMesh(jobHandles);
+            // }
+            // else
+            //     chunk.GenerateTerrainDataAndBuildMesh(jobHandles, positionX, positionZ);
+
+            void ScheduleBuild(Chunk chunk)
             {
-                ChunkSaveData data = WorldSave.savedChunks[serializableChunkPos];
-                // convert byte[] to BlockType[]
-                chunk.blocks.CopyFrom(Array.ConvertAll(data.blocks, value => (BlockType)value)); //data.blocks);
-                chunk.BuildMesh(jobHandles);
+                chunk.OnEnabled -= ScheduleBuild;
+
+                SerializableVector2Int serializableChunkPos = SerializableVector2Int.FromVector2Int(chunk.ChunkPosition);
+                if (WorldSave.savedChunks.ContainsKey(serializableChunkPos))
+                {
+                    ChunkSaveData data = WorldSave.savedChunks[serializableChunkPos];
+                    // convert byte[] to BlockType[]
+                    chunk.blocks.CopyFrom(Array.ConvertAll(data.blocks, value => (BlockType)value)); //data.blocks);
+                    chunk.BuildMesh(jobHandles);
+                }
+                else
+                    chunk.GenerateTerrainDataAndBuildMesh(jobHandles, positionX, positionZ);
             }
-            else
-                chunk.GenerateTerrainDataAndBuildMesh(jobHandles, positionX, positionZ);
 
             // disable mesh renderers
+            chunk.Init();
             chunk.SetMeshRenderersActive(false);
 
             // add chunk to chunk dict
             chunks.Add(new Vector2Int(positionX, positionZ), chunk);
         }
 
+        private Coroutine chunkLoadingCoroutine;
         /// <summary>
         /// Load nearby chunks & unload far chunks
         /// </summary>
         /// <param name="instant"></param>
         private void LoadChunks(bool instant = false)
         {
-            //the current chunk the player is in
-            int curChunkPosX = Mathf.FloorToInt(PlayerController.PlayerTransform.position.x / ChunkSizeXZ) * ChunkSizeXZ;
-            int curChunkPosZ = Mathf.FloorToInt(PlayerController.PlayerTransform.position.z / ChunkSizeXZ) * ChunkSizeXZ;
-
+            Vector2Int playerChunk = GetChunkPositionAt(PlayerController.PlayerTransform.position);
             //entered a new chunk
-            if (chunkAtPlayerPosition.x != curChunkPosX || chunkAtPlayerPosition.y != curChunkPosZ)
+            if (chunkAtPlayerPosition != playerChunk)
             {
-                chunkAtPlayerPosition.x = curChunkPosX;
-                chunkAtPlayerPosition.y = curChunkPosZ;
+                chunkAtPlayerPosition = playerChunk;
 
-                int startX = curChunkPosX - ChunkSizeXZ * RenderDistance;
-                int startZ = curChunkPosZ - ChunkSizeXZ * RenderDistance;
-                int maxX = curChunkPosX + ChunkSizeXZ * RenderDistance;
-                int maxZ = curChunkPosZ + ChunkSizeXZ * RenderDistance;
+                if (chunkLoadingCoroutine != null)
+                    StopCoroutine(chunkLoadingCoroutine);
+                chunkLoadingCoroutine = StartCoroutine(LoadChunksCoroutine(instant));
+            }
+        }
 
-                for (int x = startX ; x <= maxX; x += ChunkSizeXZ)
+        /// <summary>
+        /// Don't call this directly, use 'LoadChunks' instead
+        /// </summary>
+        private IEnumerator LoadChunksCoroutine(bool instant = false)
+        {
+            Vector2Int playerChunk = GetChunkPositionAt(PlayerController.PlayerTransform.position);
+
+            int startX = playerChunk.x - ChunkSizeXZ * RenderDistance;
+            int startZ = playerChunk.y - ChunkSizeXZ * RenderDistance;
+            int maxX = playerChunk.x + ChunkSizeXZ * RenderDistance;
+            int maxZ = playerChunk.y + ChunkSizeXZ * RenderDistance;
+
+            Vector2 center = new Vector2(startX + maxX, startZ + maxZ) / 2f;
+            Vector2 playerChunkCenter = GetChunkCenter(playerChunk);
+            float delay = (Vector2.Distance(center, playerChunkCenter) > (ChunkSizeXZ * RenderDistance / 2))
+                ? newChunkBuildDelay
+                : 0;
+
+            List<Vector2Int> chunksToBuild = new List<Vector2Int>(16);
+            for (int x = startX; x <= maxX; x += ChunkSizeXZ)
+            {
+                for (int z = startZ; z <= maxZ; z += ChunkSizeXZ)
                 {
-                    for (int z = startZ; z <= maxZ; z += ChunkSizeXZ)
-                    {
-                        Vector2Int cp = new Vector2Int(x, z);
+                    Vector2Int cp = new Vector2Int(x, z);
 
-                        if (!chunks.ContainsKey(cp))
-                        {
-                            Chunk chunk = null;
-                            BuildChunk(x, z, pendingJobs, ref chunk);
-                            terrainChunks.Enqueue(chunk);
-                        }
+                    if (!chunks.ContainsKey(cp))
+                    {
+                        chunksToBuild.Add(cp);
                     }
                 }
+            }
+            
+            // order by distance to player
+            chunksToBuild = chunksToBuild.OrderBy((p) => Vector2.Distance(GetChunkCenter(p), playerChunkCenter)).ToList();
 
-                // unload far chunks
-                List<Vector2Int> toDestroy = new List<Vector2Int>();
-                foreach (KeyValuePair<Vector2Int, Chunk> c in chunks)
+            foreach (var cp in chunksToBuild)
+            {
+                Chunk chunk = null;
+                BuildChunk(cp.x, cp.y, chunkBuildingJobs, ref chunk);
+                terrainChunks.Enqueue(chunk);
+
+                if (!instant && newChunkBuildDelay > 0)
+                    yield return new WaitForSecondsRealtime(newChunkBuildDelay);
+            }
+
+            // unload far chunks
+            List<Vector2Int> toDestroy = new List<Vector2Int>();
+            foreach (KeyValuePair<Vector2Int, Chunk> c in chunks)
+            {
+                Vector2Int cp = c.Key;
+                if (Mathf.Abs(playerChunk.x - cp.x) > ChunkSizeXZ * (RenderDistance + 3) ||
+                    Mathf.Abs(playerChunk.y - cp.y) > ChunkSizeXZ * (RenderDistance + 3))
                 {
-                    Vector2Int cp = c.Key;
-                    if (Mathf.Abs(curChunkPosX - cp.x) > ChunkSizeXZ * (RenderDistance + 3) ||
-                        Mathf.Abs(curChunkPosZ - cp.y) > ChunkSizeXZ * (RenderDistance + 3))
-                    {
-                        toDestroy.Add(c.Key);
-                    }
+                    toDestroy.Add(c.Key);
                 }
+            }
 
-                // add chunks to pool
-                foreach (Vector2Int cp in toDestroy)
-                {
-                    Chunk tc = chunks[cp];
-                    tc.DissapearingAnimation();
+            // add chunks to pool
+            foreach (Vector2Int cp in toDestroy)
+            {
+                Chunk tc = chunks[cp];
+                tc.DissapearingAnimation();
 
-                    LoadedChunks--;
+                LoadedChunks--;
 
-                    pooledChunks.Add(tc);
-                    chunks.Remove(cp);
-                }
+                pooledChunks.Add(tc);
+                chunks.Remove(cp);
             }
         }
 
@@ -470,6 +519,26 @@ namespace VoxelTG
         #endregion
 
         #region // === Chunk & Block methods === \\
+
+        /// <summary>
+        /// Get position of chunk at provided position
+        /// </summary>
+        public static Vector2Int GetChunkPositionAt(Vector3 position) => GetChunkPositionAt(position.x, position.z);
+        /// <summary>
+        /// Get position of chunk at provided position
+        /// </summary>
+        public static Vector2Int GetChunkPositionAt(float x, float z)
+        {
+            int X = Mathf.FloorToInt(x / ChunkSizeXZ) * ChunkSizeXZ;
+            int Z = Mathf.FloorToInt(z / ChunkSizeXZ) * ChunkSizeXZ;
+
+            return new Vector2Int(X, Z);
+        }
+
+        public static Vector2 GetChunkCenter(Vector2Int chunkPosition)
+        {
+            return chunkPosition + new Vector2(ChunkSizeXZ / 2f, ChunkSizeXZ / 2f);
+        }
 
         /// <summary>
         /// Get block at provided position
@@ -557,11 +626,7 @@ namespace VoxelTG
         /// <returns>chunk</returns>
         public static Chunk GetChunk(float x, float z)
         {
-            int chunkPosX = Mathf.FloorToInt(x / ChunkSizeXZ) * ChunkSizeXZ;
-            int chunkPosZ = Mathf.FloorToInt(z / ChunkSizeXZ) * ChunkSizeXZ;
-
-            Vector2Int cp = new Vector2Int(chunkPosX, chunkPosZ);
-
+            Vector2Int cp = GetChunkPositionAt(x, z);
             if (chunks.TryGetValue(cp, out Chunk result))
                 return result;
 
@@ -577,11 +642,7 @@ namespace VoxelTG
         /// <returns>true if found</returns>
         public static bool TryGetChunk(float x, float z, out Chunk chunk)
         {
-            int chunkPosX = Mathf.FloorToInt(x / ChunkSizeXZ) * ChunkSizeXZ;
-            int chunkPosZ = Mathf.FloorToInt(z / ChunkSizeXZ) * ChunkSizeXZ;
-
-            Vector2Int cp = new Vector2Int(chunkPosX, chunkPosZ);
-
+            Vector2Int cp = GetChunkPositionAt(x, z);
             chunks.TryGetValue(cp, out chunk);
             return chunk != null;
         }
@@ -605,13 +666,13 @@ namespace VoxelTG
         /// </summary>
         private void ChunkLoading()
         {
-            if (pendingJobs.Count > 0)
+            if (chunkBuildingJobs.Count > 0)
             {
                 for (int i = 0; i < maxChunksToBuildAtOnce; i++)
                 {
-                    if (pendingJobs.Peek().IsCompleted)
+                    if (chunkBuildingJobs.Peek().IsCompleted)
                     {
-                        pendingJobs.Dequeue().Complete();
+                        chunkBuildingJobs.Dequeue().Complete();
 
                         Chunk tc = terrainChunks.Dequeue();
 
@@ -622,7 +683,7 @@ namespace VoxelTG
 
                         LoadedChunks++;
 
-                        if (pendingJobs.Count == 0)
+                        if (chunkBuildingJobs.Count == 0)
                             break;
                         // TODO: check if player is close
                         // ChunkLoading();
@@ -643,7 +704,7 @@ namespace VoxelTG
                 }
             }
 
-            TimeToBuild.Invoke();
+            TimeToBuild?.Invoke();
         }
 
         /// <summary>
