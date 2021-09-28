@@ -97,51 +97,30 @@ namespace VoxelTG.Terrain
 
         #endregion
 
-        public event Action<Chunk> OnEnabled;
-
         #region // === Monobehaviour === \\
 
         public void Init()
-        {
-            StopAllCoroutines();
-            StartCoroutine(InitCoroutine());
-        }
-
-        private IEnumerator InitCoroutine()
         {
             if (!blocks.IsCreated)
             {
                 // init native containers
                 blocks = new NativeArray<BlockType>(FixedChunkSizeXZ * ChunkSizeY * FixedChunkSizeXZ, Allocator.Persistent);
-                yield return null;
                 lightingData = new NativeArray<int>(FixedChunkSizeXZ * ChunkSizeY * FixedChunkSizeXZ, Allocator.Persistent);
-                yield return null;
                 biomeTypes = new NativeArray<BiomeType>(FixedChunkSizeXZ * FixedChunkSizeXZ, Allocator.Persistent);
-                yield return null;
                 blockParameters = new NativeHashMap<BlockParameter, short>(2048, Allocator.Persistent);
 
-                yield return null;
                 blockVerticles = new NativeList<float3>(16384, Allocator.Persistent);
-                yield return null;
                 blockTriangles = new NativeList<int>(32768, Allocator.Persistent);
-                yield return null;
                 blockUVs = new NativeList<float2>(16384, Allocator.Persistent);
 
-                yield return null;
                 liquidVerticles = new NativeList<float3>(8192, Allocator.Persistent);
-                yield return null;
                 liquidTriangles = new NativeList<int>(16384, Allocator.Persistent);
-                yield return null;
                 liquidUVs = new NativeList<float2>(8192, Allocator.Persistent);
 
-                yield return null;
                 plantsVerticles = new NativeList<float3>(4096, Allocator.Persistent);
-                yield return null;
                 plantsTriangles = new NativeList<int>(8192, Allocator.Persistent);
-                yield return null;
                 plantsUVs = new NativeList<float2>(4096, Allocator.Persistent);
 
-                yield return null;
                 chunkDissapearingAnimation = GetComponent<ChunkDissapearingAnimation>();
                 chunkAnimation = GetComponent<ChunkAnimation>();
             }
@@ -154,7 +133,6 @@ namespace VoxelTG.Terrain
                 biomeColorsTexture.Apply();
             }
 
-            yield return null;
             if (lightingBuffer == null || !lightingBuffer.IsValid())
             {
                 lightingBuffer = new ComputeBuffer(FixedChunkSizeXZ * ChunkSizeY * FixedChunkSizeXZ, sizeof(int), ComputeBufferType.Default);
@@ -162,7 +140,6 @@ namespace VoxelTG.Terrain
                 mr.material.SetBuffer("lightData", lightingBuffer);
             }
 
-            OnEnabled?.Invoke(this);
             World.TimeToBuild += BuildBlocks;
             StartCoroutine(CheckNeighbours());
         }
@@ -175,28 +152,12 @@ namespace VoxelTG.Terrain
         private void OnDisable()
         {
             World.TimeToBuild -= BuildBlocks;
-
-            if (!blocks.IsCreated)
-                return;
-
-            DisposeAndSaveData();
         }
 
-        private void OnDestroy()
+        public void Dispose()
         {
             if (!blocks.IsCreated)
                 return;
-
-            SaveDataInWorldDictionary();
-        }
-
-        public void DisposeAndSaveData()
-        {
-            StopAllCoroutines();
-            if (!blocks.IsCreated)
-                return;
-            // save game before quitting
-            SaveDataInWorldDictionary();
 
             // dispose native containers
             blocks.Dispose();
@@ -228,11 +189,6 @@ namespace VoxelTG.Terrain
             Destroy(biomeColorsTexture);
 
             lightingBuffer.Dispose();
-        }
-
-        private void OnApplicationQuit()
-        {
-            DisposeAndSaveData();
         }
 
         #endregion
@@ -429,8 +385,6 @@ namespace VoxelTG.Terrain
         public void DissapearingAnimation()
         {
             ClearAnimations();
-            SaveDataInWorldDictionary();
-
             chunkDissapearingAnimation.enabled = true;
         }
 
@@ -1056,6 +1010,9 @@ namespace VoxelTG.Terrain
 
         private IEnumerator ColorDataCoroutine()
         {
+            //TODO: rework this
+            yield break;
+
             NativeArray<Color> biomeColors = new NativeArray<Color>(World.GetBiomeColors(), Allocator.TempJob);
             NativeArray<Color> colors = new NativeArray<Color>(FixedChunkSizeXZ * FixedChunkSizeXZ, Allocator.TempJob);
             CreateBiomeColorData job = new CreateBiomeColorData()

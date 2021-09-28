@@ -44,9 +44,10 @@ namespace VoxelTG
         public static int RenderDistance { get; private set; }
         public static int CurrentTick { get; private set; }
 
+        // FIXME: get rid of static fields
         public static FastNoise FastNoise { get; private set; }
         public static WorldSave WorldSave { get; private set; } = new WorldSave();
-        public static Dictionary<Vector2Int, Chunk> chunks { get; private set; } = new Dictionary<Vector2Int, Chunk>();
+        public static Dictionary<Vector2Int, Chunk> Chunks { get; private set; } = new Dictionary<Vector2Int, Chunk>();
 
         #endregion
 
@@ -71,7 +72,6 @@ namespace VoxelTG
         [Header("Settings")]
         [SerializeField] private float ticksPerSecond = 20;
         [SerializeField] private float buildChecksPerSecond = 10;
-        [SerializeField] private float newChunkBuildDelay = 0.25f;
         [SerializeField] private GameObject chunkPrefab;
         [SerializeField] private BiomeColorsObject biomeColors;
 
@@ -105,13 +105,12 @@ namespace VoxelTG
 
         #endregion
 
-        // TODO: there must be a better way to handle this
+        // TODO: rework save system
         /// <summary>
         /// Save world data to disk
         /// </summary>
         private void SaveChunkData()
         {
-            // TODO: enable saving later
             return;
             BinaryFormatter formatter = new BinaryFormatter();
             string path = Application.persistentDataPath + "/world0";
@@ -127,7 +126,7 @@ namespace VoxelTG
             Debug.Log($"SAVED {WorldSave.savedChunks.Count} CHUNKS");
         }
 
-        // TODO: there must be a better way to handle this
+        // TODO: rework save system
         /// <summary>
         /// Load world data from disk if exists
         /// </summary>
@@ -199,6 +198,12 @@ namespace VoxelTG
         private void OnDestroy()
         {
             SaveChunkData();
+            
+            // dispose all active & pooled chunks
+            foreach(var chunk in Chunks.Values)
+                chunk.Dispose();
+            foreach(var chunk in pooledChunks)
+                chunk.Dispose();
 
             PathFinding.Dispose();
             WorldSettings.Dispose();
@@ -215,7 +220,7 @@ namespace VoxelTG
             LoadChunks(true);
 
             // start invoking chunk loading task
-            InvokeRepeating(nameof(ChunkLoading), 1f / buildChecksPerSecond, 1f / buildChecksPerSecond);
+            StartCoroutine(ChunkLoading());
             // start invoking tick task
             InvokeRepeating(nameof(Tick), 1f / ticksPerSecond, 1f / ticksPerSecond);
 
@@ -372,42 +377,25 @@ namespace VoxelTG
                 chunk.ChunkPosition = new Vector2Int(positionX, positionZ);
             }
 
-            chunk.OnEnabled += ScheduleBuild;
-
-            // schedule build job
-            // SerializableVector2Int serializableChunkPos = SerializableVector2Int.FromVector2Int(chunk.ChunkPosition);
-            // if (WorldSave.savedChunks.ContainsKey(serializableChunkPos))
-            // {
-            //     ChunkSaveData data = WorldSave.savedChunks[serializableChunkPos];
-            //     // convert byte[] to BlockType[]
-            //     chunk.blocks.CopyFrom(Array.ConvertAll(data.blocks, value => (BlockType)value)); //data.blocks);
-            //     chunk.BuildMesh(jobHandles);
-            // }
-            // else
-            //     chunk.GenerateTerrainDataAndBuildMesh(jobHandles, positionX, positionZ);
-
-            void ScheduleBuild(Chunk chunk)
-            {
-                chunk.OnEnabled -= ScheduleBuild;
-
-                SerializableVector2Int serializableChunkPos = SerializableVector2Int.FromVector2Int(chunk.ChunkPosition);
-                if (WorldSave.savedChunks.ContainsKey(serializableChunkPos))
-                {
-                    ChunkSaveData data = WorldSave.savedChunks[serializableChunkPos];
-                    // convert byte[] to BlockType[]
-                    chunk.blocks.CopyFrom(Array.ConvertAll(data.blocks, value => (BlockType)value)); //data.blocks);
-                    chunk.BuildMesh(jobHandles);
-                }
-                else
-                    chunk.GenerateTerrainDataAndBuildMesh(jobHandles, positionX, positionZ);
-            }
-
-            // disable mesh renderers
+            // init chunk & disable mesh renderers
             chunk.Init();
             chunk.SetMeshRenderersActive(false);
 
+            // schedule build job
+            SerializableVector2Int serializableChunkPos = SerializableVector2Int.FromVector2Int(chunk.ChunkPosition);
+            if (WorldSave.savedChunks.ContainsKey(serializableChunkPos))
+            {
+                ChunkSaveData data = WorldSave.savedChunks[serializableChunkPos];
+                // convert byte[] to BlockType[]
+                chunk.blocks.CopyFrom(Array.ConvertAll(data.blocks, value => (BlockType)value)); //data.blocks);
+                chunk.BuildMesh(jobHandles);
+            }
+            else
+                chunk.GenerateTerrainDataAndBuildMesh(jobHandles, positionX, positionZ);
+
+
             // add chunk to chunk dict
-            chunks.Add(new Vector2Int(positionX, positionZ), chunk);
+            Chunks.Add(new Vector2Int(positionX, positionZ), chunk);
         }
 
         private Coroutine chunkLoadingCoroutine;
@@ -443,9 +431,22 @@ namespace VoxelTG
 
             Vector2 center = new Vector2(startX + maxX, startZ + maxZ) / 2f;
             Vector2 playerChunkCenter = GetChunkCenter(playerChunk);
-            float delay = (Vector2.Distance(center, playerChunkCenter) > (ChunkSizeXZ * RenderDistance / 2))
-                ? newChunkBuildDelay
-                : 0;
+
+            // unload far chunks
+            foreach (KeyValuePair<Vector2Int, Chunk> pair in Chunks.ToArray())
+            {
+                Vector2Int cp = pair.Key;
+                if (Mathf.Abs(playerChunk.x - cp.x) > ChunkSizeXZ * (RenderDistance + 3) ||
+                    Mathf.Abs(playerChunk.y - cp.y) > ChunkSizeXZ * (RenderDistance + 3))
+                {
+                    Chunk chunk = pair.Value;
+                    chunk.DissapearingAnimation();
+
+                    pooledChunks.Add(chunk);
+                    Chunks.Remove(cp);
+                    LoadedChunks--;
+                }
+            }
 
             List<Vector2Int> chunksToBuild = new List<Vector2Int>(16);
             for (int x = startX; x <= maxX; x += ChunkSizeXZ)
@@ -454,13 +455,13 @@ namespace VoxelTG
                 {
                     Vector2Int cp = new Vector2Int(x, z);
 
-                    if (!chunks.ContainsKey(cp))
+                    if (!Chunks.ContainsKey(cp))
                     {
                         chunksToBuild.Add(cp);
                     }
                 }
             }
-            
+
             // order by distance to player
             chunksToBuild = chunksToBuild.OrderBy((p) => Vector2.Distance(GetChunkCenter(p), playerChunkCenter)).ToList();
 
@@ -470,33 +471,15 @@ namespace VoxelTG
                 BuildChunk(cp.x, cp.y, chunkBuildingJobs, ref chunk);
                 terrainChunks.Enqueue(chunk);
 
-                if (!instant && newChunkBuildDelay > 0)
-                    yield return new WaitForSecondsRealtime(newChunkBuildDelay);
-            }
-
-            // unload far chunks
-            List<Vector2Int> toDestroy = new List<Vector2Int>();
-            foreach (KeyValuePair<Vector2Int, Chunk> c in chunks)
-            {
-                Vector2Int cp = c.Key;
-                if (Mathf.Abs(playerChunk.x - cp.x) > ChunkSizeXZ * (RenderDistance + 3) ||
-                    Mathf.Abs(playerChunk.y - cp.y) > ChunkSizeXZ * (RenderDistance + 3))
+                if (!instant)
                 {
-                    toDestroy.Add(c.Key);
+                    yield return null;
+                    yield return null;
+                    yield return null;
                 }
             }
 
-            // add chunks to pool
-            foreach (Vector2Int cp in toDestroy)
-            {
-                Chunk tc = chunks[cp];
-                tc.DissapearingAnimation();
-
-                LoadedChunks--;
-
-                pooledChunks.Add(tc);
-                chunks.Remove(cp);
-            }
+            yield return null;
         }
 
         /// <summary>
@@ -627,7 +610,7 @@ namespace VoxelTG
         public static Chunk GetChunk(float x, float z)
         {
             Vector2Int cp = GetChunkPositionAt(x, z);
-            if (chunks.TryGetValue(cp, out Chunk result))
+            if (Chunks.TryGetValue(cp, out Chunk result))
                 return result;
 
             return null;
@@ -643,7 +626,7 @@ namespace VoxelTG
         public static bool TryGetChunk(float x, float z, out Chunk chunk)
         {
             Vector2Int cp = GetChunkPositionAt(x, z);
-            chunks.TryGetValue(cp, out chunk);
+            Chunks.TryGetValue(cp, out chunk);
             return chunk != null;
         }
 
@@ -664,47 +647,54 @@ namespace VoxelTG
         /// <summary>
         /// Checks if chunk building jobs are ready
         /// </summary>
-        private void ChunkLoading()
+        private IEnumerator ChunkLoading()
         {
-            if (chunkBuildingJobs.Count > 0)
+            var wait = new WaitForSecondsRealtime(1f / buildChecksPerSecond);
+            while (true)
             {
-                for (int i = 0; i < maxChunksToBuildAtOnce; i++)
+                yield return wait;
+
+                if (chunkBuildingJobs.Count > 0)
                 {
-                    if (chunkBuildingJobs.Peek().IsCompleted)
+                    for (int i = 0; i < maxChunksToBuildAtOnce; i++)
                     {
-                        chunkBuildingJobs.Dequeue().Complete();
+                        if (chunkBuildingJobs.Peek().IsCompleted)
+                        {
+                            chunkBuildingJobs.Dequeue().Complete();
 
-                        Chunk tc = terrainChunks.Dequeue();
+                            Chunk tc = terrainChunks.Dequeue();
 
-                        tc.gameObject.SetActive(true);
-                        tc.CreateBiomeTexture();
-                        tc.Animation();
-                        tc.ApplyMesh();
+                            tc.gameObject.SetActive(true);
+                            tc.CreateBiomeTexture();
+                            tc.Animation();
+                            tc.ApplyMesh();
 
-                        LoadedChunks++;
+                            LoadedChunks++;
+                            yield return null;
 
-                        if (chunkBuildingJobs.Count == 0)
+                            if (chunkBuildingJobs.Count == 0)
+                                break;
+                            // TODO: check if player is close
+                            // ChunkLoading();
+                        }
+                        else
                             break;
-                        // TODO: check if player is close
-                        // ChunkLoading();
                     }
-                    else
-                        break;
                 }
-            }
 
-            while (meshBakingJobs.Count > 0)
-            {
-                if (meshBakingJobs.Peek().IsCompleted)
+                while (meshBakingJobs.Count > 0)
                 {
-                    meshBakingJobs.Dequeue().Complete();
+                    if (meshBakingJobs.Peek().IsCompleted)
+                    {
+                        meshBakingJobs.Dequeue().Complete();
 
-                    Chunk chunk = terrainCollisionMeshes.Dequeue();
-                    chunk.BlockMeshCollider.sharedMesh = chunk.BlockMeshFilter.mesh;
+                        Chunk chunk = terrainCollisionMeshes.Dequeue();
+                        chunk.BlockMeshCollider.sharedMesh = chunk.BlockMeshFilter.mesh;
+                    }
                 }
-            }
 
-            TimeToBuild?.Invoke();
+                TimeToBuild?.Invoke();
+            }
         }
 
         /// <summary>
