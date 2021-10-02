@@ -14,6 +14,7 @@ namespace VoxelTG
     [BurstCompile]
     public static class Utils
     {
+        private const int CHUNK_PLANE_VOLUME = FixedChunkSizeXZ * ChunkSizeY;
 
         /// <summary>
         /// Custom clamp method used in BlockPosition
@@ -35,7 +36,7 @@ namespace VoxelTG
         /// <returns>index that can be used in Chunk.blocks</returns>
         public static int BlockPosition3DtoIndex(BlockPosition pos)
         {
-            return (pos.z * FixedChunkSizeXZ * ChunkSizeY) + (pos.y * FixedChunkSizeXZ) + pos.x;
+            return (pos.z * CHUNK_PLANE_VOLUME) + (pos.y * FixedChunkSizeXZ) + pos.x;
         }
 
         /// <summary>
@@ -44,7 +45,7 @@ namespace VoxelTG
         /// <returns>index that can be used in Chunk.blocks</returns>
         public static int BlockPosition3DtoIndex(int3 pos)
         {
-            return (pos.z * FixedChunkSizeXZ * ChunkSizeY) + (pos.y * FixedChunkSizeXZ) + pos.x;
+            return (pos.z * CHUNK_PLANE_VOLUME) + (pos.y * FixedChunkSizeXZ) + pos.x;
         }
 
         /// <summary>
@@ -53,8 +54,15 @@ namespace VoxelTG
         /// <returns>index that can be used in Chunk.blocks</returns>
         public static int BlockPosition3DtoIndex(int x, int y, int z)
         {
-            return (z * FixedChunkSizeXZ * ChunkSizeY) + (y * FixedChunkSizeXZ) + x;
+            return (z * CHUNK_PLANE_VOLUME) + (y * FixedChunkSizeXZ) + x;
         }
+
+        public static int NextBlock3DIndexX(int index) => index + 1;
+        public static int PrevBlock3DIndexX(int index) => index - 1;
+        public static int NextBlock3DIndexY(int index) => index + FixedChunkSizeXZ;
+        public static int PrevBlock3DIndexY(int index) => index - FixedChunkSizeXZ;
+        public static int NextBlock3DIndexZ(int index) => index + CHUNK_PLANE_VOLUME;
+        public static int PrevBlock3DIndexZ(int index) => index - CHUNK_PLANE_VOLUME;
 
         /// <summary>
         /// Convert 2D position to index

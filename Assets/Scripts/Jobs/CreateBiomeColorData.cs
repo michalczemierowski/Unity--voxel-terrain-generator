@@ -19,12 +19,12 @@ namespace VoxelTG.Jobs
         [ReadOnly]
         public NativeArray<Color> biomeColors;
 
-        public NativeArray<Color> colors;
+        public NativeArray<Color32> colors;
 
         public void Execute()
         {
             // smoothing
-            const int smoothDistanceHalf = 2;
+            const int smoothDistanceHalf = 4;
 
             for (int x = 0; x < FixedChunkSizeXZ; x++)
             {

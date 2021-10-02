@@ -197,25 +197,20 @@ namespace VoxelTG
 
         private void OnDestroy()
         {
-            SaveChunkData();
-            
-            // dispose all active & pooled chunks
-            foreach(var chunk in Chunks.Values)
-                chunk.Dispose();
-            foreach(var chunk in pooledChunks)
-                chunk.Dispose();
-
-            PathFinding.Dispose();
-            WorldSettings.Dispose();
-
-            // dispose native containers
-            chunkBuildingJobs.Dispose();
-            meshBakingJobs.Dispose();
+            DisposeAndSave();
         }
 
+        private void OnApplicationQuit()
+        {
+            if (chunkBuildingJobs.IsCreated)
+            {
+                DisposeAndSave();
+            }
+        }
 
         private void Start()
         {
+            SetShaderValues();
             // load chunks
             LoadChunks(true);
 
@@ -226,6 +221,29 @@ namespace VoxelTG
 
             InitializeEvents();
             InitializeListeners();
+        }
+
+        private void SetShaderValues()
+        {
+            Shader.SetGlobalFloat("_ChunkSize", FixedChunkSizeXZ);
+        }
+
+        public void DisposeAndSave()
+        {
+            SaveChunkData();
+
+            // dispose all active & pooled chunks
+            foreach (var chunk in Chunks.Values)
+                chunk.Dispose();
+            foreach (var chunk in pooledChunks)
+                chunk.Dispose();
+
+            PathFinding.Dispose();
+            WorldSettings.Dispose();
+
+            // dispose native containers
+            chunkBuildingJobs.Dispose();
+            meshBakingJobs.Dispose();
         }
 
         #endregion
@@ -393,9 +411,8 @@ namespace VoxelTG
             else
                 chunk.GenerateTerrainDataAndBuildMesh(jobHandles, positionX, positionZ);
 
-
             // add chunk to chunk dict
-            Chunks.Add(new Vector2Int(positionX, positionZ), chunk);
+            Chunks.Add(chunk.ChunkPosition, chunk);
         }
 
         private Coroutine chunkLoadingCoroutine;

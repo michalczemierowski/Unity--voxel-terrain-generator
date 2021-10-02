@@ -51,113 +51,119 @@ namespace VoxelTG.Jobs
                 {
                     for (int y = 0; y < WorldSettings.ChunkSizeY; y++)
                     {
-                        BlockType blockType = blocks[Utils.BlockPosition3DtoIndex(x, y, z)];
+                        int index = Utils.BlockPosition3DtoIndex(x, y, z);
+                        BlockType blockType = blocks[index];
 
-                        if (blockType != BlockType.AIR)
+                        if (blockType == BlockType.AIR)
+                            continue;
+
+                        int3 blockPos = new int3(x - 1, y, z - 1);
+                        int numFaces = 0;
+
+                        BlockStructure block = WorldData.GetBlockData(blockType);
+
+                        short param = 0;
+
+                        // assign default values
+                        ref var verticles = ref blockVerticles;
+                        ref var uvs = ref blockUVs;
+                        ref var tris = ref blockTriangles;
+
+                        // check for visible faces
+                        switch (block.shape)
                         {
-                            int3 blockPos = new int3(x - 1, y, z - 1);
-                            int numFaces = 0;
+                            case BlockShape.LIQUID:
+                                verticles = ref liquidVerticles;
+                                uvs = ref liquidUVs;
+                                tris = ref liquidTriangles;
 
-                            BlockStructure block = WorldData.GetBlockData(blockType);
+                                // set to full by default to not save full blocks in game saves
+                                if (!blockParameters.TryGetValue(new BlockParameter(new int3(x, y, z), ParameterType.WATER_SOURCE_DISTANCE), out param))
+                                    param = 8;
 
-                            short param = 0;
+                                BlockstateLiquid(drawFace, index, x, y, z);
+                                break;
+                            case BlockShape.HALF_BLOCK:
+                                blockParameters.TryGetValue(new BlockParameter(new int3(x, y, z), ParameterType.ROTATION), out param);
 
-                            // assign default values
-                            ref var verticles = ref blockVerticles;
-                            ref var uvs = ref blockUVs;
-                            ref var tris = ref blockTriangles;
+                                BlockstateSolidHalf(drawFace, index, x, y, z, param);
+                                break;
+                            case BlockShape.GRASS:
+                                verticles = ref plantsVerticles;
+                                uvs = ref plantsUVs;
+                                tris = ref plantsTriangles;
 
-                            // check for visible faces
-                            switch (block.shape)
-                            {
-                                case BlockShape.LIQUID:
-                                    verticles = ref liquidVerticles;
-                                    uvs = ref liquidUVs;
-                                    tris = ref liquidTriangles;
+                                blockParameters.TryGetValue(new BlockParameter(new int3(x, y, z), ParameterType.BLOCK_TYPE), out param);
 
-                                    // set to full by default to not save full blocks in game saves
-                                    if (!blockParameters.TryGetValue(new BlockParameter(new int3(x, y, z), ParameterType.WATER_SOURCE_DISTANCE), out param))
-                                        param = 8;
+                                BlockstateGrass(drawFace, index, x, y, z);
+                                break;
+                            default:
+                                BlockstateSolid(drawFace, index, x, y, z);
+                                break;
+                        }
 
-                                    BlockstateLiquid(drawFace, x, y, z);
-                                    break;
-                                case BlockShape.HALF_BLOCK:
-                                    blockParameters.TryGetValue(new BlockParameter(new int3(x, y, z), ParameterType.ROTATION), out param);
-
-                                    BlockstateSolidHalf(drawFace, x, y, z, param);
-                                    break;
-                                case BlockShape.GRASS:
-                                    verticles = ref plantsVerticles;
-                                    uvs = ref plantsUVs;
-                                    tris = ref plantsTriangles;
-
-                                    blockParameters.TryGetValue(new BlockParameter(new int3(x, y, z), ParameterType.BLOCK_TYPE), out param);
-
-                                    BlockstateGrass(drawFace, x, y, z);
-                                    break;
-                                default:
-                                    BlockstateSolid(drawFace, x, y, z);
-                                    break;
-                            }
-
-                            // draw faces
+                        // draw faces
+                        if (block.shape == BlockShape.LIQUID)
+                        {
+                            short value;
                             for (int i = 0; i < 6; i++)
                             {
-                                if (drawFace[i])
-                                {
-                                    if (block.shape == BlockShape.LIQUID)
-                                    {
-                                        short value;
-                                        // R L F B
-                                        nearbyLiquidSourceDistance[0] = blockParameters.TryGetValue(new BlockParameter(new int3(x + 1, y, z), ParameterType.WATER_SOURCE_DISTANCE), out value) ? value : (short)0;
-                                        nearbyLiquidSourceDistance[1] = blockParameters.TryGetValue(new BlockParameter(new int3(x - 1, y, z), ParameterType.WATER_SOURCE_DISTANCE), out value) ? value : (short)0;
-                                        nearbyLiquidSourceDistance[2] = blockParameters.TryGetValue(new BlockParameter(new int3(x, y, z + 1), ParameterType.WATER_SOURCE_DISTANCE), out value) ? value : (short)0;
-                                        nearbyLiquidSourceDistance[3] = blockParameters.TryGetValue(new BlockParameter(new int3(x, y, z - 1), ParameterType.WATER_SOURCE_DISTANCE), out value) ? value : (short)0;
+                                if (!drawFace[i])
+                                    continue;
 
-                                        bool reverse = block.GetWaterShape((BlockFace)i, blockPos, verts, uv, param, nearbyLiquidSourceDistance);
-                                        verticles.AddRange(verts);
-                                        uvs.AddRange(uv);
+                                // R L F B
+                                nearbyLiquidSourceDistance[0] = blockParameters.TryGetValue(new BlockParameter(new int3(x + 1, y, z), ParameterType.WATER_SOURCE_DISTANCE), out value) ? value : (short)0;
+                                nearbyLiquidSourceDistance[1] = blockParameters.TryGetValue(new BlockParameter(new int3(x - 1, y, z), ParameterType.WATER_SOURCE_DISTANCE), out value) ? value : (short)0;
+                                nearbyLiquidSourceDistance[2] = blockParameters.TryGetValue(new BlockParameter(new int3(x, y, z + 1), ParameterType.WATER_SOURCE_DISTANCE), out value) ? value : (short)0;
+                                nearbyLiquidSourceDistance[3] = blockParameters.TryGetValue(new BlockParameter(new int3(x, y, z - 1), ParameterType.WATER_SOURCE_DISTANCE), out value) ? value : (short)0;
 
-                                        flipFace[numFaces] = reverse;
-                                        numFaces++;
-                                    }
-                                    else
-                                    {
-                                        bool reverse = block.GetBlockShape((BlockFace)i, blockPos, verts, uv, param);
-                                        verticles.AddRange(verts);
-                                        uvs.AddRange(uv);
+                                bool reverse = block.GetWaterShape((BlockFace)i, blockPos, verts, uv, param, nearbyLiquidSourceDistance);
+                                verticles.AddRange(verts);
+                                uvs.AddRange(uv);
 
-                                        flipFace[numFaces] = reverse;
-                                        numFaces++;
-                                    }
-                                }
+                                flipFace[numFaces] = reverse;
+                                numFaces++;
                             }
-
-                            // triangles
-                            int tl = verticles.Length - 4 * numFaces;
-                            for (int i = 0; i < numFaces; i++)
+                        }
+                        else
+                        {
+                            for (int i = 0; i < 6; i++)
                             {
-                                if (flipFace[i])
-                                {
-                                    triangles[5] = tl + i * 4;
-                                    triangles[4] = tl + i * 4 + 1;
-                                    triangles[3] = tl + i * 4 + 2;
-                                    triangles[2] = tl + i * 4;
-                                    triangles[1] = tl + i * 4 + 2;
-                                    triangles[0] = tl + i * 4 + 3;
-                                }
-                                else
-                                {
-                                    triangles[0] = tl + i * 4;
-                                    triangles[1] = tl + i * 4 + 1;
-                                    triangles[2] = tl + i * 4 + 2;
-                                    triangles[3] = tl + i * 4;
-                                    triangles[4] = tl + i * 4 + 2;
-                                    triangles[5] = tl + i * 4 + 3;
-                                }
+                                if (!drawFace[i])
+                                    continue;
+                                bool reverse = block.GetBlockShape((BlockFace)i, blockPos, verts, uv, param);
+                                verticles.AddRange(verts);
+                                uvs.AddRange(uv);
 
-                                tris.AddRange(triangles);
+                                flipFace[numFaces] = reverse;
+                                numFaces++;
                             }
+                        }
+
+                        // triangles
+                        int tl = verticles.Length - 4 * numFaces;
+                        for (int i = 0; i < numFaces; i++)
+                        {
+                            if (flipFace[i])
+                            {
+                                triangles[5] = tl + i * 4;
+                                triangles[4] = tl + i * 4 + 1;
+                                triangles[3] = tl + i * 4 + 2;
+                                triangles[2] = tl + i * 4;
+                                triangles[1] = tl + i * 4 + 2;
+                                triangles[0] = tl + i * 4 + 3;
+                            }
+                            else
+                            {
+                                triangles[0] = tl + i * 4;
+                                triangles[1] = tl + i * 4 + 1;
+                                triangles[2] = tl + i * 4 + 2;
+                                triangles[3] = tl + i * 4;
+                                triangles[4] = tl + i * 4 + 2;
+                                triangles[5] = tl + i * 4 + 3;
+                            }
+
+                            tris.AddRange(triangles);
                         }
                     }
                 }
@@ -176,41 +182,41 @@ namespace VoxelTG.Jobs
 
         #region blockstate checks
 
-        private void BlockstateSolid(NativeArray<bool> sides, int x, int y, int z)
+        private void BlockstateSolid(NativeArray<bool> sides, int index, int x, int y, int z)
         {
             sides[0] = y == WorldSettings.ChunkSizeY - 1 ||
-                WorldData.GetBlockState(blocks[Utils.BlockPosition3DtoIndex(x, y + 1, z)],
+                WorldData.GetBlockState(blocks[Utils.NextBlock3DIndexY(index)],
                 BlockFace.BOTTOM
             ) != BlockState.SOLID;
 
             sides[1] = y > 0 &&
-                WorldData.GetBlockState(blocks[Utils.BlockPosition3DtoIndex(x, y - 1, z)],
+                WorldData.GetBlockState(blocks[Utils.PrevBlock3DIndexY(index)],
                 BlockFace.TOP
             ) != BlockState.SOLID;
 
-            sides[2] = WorldData.GetBlockState(blocks[Utils.BlockPosition3DtoIndex(x, y, z - 1)],
+            sides[2] = WorldData.GetBlockState(blocks[Utils.PrevBlock3DIndexZ(index)],
                 BlockFace.BACK
             ) != BlockState.SOLID;
 
-            sides[5] = WorldData.GetBlockState(blocks[Utils.BlockPosition3DtoIndex(x + 1, y, z)],
+            sides[5] = WorldData.GetBlockState(blocks[Utils.NextBlock3DIndexX(index)],
                 BlockFace.LEFT
             ) != BlockState.SOLID;
 
-            sides[3] = WorldData.GetBlockState(blocks[Utils.BlockPosition3DtoIndex(x, y, z + 1)],
+            sides[3] = WorldData.GetBlockState(blocks[Utils.NextBlock3DIndexZ(index)],
                 BlockFace.FRONT
             ) != BlockState.SOLID;
 
-            sides[4] = WorldData.GetBlockState(blocks[Utils.BlockPosition3DtoIndex(x - 1, y, z)],
+            sides[4] = WorldData.GetBlockState(blocks[Utils.PrevBlock3DIndexX(index)],
                 BlockFace.RIGHT
             ) != BlockState.SOLID;
         }
 
-        private void BlockstateLiquid(NativeArray<bool> sides, int x, int y, int z)
+        private void BlockstateLiquid(NativeArray<bool> sides, int index, int x, int y, int z)
         {
             short waterSourceDistance;
-            if(!blockParameters.TryGetValue(new BlockParameter(new int3(x, y, z), ParameterType.WATER_SOURCE_DISTANCE), out waterSourceDistance))
+            if (!blockParameters.TryGetValue(new BlockParameter(new int3(x, y, z), ParameterType.WATER_SOURCE_DISTANCE), out waterSourceDistance))
                 waterSourceDistance = 8;
-                
+
             NativeArray<int> nearbyWaterSources = new NativeArray<int>(4, Allocator.Temp);
 
             short value;
@@ -220,20 +226,20 @@ namespace VoxelTG.Jobs
             nearbyWaterSources[3] = blockParameters.TryGetValue(new BlockParameter(new int3(x + 1, y, z), ParameterType.WATER_SOURCE_DISTANCE), out value) ? value : waterSourceDistance;
 
             sides[0] = y < WorldSettings.ChunkSizeY - 1 &&
-                WorldData.GetBlockState(blocks[Utils.BlockPosition3DtoIndex(x, y + 1, z)]) == BlockState.TRANSPARENT;
+                WorldData.GetBlockState(blocks[Utils.NextBlock3DIndexY(index)]) == BlockState.TRANSPARENT;
             sides[1] = y > 0 &&
-                WorldData.GetBlockState(blocks[Utils.BlockPosition3DtoIndex(x, y - 1, z)]) == BlockState.TRANSPARENT;
+                WorldData.GetBlockState(blocks[Utils.PrevBlock3DIndexY(index)]) == BlockState.TRANSPARENT;
             sides[2] = nearbyWaterSources[0] < waterSourceDistance ||
-                WorldData.GetBlockState(blocks[Utils.BlockPosition3DtoIndex(x, y, z - 1)]) == BlockState.TRANSPARENT;
+                WorldData.GetBlockState(blocks[Utils.PrevBlock3DIndexZ(index)]) == BlockState.TRANSPARENT;
             sides[3] = nearbyWaterSources[1] < waterSourceDistance ||
-                WorldData.GetBlockState(blocks[Utils.BlockPosition3DtoIndex(x, y, z + 1)]) == BlockState.TRANSPARENT;
+                WorldData.GetBlockState(blocks[Utils.NextBlock3DIndexZ(index)]) == BlockState.TRANSPARENT;
             sides[4] = nearbyWaterSources[2] < waterSourceDistance ||
-                WorldData.GetBlockState(blocks[Utils.BlockPosition3DtoIndex(x - 1, y, z)]) == BlockState.TRANSPARENT;
+                WorldData.GetBlockState(blocks[Utils.PrevBlock3DIndexX(index)]) == BlockState.TRANSPARENT;
             sides[5] = nearbyWaterSources[3] < waterSourceDistance ||
-                WorldData.GetBlockState(blocks[Utils.BlockPosition3DtoIndex(x + 1, y, z)]) == BlockState.TRANSPARENT;
+                WorldData.GetBlockState(blocks[Utils.NextBlock3DIndexX(index)]) == BlockState.TRANSPARENT;
         }
 
-        private void BlockstateSolidHalf(NativeArray<bool> sides, int x, int y, int z, int3 rotation)
+        private void BlockstateSolidHalf(NativeArray<bool> sides, int index, int x, int y, int z, int3 rotation)
         {
             int eulerY = rotation.y / 90;
 
@@ -243,18 +249,18 @@ namespace VoxelTG.Jobs
             int leftIndex = 4 + eulerY > 5 ? 5 + eulerY - 4 : 4 + eulerY;
 
             sides[0] = y < WorldSettings.ChunkSizeY - 1 &&
-                WorldData.GetBlockState(blocks[Utils.BlockPosition3DtoIndex(x, y + 1, z)]) != BlockState.SOLID;
+                WorldData.GetBlockState(blocks[Utils.NextBlock3DIndexY(index)]) != BlockState.SOLID;
             sides[1] = y > 0 &&
-                WorldData.GetBlockState(blocks[Utils.BlockPosition3DtoIndex(x, y - 1, z)]) != BlockState.SOLID;
-            sides[frontIndex] = WorldData.GetBlockState(blocks[Utils.BlockPosition3DtoIndex(x, y, z - 1)]) != BlockState.SOLID;
-            sides[rightIndex] = WorldData.GetBlockState(blocks[Utils.BlockPosition3DtoIndex(x + 1, y, z)]) != BlockState.SOLID;
-            sides[backIndex] = WorldData.GetBlockState(blocks[Utils.BlockPosition3DtoIndex(x, y, z + 1)]) != BlockState.SOLID;
-            sides[leftIndex] = WorldData.GetBlockState(blocks[Utils.BlockPosition3DtoIndex(x - 1, y, z)]) != BlockState.SOLID;
+                WorldData.GetBlockState(blocks[Utils.PrevBlock3DIndexY(index)]) != BlockState.SOLID;
+            sides[frontIndex] = WorldData.GetBlockState(blocks[Utils.PrevBlock3DIndexZ(index)]) != BlockState.SOLID;
+            sides[rightIndex] = WorldData.GetBlockState(blocks[Utils.NextBlock3DIndexX(index)]) != BlockState.SOLID;
+            sides[backIndex] = WorldData.GetBlockState(blocks[Utils.NextBlock3DIndexZ(index)]) != BlockState.SOLID;
+            sides[leftIndex] = WorldData.GetBlockState(blocks[Utils.PrevBlock3DIndexX(index)]) != BlockState.SOLID;
         }
 
-        private void BlockstateGrass(NativeArray<bool> sides, int x, int y, int z)
+        private void BlockstateGrass(NativeArray<bool> sides, int index, int x, int y, int z)
         {
-            BlockstateSolid(sides, x, y, z);
+            BlockstateSolid(sides, index, x, y, z);
             bool visible = sides[0] || sides[1] || sides[2] || sides[3] || sides[4] || sides[5];
             for (int i = 2; i < 6; i++)
             {

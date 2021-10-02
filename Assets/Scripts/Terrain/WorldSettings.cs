@@ -22,8 +22,9 @@ namespace VoxelTG
         }
 
         public const int ChunkSizeXZ = 16;
-        public const int ChunkSizeY = 256;
-        public const int WaterLevelY = 30;
+        public const int ChunkSizeY = 128;
+        //FIXME: water needs rework
+        public const int WaterLevelY = 0;
         public const float BaseLandHeightMultipler = 0.3f;
         public const int FixedChunkSizeXZ = ChunkSizeXZ + 2;
 
@@ -89,7 +90,8 @@ namespace VoxelTG
 
             public static void Dispose()
             {
-                biomeConfigs.Dispose();
+                if (biomeConfigs.IsCreated)
+                    biomeConfigs.Dispose();
             }
 
             public static BiomeType GetBiome(int x, int z)
